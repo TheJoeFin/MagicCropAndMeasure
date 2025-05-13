@@ -235,8 +235,13 @@ public partial class MainWindow : FluentWindow
         double deltaX = currentPoint.X - clickedPoint.X;
         double deltaY = currentPoint.Y - clickedPoint.Y;
 
-        ImageGrid.Width = oldGridSize.Width + deltaX;
-        ImageGrid.Height = oldGridSize.Height + deltaY;
+        // Calculate new dimensions
+        double newWidth = oldGridSize.Width + deltaX;
+        double newHeight = oldGridSize.Height + deltaY;
+        
+        // Enforce minimum dimensions of 50px
+        ImageGrid.Width = Math.Max(50, newWidth);
+        ImageGrid.Height = Math.Max(50, newHeight);
 
         e.Handled = true;
     }
