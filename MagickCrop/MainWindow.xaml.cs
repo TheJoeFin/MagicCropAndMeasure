@@ -2401,4 +2401,12 @@ public partial class MainWindow : FluentWindow
         isCreatingMeasurement = false;
         draggingMode = DraggingMode.None;
     }
+
+    private void FluentWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            UncheckAllBut();
+        }
+    }
 }

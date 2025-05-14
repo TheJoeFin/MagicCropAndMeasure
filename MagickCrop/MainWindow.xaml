@@ -19,7 +19,8 @@
     PreviewDragOver="FluentWindow_PreviewDragOver"
     PreviewDrop="FluentWindow_PreviewDrop"
     WindowStyle="None"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    PreviewKeyDown="FluentWindow_PreviewKeyDown">
     <Window.Resources>
         <Style TargetType="Ellipse">
             <Setter Property="Height" Value="12" />
