@@ -125,6 +125,7 @@ public partial class MainWindow : FluentWindow
             Stroke = new SolidColorBrush(color),
             StrokeThickness = 2,
             IsHitTestVisible = false,
+            StrokeLineJoin = PenLineJoin.Round,
             Opacity = 0.8,
         };
 
