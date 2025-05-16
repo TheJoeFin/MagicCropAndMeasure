@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -158,7 +159,7 @@ public partial class MainWindow : FluentWindow
         if (Mouse.MiddleButton == MouseButtonState.Released && Mouse.LeftButton == MouseButtonState.Released)
         {
             if (draggingMode == DraggingMode.Panning)
-                Mouse.SetCursor(null);
+                Cursor = Cursors.SizeAll;
 
             if (draggingMode == DraggingMode.MeasureDistance && activeMeasureControl is not null)
             {
@@ -231,7 +232,7 @@ public partial class MainWindow : FluentWindow
     private void ResizeImage(MouseEventArgs e)
     {
         MainImage.Stretch = Stretch.Fill;
-        Mouse.SetCursor(Cursors.SizeAll);
+        Cursor = Cursors.SizeAll;
         Point currentPoint = e.GetPosition(ShapeCanvas);
         double deltaX = currentPoint.X - clickedPoint.X;
         double deltaY = currentPoint.Y - clickedPoint.Y;
@@ -249,7 +250,7 @@ public partial class MainWindow : FluentWindow
 
     private void PanCanvas(MouseEventArgs e)
     {
-        Mouse.SetCursor(Cursors.SizeAll);
+        Cursor = Cursors.SizeAll;
         Point currentPosition = e.GetPosition(this);
         Vector delta = currentPosition - clickedPoint;
 
@@ -391,7 +392,7 @@ public partial class MainWindow : FluentWindow
         if (saveFileDialog.ShowDialog() is not true || lines is null)
         {
             BottomPane.IsEnabled = true;
-            BottomPane.Cursor = null;
+            Cursor = null;
             SetUiForCompletedTask();
             return;
         }
@@ -540,7 +541,7 @@ public partial class MainWindow : FluentWindow
     private void SetUiForLongTask()
     {
         BottomPane.IsEnabled = false;
-        BottomPane.Cursor = Cursors.Wait;
+        Cursor = Cursors.Wait;
         IsWorkingBar.Visibility = Visibility.Visible;
         autoSaveTimer?.Stop();
     }
@@ -548,7 +549,7 @@ public partial class MainWindow : FluentWindow
     private void SetUiForCompletedTask()
     {
         IsWorkingBar.Visibility = Visibility.Collapsed;
-        BottomPane.Cursor = null;
+        Cursor = null;
         BottomPane.IsEnabled = true;
 
         autoSaveTimer?.Stop();
@@ -1658,7 +1659,6 @@ public partial class MainWindow : FluentWindow
         isDrawingMode = false;
         DrawingCanvas.IsEnabled = false;
         DrawingOptionsPanel.Visibility = Visibility.Collapsed;
-        MainGrid.Cursor = null;
     }
 
     private void SaveMeasurementsPackageToFile()
@@ -2347,7 +2347,7 @@ public partial class MainWindow : FluentWindow
         if (sender is ToggleButton toggleButton)
             UncheckAllBut(toggleButton);
 
-        MainGrid.Cursor = Cursors.Pen;
+        Cursor = Cursors.Pen;
     }
 
     private void DrawingLinesRadio_Unchecked(object sender, RoutedEventArgs e)
@@ -2357,7 +2357,6 @@ public partial class MainWindow : FluentWindow
 
         DrawingOptionsPanel.Visibility = Visibility.Collapsed;
         DrawingCanvas.IsHitTestVisible = false;
-        MainGrid.Cursor = null;
     }
 
     private void ToolSelector_Checked(object sender, RoutedEventArgs e)
@@ -2366,7 +2365,7 @@ public partial class MainWindow : FluentWindow
             return;
 
         UncheckAllBut(toggleButton);
-        MainGrid.Cursor = Cursors.Cross;
+        Cursor = Cursors.Cross;
     }
 
     private bool IsAnyToolSelected()
@@ -2387,6 +2386,13 @@ public partial class MainWindow : FluentWindow
         foreach (ToggleButton button in toolToggleButtons)
             if (button != toggleButton)
                 button.IsChecked = false;
+
+        if (toggleButton is null)
+        {
+            Cursor = null;
+            draggingMode = DraggingMode.None;
+            isCreatingMeasurement = false;
+        }
     }
 
     private void ToolSelector_Clicked(object sender, RoutedEventArgs e)
@@ -2397,7 +2403,6 @@ public partial class MainWindow : FluentWindow
         if (toggle.IsChecked is true)
             return;
 
-        MainGrid.Cursor = null;
         isDrawingMode = false;
         isCreatingMeasurement = false;
         draggingMode = DraggingMode.None;

@@ -25,6 +25,7 @@
             Fill="#200066FF"
             Opacity="0.8"
             Stroke="#0066FF"
+            StrokeLineJoin="Round"
             StrokeThickness="2" />
 
         <Ellipse
@@ -74,11 +75,11 @@
                     <MenuItem Click="RemoveMeasurementMenuItem_Click" Header="Remove Measurement" />
                 </ContextMenu>
             </Border.ContextMenu>
-            <Button 
-                x:Name="MeasurementButton" 
+            <Button
+                x:Name="MeasurementButton"
+                Padding="0"
                 Background="Transparent"
                 BorderThickness="0"
-                Padding="0"
                 Click="MeasurementButton_Click">
                 <TextBlock
                     x:Name="AngleTextBlock"
