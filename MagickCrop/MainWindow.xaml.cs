@@ -78,6 +78,11 @@ public partial class MainWindow : FluentWindow
 
     private bool isCreatingMeasurement = false;
 
+    // --- Angle measurement placement state ---
+    private bool isPlacingAngleMeasurement = false;
+    private AnglePlacementStep anglePlacementStep = AnglePlacementStep.None;
+    private AngleMeasurementControl? activeAnglePlacementControl = null;
+
     public MainWindow()
     {
         ThemeService themeService = new();
@@ -156,6 +161,28 @@ public partial class MainWindow : FluentWindow
 
     private void TopLeft_MouseMove(object sender, MouseEventArgs e)
     {
+        // --- ANGLE MEASUREMENT PLACEMENT LOGIC ---
+        if (isPlacingAngleMeasurement && activeAnglePlacementControl != null)
+        {
+            Point mousePos = e.GetPosition(ShapeCanvas);
+            if (anglePlacementStep == AnglePlacementStep.DraggingFirstLeg)
+            {
+                // Dragging to set point1 (first arm)
+                activeAnglePlacementControl.MovePoint(1, mousePos);
+                // Keep vertex fixed at original click
+                // point3 stays at vertex for now
+                e.Handled = true;
+                return;
+            }
+            else if (anglePlacementStep == AnglePlacementStep.PlacingThirdPoint)
+            {
+                // Tracking mouse for third point
+                activeAnglePlacementControl.MovePoint(2, mousePos);
+                e.Handled = true;
+                return;
+            }
+        }
+
         if (Mouse.MiddleButton == MouseButtonState.Released && Mouse.LeftButton == MouseButtonState.Released)
         {
             if (draggingMode == DraggingMode.Panning)
@@ -780,7 +807,8 @@ public partial class MainWindow : FluentWindow
 
     private void ShapeCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        if ((Mouse.MiddleButton == MouseButtonState.Pressed || Mouse.LeftButton == MouseButtonState.Pressed && !isCreatingMeasurement)
+        if ((Mouse.MiddleButton == MouseButtonState.Pressed 
+            || Mouse.LeftButton == MouseButtonState.Pressed && !isCreatingMeasurement)
             && !IsAnyToolSelected())
         {
             clickedPoint = e.GetPosition(this);
@@ -793,7 +821,24 @@ public partial class MainWindow : FluentWindow
             return;
 
         clickedPoint =  e.GetPosition(ShapeCanvas);
-        isCreatingMeasurement = true;
+
+        // --- ANGLE MEASUREMENT PLACEMENT LOGIC ---
+        if (isPlacingAngleMeasurement && anglePlacementStep == AnglePlacementStep.PlacingThirdPoint && activeAnglePlacementControl != null)
+        {
+            // Finalize third point
+            activeAnglePlacementControl.MovePoint(2, clickedPoint);
+            angleMeasurementTools.Add(activeAnglePlacementControl);
+            activeAnglePlacementControl.MeasurementPointMouseDown += AngleMeasurementPoint_MouseDown;
+            activeAnglePlacementControl.RemoveControlRequested += AngleMeasurementControl_RemoveControlRequested;
+            isPlacingAngleMeasurement = false;
+            anglePlacementStep = AnglePlacementStep.None;
+            activeAnglePlacementControl = null;
+            isCreatingMeasurement = false;
+            draggingMode = DraggingMode.None;
+            ShapeCanvas.ReleaseMouseCapture();
+            e.Handled = true;
+            return;
+        }
 
         if (MeasureDistanceToggle.IsChecked is true)
         {
@@ -812,13 +857,36 @@ public partial class MainWindow : FluentWindow
             // Set the start and end positions of the measurement
             measurementControl.MovePoint(0, clickedPoint);
             measurementControl.StartDraggingPoint(1);
+            isCreatingMeasurement = true;
         }
-        else if (MeasureAngleToggle.IsChecked is true
-        || DrawingLinesToggle.IsChecked is true)
+        else if (MeasureAngleToggle.IsChecked is true)
+        {
+            // Start angle measurement placement
+            isPlacingAngleMeasurement = true;
+            anglePlacementStep = AnglePlacementStep.DraggingFirstLeg;
+            isCreatingMeasurement = false;
+            draggingMode = DraggingMode.None;
+            // Create the control but do not add to canvas yet
+            activeAnglePlacementControl = new AngleMeasurementControl();
+            // Place vertex at clicked point, set both other points to same position for now
+            activeAnglePlacementControl.MovePoint(1, clickedPoint); // vertex
+            activeAnglePlacementControl.MovePoint(0, clickedPoint); // point1
+            activeAnglePlacementControl.MovePoint(2, clickedPoint); // point3
+            ShapeCanvas.Children.Add(activeAnglePlacementControl);
+            ShapeCanvas.CaptureMouse();
+            e.Handled = true;
+            return;
+        }
+        else if (isPlacingAngleMeasurement)
+        {
+            // Should not happen, but safety
+            e.Handled = true;
+            return;
+        }
+        else if (DrawingLinesToggle.IsChecked is true)
         {
             isCreatingMeasurement = true;
             draggingMode = DraggingMode.CreatingMeasurement;
-
             ShapeCanvas.CaptureMouse();
             e.Handled = true;
         }
@@ -834,6 +902,20 @@ public partial class MainWindow : FluentWindow
 
     private void ShapeCanvas_MouseUp(object sender, MouseButtonEventArgs e)
     {
+        // --- ANGLE MEASUREMENT PLACEMENT LOGIC ---
+        if (isPlacingAngleMeasurement && anglePlacementStep == AnglePlacementStep.DraggingFirstLeg && activeAnglePlacementControl != null)
+        {
+            // On mouse up after dragging, fix point1 and start tracking for point3
+            Point mousePos = e.GetPosition(ShapeCanvas);
+            activeAnglePlacementControl.MovePoint(1, mousePos);
+            // Now move to step 2: track mouse for third point
+            anglePlacementStep = AnglePlacementStep.PlacingThirdPoint;
+            // Ensure mouse is captured so ShapeCanvas_MouseMove continues to update point3
+            ShapeCanvas.ReleaseMouseCapture();
+            e.Handled = true;
+            return;
+        }
+
         if (isCreatingMeasurement && draggingMode == DraggingMode.CreatingMeasurement)
         {
             Point endPoint = e.GetPosition(ShapeCanvas);
@@ -2413,6 +2495,21 @@ public partial class MainWindow : FluentWindow
         if (e.Key == Key.Escape)
         {
             UncheckAllBut();
+
+            isPlacingAngleMeasurement = false;
+            anglePlacementStep = AnglePlacementStep.None;
+            ShapeCanvas.Children.Remove(activeAngleMeasureControl);
+            activeAnglePlacementControl = null;
+            isCreatingMeasurement = false;
+            draggingMode = DraggingMode.None;
+            ShapeCanvas.ReleaseMouseCapture();
         }
     }
+}
+
+enum AnglePlacementStep
+{
+    None,
+    DraggingFirstLeg,
+    PlacingThirdPoint
 }

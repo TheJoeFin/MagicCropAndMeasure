@@ -175,6 +175,7 @@ public partial class AngleMeasurementControl : UserControl
                 break;
             case 2:
                 point3Position = newPosition;
+                Point3.IsHitTestVisible = true;
                 break;
         }
 

@@ -5,9 +5,10 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
-    <Canvas x:Name="MeasurementCanvas">
+    <Canvas x:Name="MeasurementCanvas" IsHitTestVisible="False">
         <Line
             x:Name="Line1"
+            IsHitTestVisible="False"
             Opacity="0.8"
             Stroke="#0066FF"
             StrokeDashArray="4,2"
@@ -15,6 +16,7 @@
 
         <Line
             x:Name="Line2"
+            IsHitTestVisible="False"
             Opacity="0.8"
             Stroke="#0066FF"
             StrokeDashArray="4,2"
@@ -23,6 +25,7 @@
         <Path
             x:Name="AngleArc"
             Fill="#200066FF"
+            IsHitTestVisible="False"
             Opacity="0.8"
             Stroke="#0066FF"
             StrokeLineJoin="Round"
@@ -58,6 +61,7 @@
             Height="12"
             Cursor="SizeAll"
             Fill="#0066FF"
+            IsHitTestVisible="False"
             MouseDown="MeasurementPoint_MouseDown"
             Opacity="0.8"
             Stroke="White"

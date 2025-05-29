@@ -424,6 +424,19 @@
                                                 </ToggleButton.Content>
                                             </ToggleButton>
                                             <ToggleButton
+                                                x:Name="RectangleMeasureToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="ToolSelector_Checked"
+                                                Click="ToolSelector_Clicked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="RectangleLandscape24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Add Rectangle" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                            <ToggleButton
                                                 x:Name="HorizontalLineRadio"
                                                 Width="150"
                                                 Margin="0,4"
