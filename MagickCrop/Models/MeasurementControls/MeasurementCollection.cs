@@ -34,6 +34,11 @@ public class MeasurementCollection
     public List<HorizontalLineControlDto> HorizontalLines { get; set; } = [];
 
     /// <summary>
+    /// Collection of rectangle measurement control data
+    /// </summary>
+    public List<RectangleMeasurementControlDto> RectangleMeasurements { get; set; } = [];
+
+    /// <summary>
     /// Collection of serialized ink strokes
     /// </summary>
     public List<StrokeDto> InkStrokes { get; set; } = [];
