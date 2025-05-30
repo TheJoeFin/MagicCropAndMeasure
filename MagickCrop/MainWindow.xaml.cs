@@ -914,7 +914,14 @@ public partial class MainWindow : FluentWindow
             isPlacingRectangleMeasurement = true;
             draggingMode = DraggingMode.CreatingMeasurement; // Use CreatingMeasurement to signify drag
             isCreatingMeasurement = true; // Ensure this is set for MouseUp cleanup
-            activeRectanglePlacementControl = new RectangleMeasurementControl();
+            
+            // Create new rectangle control with current scale factor and units
+            activeRectanglePlacementControl = new RectangleMeasurementControl
+            {
+                ScaleFactor = ScaleInput.Value ?? 1.0,
+                Units = MeasurementUnits.Text
+            };
+            
             activeRectanglePlacementControl.MovePoint(0, clickedPoint); // Set top-left to initial click
             activeRectanglePlacementControl.MovePoint(1, clickedPoint); // Set bottom-right to initial click, will be updated on mouse move/up
             ShapeCanvas.Children.Add(activeRectanglePlacementControl);
@@ -970,7 +977,14 @@ public partial class MainWindow : FluentWindow
             {
                 if (isPlacingRectangleMeasurement && activeRectanglePlacementControl != null)
                 {
-                    activeRectanglePlacementControl.MovePoint(1, endPoint); // Finalize bottom-right point
+                    // Make sure the control has the latest scale and units
+                    activeRectanglePlacementControl.ScaleFactor = ScaleInput.Value ?? 1.0;
+                    activeRectanglePlacementControl.Units = MeasurementUnits.Text;
+                    
+                    // Finalize bottom-right point
+                    activeRectanglePlacementControl.MovePoint(1, endPoint);
+                    
+                    // Add to the collection of rectangle measurements
                     rectangleMeasurementTools.Add(activeRectanglePlacementControl);
                     activeRectanglePlacementControl.MeasurementPointMouseDown += RectangleMeasurementPoint_MouseDown;
                     activeRectanglePlacementControl.RemoveControlRequested += RectangleMeasurementControl_RemoveControlRequested;
@@ -1623,7 +1637,12 @@ public partial class MainWindow : FluentWindow
 
     private void AddNewRectangleMeasurementToolToCanvas()
     {
-        RectangleMeasurementControl measurementControl = new();
+        double scale = ScaleInput.Value ?? 1.0;
+        RectangleMeasurementControl measurementControl = new()
+        {
+            ScaleFactor = scale,
+            Units = MeasurementUnits.Text
+        };
         measurementControl.MeasurementPointMouseDown += RectangleMeasurementPoint_MouseDown;
         measurementControl.RemoveControlRequested += RectangleMeasurementControl_RemoveControlRequested;
         rectangleMeasurementTools.Add(measurementControl);
@@ -2536,7 +2555,14 @@ public partial class MainWindow : FluentWindow
 
     private void CreateRectangleMeasurement(Point topLeft, Point bottomRight)
     {
-        RectangleMeasurementControl measurementControl = new();
+        double scale = ScaleInput.Value ?? 1.0;
+        string units = MeasurementUnits.Text;
+        
+        RectangleMeasurementControl measurementControl = new()
+        {
+            ScaleFactor = scale,
+            Units = units
+        };
         measurementControl.MeasurementPointMouseDown += RectangleMeasurementPoint_MouseDown;
         measurementControl.RemoveControlRequested += RectangleMeasurementControl_RemoveControlRequested;
         rectangleMeasurementTools.Add(measurementControl);

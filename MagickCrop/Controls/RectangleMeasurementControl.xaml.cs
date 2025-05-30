@@ -13,31 +13,25 @@ public partial class RectangleMeasurementControl : UserControl
     private int pointDraggingIndex = -1;
     private Point clickedPoint;
 
-    private double _scaleFactor = 1.0;
+    private double scaleFactor = 1.0;
     public double ScaleFactor
     {
-        get => _scaleFactor;
+        get => scaleFactor;
         set
         {
-            if (_scaleFactor != value)
-            {
-                _scaleFactor = value;
-                UpdatePositions(); // Update display when scale factor changes
-            }
+            scaleFactor = value;
+            UpdateMeasurementText();
         }
     }
 
-    private string _units = "pixels";
+    private string units = "pixels";
     public string Units
     {
-        get => _units;
+        get => units;
         set
         {
-            if (_units != value)
-            {
-                _units = value;
-                UpdatePositions(); // Update display when units change
-            }
+            units = value;
+            UpdateMeasurementText();
         }
     }
 
@@ -78,6 +72,8 @@ public partial class RectangleMeasurementControl : UserControl
 
         // Update measurement text
         UpdateMeasurementText();
+        
+        // Position the measurement text above the rectangle
         Canvas.SetLeft(MeasurementText, x + width / 2 - (MeasurementText.ActualWidth / 2));
         Canvas.SetTop(MeasurementText, y - MeasurementText.ActualHeight - 5);
     }
