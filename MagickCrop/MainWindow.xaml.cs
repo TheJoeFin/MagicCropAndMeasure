@@ -51,6 +51,8 @@ public partial class MainWindow : FluentWindow
     private DistanceMeasurementControl? activeMeasureControl;
     private readonly ObservableCollection<AngleMeasurementControl> angleMeasurementTools = [];
     private AngleMeasurementControl? activeAngleMeasureControl;
+    private readonly ObservableCollection<RectangleMeasurementControl> rectangleMeasurementTools = [];
+    private RectangleMeasurementControl? activeRectangleMeasureControl;
 
     private readonly ObservableCollection<VerticalLineControl> verticalLineControls = [];
     private readonly ObservableCollection<HorizontalLineControl> horizontalLineControls = [];
@@ -82,6 +84,10 @@ public partial class MainWindow : FluentWindow
     private bool isPlacingAngleMeasurement = false;
     private AnglePlacementStep anglePlacementStep = AnglePlacementStep.None;
     private AngleMeasurementControl? activeAnglePlacementControl = null;
+
+    // --- Rectangle measurement placement state ---
+    private bool isPlacingRectangleMeasurement = false;
+    private RectangleMeasurementControl? activeRectanglePlacementControl = null;
 
     public MainWindow()
     {
@@ -183,6 +189,15 @@ public partial class MainWindow : FluentWindow
             }
         }
 
+        // --- RECTANGLE MEASUREMENT PLACEMENT LOGIC ---
+        if (isPlacingRectangleMeasurement && activeRectanglePlacementControl != null && draggingMode == DraggingMode.CreatingMeasurement)
+        {
+            Point mousePos = e.GetPosition(ShapeCanvas);
+            activeRectanglePlacementControl.MovePoint(1, mousePos); // Update bottom-right point as mouse moves
+            e.Handled = true;
+            return;
+        }
+
         if (Mouse.MiddleButton == MouseButtonState.Released && Mouse.LeftButton == MouseButtonState.Released)
         {
             if (draggingMode == DraggingMode.Panning)
@@ -198,6 +213,12 @@ public partial class MainWindow : FluentWindow
             {
                 activeAngleMeasureControl.ResetActivePoint();
                 activeAngleMeasureControl = null;
+            }
+
+            if (draggingMode == DraggingMode.MeasureRectangle && activeRectangleMeasureControl is not null)
+            {
+                activeRectangleMeasureControl.ResetActivePoint();
+                activeRectangleMeasureControl = null;
             }
 
             clickedElement = null;
@@ -237,6 +258,17 @@ public partial class MainWindow : FluentWindow
             if (pointIndex >= 0)
             {
                 activeAngleMeasureControl.MovePoint(pointIndex, movingPoint);
+            }
+            e.Handled = true;
+            return;
+        }
+
+        if (draggingMode == DraggingMode.MeasureRectangle && activeRectangleMeasureControl is not null)
+        {
+            int pointIndex = activeRectangleMeasureControl.GetActivePointIndex();
+            if (pointIndex >= 0)
+            {
+                activeRectangleMeasureControl.MovePoint(pointIndex, movingPoint);
             }
             e.Handled = true;
             return;
@@ -877,6 +909,18 @@ public partial class MainWindow : FluentWindow
             e.Handled = true;
             return;
         }
+        else if (RectangleMeasureToggle.IsChecked is true)
+        {
+            isPlacingRectangleMeasurement = true;
+            draggingMode = DraggingMode.CreatingMeasurement; // Use CreatingMeasurement to signify drag
+            isCreatingMeasurement = true; // Ensure this is set for MouseUp cleanup
+            activeRectanglePlacementControl = new RectangleMeasurementControl();
+            activeRectanglePlacementControl.MovePoint(0, clickedPoint); // Set top-left to initial click
+            activeRectanglePlacementControl.MovePoint(1, clickedPoint); // Set bottom-right to initial click, will be updated on mouse move/up
+            ShapeCanvas.Children.Add(activeRectanglePlacementControl);
+            ShapeCanvas.CaptureMouse();
+            e.Handled = true;
+        }
         else if (isPlacingAngleMeasurement)
         {
             // Should not happen, but safety
@@ -924,7 +968,26 @@ public partial class MainWindow : FluentWindow
             if (Math.Abs(endPoint.X - clickedPoint.X) > 5 ||
                 Math.Abs(endPoint.Y - clickedPoint.Y) > 5)
             {
-                CreateMeasurementFromDrag(clickedPoint, endPoint);
+                if (isPlacingRectangleMeasurement && activeRectanglePlacementControl != null)
+                {
+                    activeRectanglePlacementControl.MovePoint(1, endPoint); // Finalize bottom-right point
+                    rectangleMeasurementTools.Add(activeRectanglePlacementControl);
+                    activeRectanglePlacementControl.MeasurementPointMouseDown += RectangleMeasurementPoint_MouseDown;
+                    activeRectanglePlacementControl.RemoveControlRequested += RectangleMeasurementControl_RemoveControlRequested;
+                    activeRectanglePlacementControl = null;
+                    isPlacingRectangleMeasurement = false;
+                }
+                else
+                {
+                    CreateMeasurementFromDrag(clickedPoint, endPoint);
+                }
+            }
+            else if (isPlacingRectangleMeasurement && activeRectanglePlacementControl != null) // Click without drag
+            {
+                // If it was a click without drag for rectangle, remove the temp control
+                ShapeCanvas.Children.Remove(activeRectanglePlacementControl);
+                activeRectanglePlacementControl = null;
+                isPlacingRectangleMeasurement = false;
             }
 
             // Reset state
@@ -1523,6 +1586,11 @@ public partial class MainWindow : FluentWindow
         AddNewAngleMeasurementToolToCanvas();
     }
 
+    private void MeasureRectangleMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        AddNewRectangleMeasurementToolToCanvas();
+    }
+
     private void AddNewMeasurementToolToCanvas()
     {
         double scale = ScaleInput.Value ?? 1.0;
@@ -1541,15 +1609,6 @@ public partial class MainWindow : FluentWindow
         measurementControl.InitializePositions(ShapeCanvas.ActualWidth, ShapeCanvas.ActualHeight);
     }
 
-    private void DistanceMeasurementControl_RemoveControlRequested(object sender, EventArgs e)
-    {
-        if (sender is DistanceMeasurementControl control)
-        {
-            ShapeCanvas.Children.Remove(control);
-            measurementTools.Remove(control);
-        }
-    }
-
     private void AddNewAngleMeasurementToolToCanvas()
     {
         AngleMeasurementControl measurementControl = new();
@@ -1562,12 +1621,40 @@ public partial class MainWindow : FluentWindow
         measurementControl.InitializePositions(ShapeCanvas.ActualWidth, ShapeCanvas.ActualHeight);
     }
 
+    private void AddNewRectangleMeasurementToolToCanvas()
+    {
+        RectangleMeasurementControl measurementControl = new();
+        measurementControl.MeasurementPointMouseDown += RectangleMeasurementPoint_MouseDown;
+        measurementControl.RemoveControlRequested += RectangleMeasurementControl_RemoveControlRequested;
+        rectangleMeasurementTools.Add(measurementControl);
+        ShapeCanvas.Children.Add(measurementControl);
+        measurementControl.InitializePositions(ShapeCanvas.ActualWidth, ShapeCanvas.ActualHeight);
+    }
+
+    private void DistanceMeasurementControl_RemoveControlRequested(object sender, EventArgs e)
+    {
+        if (sender is DistanceMeasurementControl control)
+        {
+            ShapeCanvas.Children.Remove(control);
+            measurementTools.Remove(control);
+        }
+    }
+
     private void AngleMeasurementControl_RemoveControlRequested(object sender, EventArgs e)
     {
         if (sender is AngleMeasurementControl control)
         {
             ShapeCanvas.Children.Remove(control);
             angleMeasurementTools.Remove(control);
+        }
+    }
+
+    private void RectangleMeasurementControl_RemoveControlRequested(object sender, EventArgs e)
+    {
+        if (sender is RectangleMeasurementControl control)
+        {
+            ShapeCanvas.Children.Remove(control);
+            rectangleMeasurementTools.Remove(control);
         }
     }
 
@@ -1637,6 +1724,15 @@ public partial class MainWindow : FluentWindow
 
         angleMeasurementTools.Clear();
 
+        foreach (RectangleMeasurementControl measurementControl in rectangleMeasurementTools)
+        {
+            measurementControl.MeasurementPointMouseDown -= RectangleMeasurementPoint_MouseDown;
+            measurementControl.RemoveControlRequested -= RectangleMeasurementControl_RemoveControlRequested;
+            ShapeCanvas.Children.Remove(measurementControl);
+        }
+
+        rectangleMeasurementTools.Clear();
+
         foreach (VerticalLineControl lineControl in verticalLineControls)
         {
             lineControl.RemoveControlRequested -= VerticalLineControl_RemoveControlRequested;
@@ -1688,10 +1784,26 @@ public partial class MainWindow : FluentWindow
         }
     }
 
+    private void RectangleMeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is System.Windows.Shapes.Ellipse senderEllipse &&
+            senderEllipse.Parent is Canvas measureCanvas &&
+            measureCanvas.Parent is RectangleMeasurementControl measureControl)
+        {
+            activeRectangleMeasureControl = measureControl;
+            draggingMode = DraggingMode.MeasureRectangle;
+            clickedPoint = e.GetPosition(ShapeCanvas);
+            CaptureMouse();
+        }
+    }
+
     private void ScaleInput_ValueChanged(object sender, RoutedEventArgs e)
     {
         double newScale = ScaleInput.Value ?? 1.0;
         foreach (DistanceMeasurementControl tool in measurementTools)
+            tool.ScaleFactor = newScale;
+
+        foreach (RectangleMeasurementControl tool in rectangleMeasurementTools)
             tool.ScaleFactor = newScale;
 
         // Update stroke measurements
@@ -1704,6 +1816,9 @@ public partial class MainWindow : FluentWindow
             return;
 
         foreach (DistanceMeasurementControl tool in measurementTools)
+            tool.Units = textBox.Text;
+
+        foreach (RectangleMeasurementControl tool in rectangleMeasurementTools)
             tool.Units = textBox.Text;
 
         // Update stroke measurements
@@ -1780,6 +1895,11 @@ public partial class MainWindow : FluentWindow
         foreach (AngleMeasurementControl control in angleMeasurementTools)
         {
             package.Measurements.AngleMeasurements.Add(control.ToDto());
+        }
+
+        foreach (RectangleMeasurementControl control in rectangleMeasurementTools)
+        {
+            package.Measurements.RectangleMeasurements.Add(control.ToDto());
         }
 
         foreach (VerticalLineControl control in verticalLineControls)
@@ -1935,6 +2055,17 @@ public partial class MainWindow : FluentWindow
             ShapeCanvas.Children.Add(control);
         }
 
+        // Add rectangle measurements
+        foreach (RectangleMeasurementControlDto dto in package.Measurements.RectangleMeasurements)
+        {
+            RectangleMeasurementControl control = new();
+            control.FromDto(dto);
+            control.MeasurementPointMouseDown += RectangleMeasurementPoint_MouseDown;
+            control.RemoveControlRequested += RectangleMeasurementControl_RemoveControlRequested;
+            rectangleMeasurementTools.Add(control);
+            ShapeCanvas.Children.Add(control);
+        }
+
         MagickImage image = new(package.ImagePath);
         double aspectRatio = (double)image.Width / image.Height;
         double imageHeight = ImageWidthConst / aspectRatio;
@@ -2074,6 +2205,9 @@ public partial class MainWindow : FluentWindow
 
             foreach (AngleMeasurementControl control in angleMeasurementTools)
                 package.Measurements.AngleMeasurements.Add(control.ToDto());
+
+            foreach (RectangleMeasurementControl control in rectangleMeasurementTools)
+                package.Measurements.RectangleMeasurements.Add(control.ToDto());
 
             foreach (VerticalLineControl control in verticalLineControls)
                 package.Measurements.VerticalLines.Add(control.ToDto());
@@ -2361,6 +2495,10 @@ public partial class MainWindow : FluentWindow
             );
             CreateAngleMeasurement(startPoint, midPoint, endPoint);
         }
+        else if (RectangleMeasureToggle.IsChecked == true)
+        {
+            CreateRectangleMeasurement(startPoint, endPoint);
+        }
     }
 
     private void CreateDistanceMeasurement(Point startPoint, Point endPoint)
@@ -2394,6 +2532,18 @@ public partial class MainWindow : FluentWindow
         measurementControl.MovePoint(0, point1);
         measurementControl.MovePoint(1, vertex);
         measurementControl.MovePoint(2, point3);
+    }
+
+    private void CreateRectangleMeasurement(Point topLeft, Point bottomRight)
+    {
+        RectangleMeasurementControl measurementControl = new();
+        measurementControl.MeasurementPointMouseDown += RectangleMeasurementPoint_MouseDown;
+        measurementControl.RemoveControlRequested += RectangleMeasurementControl_RemoveControlRequested;
+        rectangleMeasurementTools.Add(measurementControl);
+        ShapeCanvas.Children.Add(measurementControl);
+
+        measurementControl.MovePoint(0, topLeft);
+        measurementControl.MovePoint(1, bottomRight);
     }
 
     private void AddVerticalLineAtPosition(double xPosition)

@@ -1,4 +1,4 @@
-﻿namespace MagickCrop.Models;
+﻿namespace MagickCrop;
 
 public enum DraggingMode
 {
@@ -8,5 +8,6 @@ public enum DraggingMode
     Resizing,
     MeasureDistance,
     MeasureAngle,
+    MeasureRectangle,
     CreatingMeasurement
 }

@@ -13,6 +13,34 @@ public partial class RectangleMeasurementControl : UserControl
     private int pointDraggingIndex = -1;
     private Point clickedPoint;
 
+    private double _scaleFactor = 1.0;
+    public double ScaleFactor
+    {
+        get => _scaleFactor;
+        set
+        {
+            if (_scaleFactor != value)
+            {
+                _scaleFactor = value;
+                UpdatePositions(); // Update display when scale factor changes
+            }
+        }
+    }
+
+    private string _units = "pixels";
+    public string Units
+    {
+        get => _units;
+        set
+        {
+            if (_units != value)
+            {
+                _units = value;
+                UpdatePositions(); // Update display when units change
+            }
+        }
+    }
+
     public event MouseButtonEventHandler? MeasurementPointMouseDown;
     public delegate void RemoveControlRequestedEventHandler(object sender, EventArgs e);
     public event RemoveControlRequestedEventHandler? RemoveControlRequested;
@@ -49,9 +77,22 @@ public partial class RectangleMeasurementControl : UserControl
         Canvas.SetTop(BottomRightPoint, bottomRight.Y - (BottomRightPoint.Height / 2));
 
         // Update measurement text
-        RectangleTextBlock.Text = $"{width:F1} × {height:F1} px";
+        UpdateMeasurementText();
         Canvas.SetLeft(MeasurementText, x + width / 2 - (MeasurementText.ActualWidth / 2));
         Canvas.SetTop(MeasurementText, y - MeasurementText.ActualHeight - 5);
+    }
+
+    private void UpdateMeasurementText()
+    {
+        double width = Math.Abs(bottomRight.X - topLeft.X);
+        double height = Math.Abs(bottomRight.Y - topLeft.Y);
+        double area = width * height;
+
+        double scaledWidth = width * ScaleFactor;
+        double scaledHeight = height * ScaleFactor;
+        double scaledArea = area * ScaleFactor * ScaleFactor; // Area scales by factor squared
+
+        RectangleTextBlock.Text = $"{scaledWidth:F1} {Units} \u00D7 {scaledHeight:F1} {Units} (Area: {scaledArea:F1} sq {Units})";
     }
 
     private void MeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)
@@ -107,7 +148,9 @@ public partial class RectangleMeasurementControl : UserControl
         return new RectangleMeasurementControlDto
         {
             TopLeft = topLeft,
-            BottomRight = bottomRight
+            BottomRight = bottomRight,
+            ScaleFactor = ScaleFactor,
+            Units = Units
         };
     }
 
@@ -115,6 +158,7 @@ public partial class RectangleMeasurementControl : UserControl
     {
         topLeft = dto.TopLeft;
         bottomRight = dto.BottomRight;
-        UpdatePositions();
+        ScaleFactor = dto.ScaleFactor; // This will use the property setter
+        Units = dto.Units;             // This will use the property setter
     }
 }
