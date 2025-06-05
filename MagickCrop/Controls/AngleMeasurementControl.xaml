@@ -5,7 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
-    <Canvas x:Name="MeasurementCanvas" IsHitTestVisible="False">
+    <Canvas x:Name="MeasurementCanvas">
         <Line
             x:Name="Line1"
             IsHitTestVisible="False"
@@ -61,7 +61,6 @@
             Height="12"
             Cursor="SizeAll"
             Fill="#0066FF"
-            IsHitTestVisible="False"
             MouseDown="MeasurementPoint_MouseDown"
             Opacity="0.8"
             Stroke="White"

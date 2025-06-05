@@ -150,11 +150,15 @@ public partial class RectangleMeasurementControl : UserControl
         };
     }
 
+    /// <summary>
+    /// Apply data from a DTO to this control
+    /// </summary>
     public void FromDto(RectangleMeasurementControlDto dto)
     {
         topLeft = dto.TopLeft;
         bottomRight = dto.BottomRight;
         ScaleFactor = dto.ScaleFactor; // This will use the property setter
         Units = dto.Units;             // This will use the property setter
+        UpdatePositions();
     }
 }

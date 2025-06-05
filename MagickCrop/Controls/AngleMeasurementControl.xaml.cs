@@ -36,6 +36,15 @@ public partial class AngleMeasurementControl : UserControl
         UpdatePositions();
     }
 
+    /// <summary>
+    /// Set hit testing for Point3 during placement operations
+    /// </summary>
+    /// <param name="isEnabled">Whether Point3 should be hit testable</param>
+    public void SetPoint3HitTestable(bool isEnabled)
+    {
+        Point3.IsHitTestVisible = isEnabled;
+    }
+
     private void UpdatePositions()
     {
         // Update the visual elements
@@ -175,7 +184,6 @@ public partial class AngleMeasurementControl : UserControl
                 break;
             case 2:
                 point3Position = newPosition;
-                Point3.IsHitTestVisible = true;
                 break;
         }
 
