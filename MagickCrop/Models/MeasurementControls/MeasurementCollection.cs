@@ -31,12 +31,15 @@ public class MeasurementCollection
     /// <summary>
     /// Collection of horizontal line control data
     /// </summary>
-    public List<HorizontalLineControlDto> HorizontalLines { get; set; } = [];
+    public List<HorizontalLineControlDto> HorizontalLines { get; set; } = [];    /// <summary>
+                                                                                 /// Collection of rectangle measurement control data
+                                                                                 /// </summary>
+    public List<RectangleMeasurementControlDto> RectangleMeasurements { get; set; } = [];
 
     /// <summary>
-    /// Collection of rectangle measurement control data
+    /// Collection of circle measurement control data
     /// </summary>
-    public List<RectangleMeasurementControlDto> RectangleMeasurements { get; set; } = [];
+    public List<CircleMeasurementControlDto> CircleMeasurements { get; set; } = [];
 
     /// <summary>
     /// Collection of polygon measurement control data

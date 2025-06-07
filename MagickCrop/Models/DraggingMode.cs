@@ -9,6 +9,7 @@ public enum DraggingMode
     MeasureDistance,
     MeasureAngle,
     MeasureRectangle,
+    MeasureCircle,
     MeasurePolygon,
     CreatingMeasurement
 }

@@ -437,6 +437,19 @@
                                                 </ToggleButton.Content>
                                             </ToggleButton>
                                             <ToggleButton
+                                                x:Name="CircleMeasureToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="ToolSelector_Checked"
+                                                Click="ToolSelector_Clicked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Circle24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Add Circle" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                            <ToggleButton
                                                 x:Name="HorizontalLineRadio"
                                                 Width="150"
                                                 Margin="0,4"

@@ -54,6 +54,8 @@ public partial class MainWindow : FluentWindow
     private RectangleMeasurementControl? activeRectangleMeasureControl;
     private readonly ObservableCollection<PolygonMeasurementControl> polygonMeasurementTools = [];
     private PolygonMeasurementControl? activePolygonMeasureControl;
+    private readonly ObservableCollection<CircleMeasurementControl> circleMeasurementTools = [];
+    private CircleMeasurementControl? activeCircleMeasureControl;
 
     private readonly ObservableCollection<VerticalLineControl> verticalLineControls = [];
     private readonly ObservableCollection<HorizontalLineControl> horizontalLineControls = [];
@@ -88,11 +90,13 @@ public partial class MainWindow : FluentWindow
 
     // --- Rectangle measurement placement state ---
     private bool isPlacingRectangleMeasurement = false;
-    private RectangleMeasurementControl? activeRectanglePlacementControl = null;
-
-    // --- Polygon measurement placement state ---
+    private RectangleMeasurementControl? activeRectanglePlacementControl = null;    // --- Polygon measurement placement state ---
     private bool isPlacingPolygonMeasurement = false;
     private PolygonMeasurementControl? activePolygonPlacementControl = null;
+
+    // --- Circle measurement placement state ---
+    private bool isPlacingCircleMeasurement = false;
+    private CircleMeasurementControl? activeCirclePlacementControl = null;
 
     public MainWindow()
     {
@@ -214,6 +218,13 @@ public partial class MainWindow : FluentWindow
             activePolygonPlacementControl.UpdatePreviewLine(mousePos);
             e.Handled = true;
             return;
+        }        // --- CIRCLE MEASUREMENT PLACEMENT LOGIC ---
+        if (isPlacingCircleMeasurement && activeCirclePlacementControl != null && draggingMode == DraggingMode.CreatingMeasurement)
+        {
+            Point mousePos = e.GetPosition(ShapeCanvas);
+            activeCirclePlacementControl.MovePoint(1, mousePos); // Update edge point as mouse moves
+            e.Handled = true;
+            return;
         }
 
         if (Mouse.MiddleButton == MouseButtonState.Released && Mouse.LeftButton == MouseButtonState.Released)
@@ -221,11 +232,11 @@ public partial class MainWindow : FluentWindow
             if (draggingMode == DraggingMode.Panning)
                 // Remove cursor setting - will be handled by XAML
 
-            if (draggingMode == DraggingMode.MeasureDistance && activeMeasureControl is not null)
-            {
-                activeMeasureControl.ResetActivePoint();
-                activeMeasureControl = null;
-            }
+                if (draggingMode == DraggingMode.MeasureDistance && activeMeasureControl is not null)
+                {
+                    activeMeasureControl.ResetActivePoint();
+                    activeMeasureControl = null;
+                }
 
             if (draggingMode == DraggingMode.MeasureAngle && activeAngleMeasureControl is not null)
             {
@@ -243,6 +254,12 @@ public partial class MainWindow : FluentWindow
             {
                 activePolygonMeasureControl.ResetActivePoint();
                 activePolygonMeasureControl = null;
+            }
+
+            if (draggingMode == DraggingMode.MeasureCircle && activeCircleMeasureControl is not null)
+            {
+                activeCircleMeasureControl.ResetActivePoint();
+                activeCircleMeasureControl = null;
             }
 
             clickedElement = null;
@@ -309,6 +326,17 @@ public partial class MainWindow : FluentWindow
             return;
         }
 
+        if (draggingMode == DraggingMode.MeasureCircle && activeCircleMeasureControl is not null)
+        {
+            int pointIndex = activeCircleMeasureControl.GetActivePointIndex();
+            if (pointIndex >= 0)
+            {
+                activeCircleMeasureControl.MovePoint(pointIndex, movingPoint);
+            }
+            e.Handled = true;
+            return;
+        }
+
         if (draggingMode != DraggingMode.MoveElement || clickedElement is null)
             return;
 
@@ -333,7 +361,7 @@ public partial class MainWindow : FluentWindow
         // Calculate new dimensions
         double newWidth = oldGridSize.Width + deltaX;
         double newHeight = oldGridSize.Height + deltaY;
-        
+
         // Enforce minimum dimensions of 50px
         ImageGrid.Width = Math.Max(50, newWidth);
         ImageGrid.Height = Math.Max(50, newHeight);
@@ -873,8 +901,8 @@ public partial class MainWindow : FluentWindow
     private void ShapeCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
         System.Diagnostics.Debug.WriteLine($"ShapeCanvas_MouseDown: Button={e.ChangedButton}, isCreatingMeasurement={isCreatingMeasurement}, isPlacingPolygon={isPlacingPolygonMeasurement}, ToolSelected={IsAnyToolSelected()}");
-        
-        if ((Mouse.MiddleButton == MouseButtonState.Pressed 
+
+        if ((Mouse.MiddleButton == MouseButtonState.Pressed
             || Mouse.LeftButton == MouseButtonState.Pressed && !isCreatingMeasurement)
             && !IsAnyToolSelected())
         {
@@ -891,7 +919,7 @@ public partial class MainWindow : FluentWindow
             return;
         }
 
-        clickedPoint =  e.GetPosition(ShapeCanvas);
+        clickedPoint = e.GetPosition(ShapeCanvas);
 
         // --- ANGLE MEASUREMENT PLACEMENT LOGIC ---
         if (isPlacingAngleMeasurement && anglePlacementStep == AnglePlacementStep.PlacingThirdPoint && activeAnglePlacementControl != null)
@@ -939,18 +967,18 @@ public partial class MainWindow : FluentWindow
             anglePlacementStep = AnglePlacementStep.DraggingFirstLeg;
             isCreatingMeasurement = false;
             draggingMode = DraggingMode.None;
-            
+
             // Create the control 
             activeAnglePlacementControl = new AngleMeasurementControl();
-            
+
             // Disable hit testing for Point3 during placement
             activeAnglePlacementControl.SetPoint3HitTestable(false);
-            
+
             // Set initial positions - vertex at clicked point, others will be moved
             activeAnglePlacementControl.MovePoint(1, clickedPoint); // vertex at click point
             activeAnglePlacementControl.MovePoint(0, clickedPoint); // point1 starts at vertex
             activeAnglePlacementControl.MovePoint(2, clickedPoint); // point3 starts at vertex
-            
+
             ShapeCanvas.Children.Add(activeAnglePlacementControl);
             ShapeCanvas.CaptureMouse();
             e.Handled = true;
@@ -961,14 +989,14 @@ public partial class MainWindow : FluentWindow
             isPlacingRectangleMeasurement = true;
             draggingMode = DraggingMode.CreatingMeasurement; // Use CreatingMeasurement to signify drag
             isCreatingMeasurement = true; // Ensure this is set for MouseUp cleanup
-            
+
             // Create new rectangle control with current scale factor and units
             activeRectanglePlacementControl = new RectangleMeasurementControl
             {
                 ScaleFactor = ScaleInput.Value ?? 1.0,
                 Units = MeasurementUnits.Text
             };
-            
+
             activeRectanglePlacementControl.MovePoint(0, clickedPoint); // Set top-left to initial click
             activeRectanglePlacementControl.MovePoint(1, clickedPoint); // Set bottom-right to initial click, will be updated on mouse move/up
             ShapeCanvas.Children.Add(activeRectanglePlacementControl);
@@ -978,7 +1006,7 @@ public partial class MainWindow : FluentWindow
         else if (PolygonMeasureToggle.IsChecked is true)
         {
             System.Diagnostics.Debug.WriteLine($"Polygon tool clicked at: ({clickedPoint.X:F1}, {clickedPoint.Y:F1})");
-            
+
             if (!isPlacingPolygonMeasurement)
             {
                 // Start new polygon
@@ -998,7 +1026,7 @@ public partial class MainWindow : FluentWindow
             {
                 System.Diagnostics.Debug.WriteLine($"Adding vertex to existing polygon. Current count: {activePolygonPlacementControl.VertexCount}");
                 activePolygonPlacementControl.AddVertex(clickedPoint);
-                
+
                 // If polygon was closed, finalize it
                 if (activePolygonPlacementControl.IsClosed)
                 {
@@ -1013,6 +1041,25 @@ public partial class MainWindow : FluentWindow
                     System.Diagnostics.Debug.WriteLine("Polygon finalization complete");
                 }
             }
+            e.Handled = true;
+        }
+        else if (CircleMeasureToggle.IsChecked is true)
+        {
+            isPlacingCircleMeasurement = true;
+            draggingMode = DraggingMode.CreatingMeasurement; // Use CreatingMeasurement to signify drag
+            isCreatingMeasurement = true; // Ensure this is set for MouseUp cleanup
+
+            // Create new circle control with current scale factor and units
+            activeCirclePlacementControl = new CircleMeasurementControl
+            {
+                ScaleFactor = ScaleInput.Value ?? 1.0,
+                Units = MeasurementUnits.Text
+            };
+
+            activeCirclePlacementControl.MovePoint(0, clickedPoint); // Set center to initial click
+            activeCirclePlacementControl.MovePoint(1, clickedPoint); // Set edge to initial click, will be updated on mouse move/up
+            ShapeCanvas.Children.Add(activeCirclePlacementControl);
+            ShapeCanvas.CaptureMouse();
             e.Handled = true;
         }
         else if (isPlacingAngleMeasurement)
@@ -1046,7 +1093,7 @@ public partial class MainWindow : FluentWindow
             // On mouse up after dragging, we want to finalize the position of the first arm (point1)
             // The vertex should stay at the original clicked position
             // Note: We don't move point1 here - it's already been moved during MouseMove
-            
+
             // Now move to step 2: track mouse for third point
             anglePlacementStep = AnglePlacementStep.PlacingThirdPoint;
             // Release mouse capture so we can track movement for the third point
@@ -1068,16 +1115,32 @@ public partial class MainWindow : FluentWindow
                     // Make sure the control has the latest scale and units
                     activeRectanglePlacementControl.ScaleFactor = ScaleInput.Value ?? 1.0;
                     activeRectanglePlacementControl.Units = MeasurementUnits.Text;
-                    
+
                     // Finalize bottom-right point
                     activeRectanglePlacementControl.MovePoint(1, endPoint);
-                    
+
                     // Add to the collection of rectangle measurements
                     rectangleMeasurementTools.Add(activeRectanglePlacementControl);
                     activeRectanglePlacementControl.MeasurementPointMouseDown += RectangleMeasurementPoint_MouseDown;
                     activeRectanglePlacementControl.RemoveControlRequested += RectangleMeasurementControl_RemoveControlRequested;
                     activeRectanglePlacementControl = null;
                     isPlacingRectangleMeasurement = false;
+                }
+                else if (isPlacingCircleMeasurement && activeCirclePlacementControl != null)
+                {
+                    // Make sure the control has the latest scale and units
+                    activeCirclePlacementControl.ScaleFactor = ScaleInput.Value ?? 1.0;
+                    activeCirclePlacementControl.Units = MeasurementUnits.Text;
+
+                    // Finalize edge point
+                    activeCirclePlacementControl.MovePoint(1, endPoint);
+
+                    // Add to the collection of circle measurements
+                    circleMeasurementTools.Add(activeCirclePlacementControl);
+                    activeCirclePlacementControl.MeasurementPointMouseDown += CircleMeasurementPoint_MouseDown;
+                    activeCirclePlacementControl.RemoveControlRequested += CircleMeasurementControl_RemoveControlRequested;
+                    activeCirclePlacementControl = null;
+                    isPlacingCircleMeasurement = false;
                 }
                 else
                 {
@@ -1090,6 +1153,13 @@ public partial class MainWindow : FluentWindow
                 ShapeCanvas.Children.Remove(activeRectanglePlacementControl);
                 activeRectanglePlacementControl = null;
                 isPlacingRectangleMeasurement = false;
+            }
+            else if (isPlacingCircleMeasurement && activeCirclePlacementControl != null) // Click without drag
+            {
+                // If it was a click without drag for circle, remove the temp control
+                ShapeCanvas.Children.Remove(activeCirclePlacementControl);
+                activeCirclePlacementControl = null;
+                isPlacingCircleMeasurement = false;
             }
 
             // Reset state
@@ -1764,13 +1834,21 @@ public partial class MainWindow : FluentWindow
             rectangleMeasurementTools.Remove(control);
         }
     }
-
     private void PolygonMeasurementControl_RemoveControlRequested(object sender, EventArgs e)
     {
         if (sender is PolygonMeasurementControl control)
         {
             ShapeCanvas.Children.Remove(control);
             polygonMeasurementTools.Remove(control);
+        }
+    }
+
+    private void CircleMeasurementControl_RemoveControlRequested(object sender, EventArgs e)
+    {
+        if (sender is CircleMeasurementControl control)
+        {
+            ShapeCanvas.Children.Remove(control);
+            circleMeasurementTools.Remove(control);
         }
     }
 
@@ -1858,6 +1936,15 @@ public partial class MainWindow : FluentWindow
 
         polygonMeasurementTools.Clear();
 
+        foreach (CircleMeasurementControl measurementControl in circleMeasurementTools)
+        {
+            measurementControl.MeasurementPointMouseDown -= CircleMeasurementPoint_MouseDown;
+            measurementControl.RemoveControlRequested -= CircleMeasurementControl_RemoveControlRequested;
+            ShapeCanvas.Children.Remove(measurementControl);
+        }
+
+        circleMeasurementTools.Clear();
+
         foreach (VerticalLineControl lineControl in verticalLineControls)
         {
             lineControl.RemoveControlRequested -= VerticalLineControl_RemoveControlRequested;
@@ -1935,6 +2022,19 @@ public partial class MainWindow : FluentWindow
         }
     }
 
+    private void CircleMeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is System.Windows.Shapes.Ellipse senderEllipse &&
+            senderEllipse.Parent is Canvas measureCanvas &&
+            measureCanvas.Parent is CircleMeasurementControl measureControl)
+        {
+            activeCircleMeasureControl = measureControl;
+            draggingMode = DraggingMode.MeasureCircle;
+            clickedPoint = e.GetPosition(ShapeCanvas);
+            CaptureMouse();
+        }
+    }
+
     private void ScaleInput_ValueChanged(object sender, RoutedEventArgs e)
     {
         double newScale = ScaleInput.Value ?? 1.0;
@@ -1945,6 +2045,9 @@ public partial class MainWindow : FluentWindow
             tool.ScaleFactor = newScale;
 
         foreach (PolygonMeasurementControl tool in polygonMeasurementTools)
+            tool.ScaleFactor = newScale;
+
+        foreach (CircleMeasurementControl tool in circleMeasurementTools)
             tool.ScaleFactor = newScale;
 
         // Update stroke measurements
@@ -1963,6 +2066,9 @@ public partial class MainWindow : FluentWindow
             tool.Units = textBox.Text;
 
         foreach (PolygonMeasurementControl tool in polygonMeasurementTools)
+            tool.Units = textBox.Text;
+
+        foreach (CircleMeasurementControl tool in circleMeasurementTools)
             tool.Units = textBox.Text;
 
         // Update stroke measurements
@@ -2035,7 +2141,6 @@ public partial class MainWindow : FluentWindow
         {
             package.Measurements.DistanceMeasurements.Add(control.ToDto());
         }
-
         foreach (AngleMeasurementControl control in angleMeasurementTools)
         {
             package.Measurements.AngleMeasurements.Add(control.ToDto());
@@ -2044,6 +2149,11 @@ public partial class MainWindow : FluentWindow
         foreach (RectangleMeasurementControl control in rectangleMeasurementTools)
         {
             package.Measurements.RectangleMeasurements.Add(control.ToDto());
+        }
+
+        foreach (CircleMeasurementControl control in circleMeasurementTools)
+        {
+            package.Measurements.CircleMeasurements.Add(control.ToDto());
         }
 
         foreach (PolygonMeasurementControl control in polygonMeasurementTools)
@@ -2203,9 +2313,7 @@ public partial class MainWindow : FluentWindow
             control.RemoveControlRequested += AngleMeasurementControl_RemoveControlRequested;
             angleMeasurementTools.Add(control);
             ShapeCanvas.Children.Add(control);
-        }
-
-        // Add rectangle measurements
+        }        // Add rectangle measurements
         foreach (RectangleMeasurementControlDto dto in package.Measurements.RectangleMeasurements)
         {
             RectangleMeasurementControl control = new()
@@ -2217,6 +2325,21 @@ public partial class MainWindow : FluentWindow
             control.MeasurementPointMouseDown += RectangleMeasurementPoint_MouseDown;
             control.RemoveControlRequested += RectangleMeasurementControl_RemoveControlRequested;
             rectangleMeasurementTools.Add(control);
+            ShapeCanvas.Children.Add(control);
+        }
+
+        // Add circle measurements
+        foreach (CircleMeasurementControlDto dto in package.Measurements.CircleMeasurements)
+        {
+            CircleMeasurementControl control = new()
+            {
+                ScaleFactor = dto.ScaleFactor,
+                Units = dto.Units
+            };
+            control.FromDto(dto);
+            control.MeasurementPointMouseDown += CircleMeasurementPoint_MouseDown;
+            control.RemoveControlRequested += CircleMeasurementControl_RemoveControlRequested;
+            circleMeasurementTools.Add(control);
             ShapeCanvas.Children.Add(control);
         }
 
@@ -2375,10 +2498,11 @@ public partial class MainWindow : FluentWindow
                 package.Measurements.DistanceMeasurements.Add(control.ToDto());
 
             foreach (AngleMeasurementControl control in angleMeasurementTools)
-                package.Measurements.AngleMeasurements.Add(control.ToDto());
-
-            foreach (RectangleMeasurementControl control in rectangleMeasurementTools)
+                package.Measurements.AngleMeasurements.Add(control.ToDto()); foreach (RectangleMeasurementControl control in rectangleMeasurementTools)
                 package.Measurements.RectangleMeasurements.Add(control.ToDto());
+
+            foreach (CircleMeasurementControl control in circleMeasurementTools)
+                package.Measurements.CircleMeasurements.Add(control.ToDto());
 
             foreach (PolygonMeasurementControl control in polygonMeasurementTools)
                 package.Measurements.PolygonMeasurements.Add(control.ToDto());
@@ -2674,6 +2798,10 @@ public partial class MainWindow : FluentWindow
         {
             CreateRectangleMeasurement(startPoint, endPoint);
         }
+        else if (CircleMeasureToggle.IsChecked == true)
+        {
+            CreateCircleMeasurement(startPoint, endPoint);
+        }
     }
 
     private void CreateDistanceMeasurement(Point startPoint, Point endPoint)
@@ -2713,7 +2841,7 @@ public partial class MainWindow : FluentWindow
     {
         double scale = ScaleInput.Value ?? 1.0;
         string units = MeasurementUnits.Text;
-        
+
         RectangleMeasurementControl measurementControl = new()
         {
             ScaleFactor = scale,
@@ -2726,6 +2854,19 @@ public partial class MainWindow : FluentWindow
 
         measurementControl.MovePoint(0, topLeft);
         measurementControl.MovePoint(1, bottomRight);
+    }
+
+    private void CreateCircleMeasurement(Point center, Point edge)
+    {
+        CircleMeasurementControl measurementControl = new();
+        measurementControl.MeasurementPointMouseDown += CircleMeasurementPoint_MouseDown;
+        measurementControl.RemoveControlRequested += CircleMeasurementControl_RemoveControlRequested;
+        circleMeasurementTools.Add(measurementControl);
+        ShapeCanvas.Children.Add(measurementControl);
+
+        // Set the center and edge points of the circle
+        measurementControl.MovePoint(0, center);
+        measurementControl.MovePoint(1, edge);
     }
 
     private void AddVerticalLineAtPosition(double xPosition)
@@ -2834,6 +2975,13 @@ public partial class MainWindow : FluentWindow
             {
                 ShapeCanvas.Children.Remove(activePolygonPlacementControl);
                 activePolygonPlacementControl = null;
+            }
+
+            isPlacingCircleMeasurement = false;
+            if (activeCirclePlacementControl != null)
+            {
+                ShapeCanvas.Children.Remove(activeCirclePlacementControl);
+                activeCirclePlacementControl = null;
             }
 
             isCreatingMeasurement = false;
