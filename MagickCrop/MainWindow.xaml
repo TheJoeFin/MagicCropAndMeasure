@@ -706,6 +706,111 @@
                     HorizontalAlignment="Center"
                     Orientation="Vertical"
                     Visibility="Collapsed">
+
+                    <!--  Current Image Size Display  -->
+                    <wpfui:Card Margin="0,6" Padding="12">
+                        <StackPanel>
+                            <TextBlock
+                                Margin="0,0,0,6"
+                                FontWeight="SemiBold"
+                                Text="Current Size" />
+                            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                <TextBlock
+                                    x:Name="CurrentWidthDisplay"
+                                    FontFamily="Consolas"
+                                    Text="0" />
+                                <TextBlock Margin="6,0" Text=" × " />
+                                <TextBlock
+                                    x:Name="CurrentHeightDisplay"
+                                    FontFamily="Consolas"
+                                    Text="0" />
+                                <TextBlock
+                                    x:Name="CurrentUnitsDisplay"
+                                    Margin="6,0,0,0"
+                                    Text=" px" />
+                            </StackPanel>
+                        </StackPanel>
+                    </wpfui:Card>
+
+                    <!--  Size Input Controls  -->
+                    <wpfui:Card Margin="0,6" Padding="12">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    Grid.Column="0"
+                                    FontWeight="SemiBold"
+                                    Text="New Size" />
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <ToggleButton
+                                        x:Name="PixelModeToggle"
+                                        Width="35"
+                                        Height="26"
+                                        Margin="0,0,3,0"
+                                        Padding="0"
+                                        Checked="PixelModeToggle_Checked"
+                                        Content="px"
+                                        IsChecked="True"
+                                        Unchecked="PixelModeToggle_Unchecked" />
+                                    <ToggleButton
+                                        x:Name="PercentageModeToggle"
+                                        Width="35"
+                                        Height="26"
+                                        Padding="0"
+                                        Checked="PercentageModeToggle_Checked"
+                                        Content="%"
+                                        Unchecked="PercentageModeToggle_Unchecked" />
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel Orientation="Vertical">
+                                <!--  Width Input  -->
+                                <StackPanel Grid.Row="0" Grid.Column="0">
+                                    <TextBlock
+                                        Margin="0,0,0,3"
+                                        FontSize="12"
+                                        Text="Width" />
+                                    <wpfui:TextBox
+                                        x:Name="WidthTextBox"
+                                        PlaceholderText="Width"
+                                        TextChanged="SizeTextBox_TextChanged" />
+                                </StackPanel>
+
+                                <!--  Aspect Ratio Lock  -->
+                                <ToggleButton
+                                    x:Name="AspectRatioLockToggle"
+                                    Width="32"
+                                    Height="32"
+                                    Margin="0,12,0,4"
+                                    Padding="0"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Checked="AspectRatioLockToggle_Checked"
+                                    IsChecked="True"
+                                    ToolTip="Lock aspect ratio"
+                                    Unchecked="AspectRatioLockToggle_Unchecked">
+                                    <wpfui:SymbolIcon x:Name="AspectRatioIcon" Symbol="Link24" />
+                                </ToggleButton>
+
+                                <!--  Height Input  -->
+                                <StackPanel Grid.Row="2" Grid.Column="2">
+                                    <TextBlock
+                                        Margin="0,0,0,3"
+                                        FontSize="12"
+                                        Text="Height" />
+                                    <wpfui:TextBox
+                                        x:Name="HeightTextBox"
+                                        PlaceholderText="Height"
+                                        TextChanged="SizeTextBox_TextChanged" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </wpfui:Card>
+
+                    <!--  Action Buttons  -->
                     <wpfui:Button
                         x:Name="ApplyResizeButton"
                         Width="180"

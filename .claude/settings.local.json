@@ -12,7 +12,9 @@
       "Bash(dotnet build:*)",
       "Bash(dotnet --version)",
       "Bash(find:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(/mnt/c/Program\\ Files/dotnet/dotnet build)",
+      "Bash(\"/mnt/c/Program Files/dotnet/dotnet\" build)"
     ],
     "deny": []
   }

@@ -6,9 +6,7 @@ using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -31,7 +29,14 @@ public partial class MainWindow : FluentWindow
     private Point clickedPoint = new();
     private Size oldGridSize = new();
     private Size originalImageSize = new();
+    private Size actualImageSize = new();
     private FrameworkElement? clickedElement;
+
+    // Size input properties
+    private bool isUpdatingFromCode = false;
+    private bool isPixelMode = true;
+    private bool isAspectRatioLocked = true;
+    private double aspectRatio = 1.0;
     private int pointDraggingIndex = -1;
     private Polygon? lines;
     private string? imagePath;
@@ -903,7 +908,7 @@ public partial class MainWindow : FluentWindow
         System.Diagnostics.Debug.WriteLine($"ShapeCanvas_MouseDown: Button={e.ChangedButton}, isCreatingMeasurement={isCreatingMeasurement}, isPlacingPolygon={isPlacingPolygonMeasurement}, ToolSelected={IsAnyToolSelected()}");
 
         if ((Mouse.MiddleButton == MouseButtonState.Pressed
-            || Mouse.LeftButton == MouseButtonState.Pressed && !isCreatingMeasurement)
+            || (Mouse.LeftButton == MouseButtonState.Pressed && !isCreatingMeasurement))
             && !IsAnyToolSelected())
         {
             System.Diagnostics.Debug.WriteLine("Entering panning mode");
@@ -1730,8 +1735,174 @@ public partial class MainWindow : FluentWindow
         HideCroppingControls();
         HideTransformControls();
 
+        // Initialize resize input controls
+        InitializeResizeInputs();
+
         ResizeButtonsPanel.Visibility = Visibility.Visible;
         ImageResizeGrip.Visibility = Visibility.Visible;
+    }
+
+    private void InitializeResizeInputs()
+    {
+        if (MainImage.Source is BitmapSource bitmap)
+        {
+            actualImageSize = new Size(bitmap.PixelWidth, bitmap.PixelHeight);
+            aspectRatio = actualImageSize.Width / actualImageSize.Height;
+        }
+        else
+        {
+            actualImageSize = originalImageSize;
+            aspectRatio = actualImageSize.Width / actualImageSize.Height;
+        }
+
+        UpdateCurrentSizeDisplay();
+        UpdateSizeInputFields();
+    }
+
+    private void UpdateCurrentSizeDisplay()
+    {
+        if (isPixelMode)
+        {
+            CurrentWidthDisplay.Text = ((int)actualImageSize.Width).ToString();
+            CurrentHeightDisplay.Text = ((int)actualImageSize.Height).ToString();
+            CurrentUnitsDisplay.Text = " px";
+        }
+        else
+        {
+            CurrentWidthDisplay.Text = "100";
+            CurrentHeightDisplay.Text = "100";
+            CurrentUnitsDisplay.Text = " %";
+        }
+    }
+
+    private void UpdateSizeInputFields()
+    {
+        isUpdatingFromCode = true;
+
+        if (isPixelMode)
+        {
+            WidthTextBox.Text = ((int)actualImageSize.Width).ToString();
+            HeightTextBox.Text = ((int)actualImageSize.Height).ToString();
+        }
+        else
+        {
+            WidthTextBox.Text = "100";
+            HeightTextBox.Text = "100";
+        }
+
+        isUpdatingFromCode = false;
+    }
+
+    private void SizeTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (isUpdatingFromCode) return;
+
+        if (sender is not Wpf.Ui.Controls.TextBox textBox) return;
+
+        if (double.TryParse(textBox.Text, out double value) && value > 0)
+        {
+            if (isAspectRatioLocked)
+            {
+                isUpdatingFromCode = true;
+
+                if (textBox == WidthTextBox)
+                {
+                    double newHeight = isPixelMode ? value / aspectRatio : value;
+                    HeightTextBox.Text = ((int)newHeight).ToString();
+                }
+                else if (textBox == HeightTextBox)
+                {
+                    double newWidth = isPixelMode ? value * aspectRatio : value;
+                    WidthTextBox.Text = ((int)newWidth).ToString();
+                }
+
+                isUpdatingFromCode = false;
+            }
+
+            ApplyManualResize();
+        }
+    }
+
+    private void ApplyManualResize()
+    {
+        if (!double.TryParse(WidthTextBox.Text, out double width) || width <= 0) return;
+        if (!double.TryParse(HeightTextBox.Text, out double height) || height <= 0) return;
+
+        double targetWidth, targetHeight;
+
+        if (isPixelMode)
+        {
+            targetWidth = width;
+            targetHeight = height;
+        }
+        else
+        {
+            targetWidth = actualImageSize.Width * (width / 100.0);
+            targetHeight = actualImageSize.Height * (height / 100.0);
+        }
+
+        // Calculate scale factors relative to original display size
+        double widthScale = targetWidth / actualImageSize.Width;
+        double heightScale = targetHeight / actualImageSize.Height;
+
+        // Apply to ImageGrid (maintains the same logic as drag resize)
+        ImageGrid.Width = originalImageSize.Width * widthScale;
+        ImageGrid.Height = originalImageSize.Height * heightScale;
+        ImageGrid.InvalidateMeasure();
+    }
+
+    private void PixelModeToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (PercentageModeToggle != null)
+        {
+            PercentageModeToggle.IsChecked = false;
+            isPixelMode = true;
+            UpdateCurrentSizeDisplay();
+            UpdateSizeInputFields();
+        }
+    }
+
+    private void PixelModeToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (PercentageModeToggle != null && !PercentageModeToggle.IsChecked == true)
+        {
+            PercentageModeToggle.IsChecked = true;
+        }
+    }
+
+    private void PercentageModeToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (PixelModeToggle is null)
+            return;
+
+        PixelModeToggle.IsChecked = false;
+        isPixelMode = false;
+        UpdateCurrentSizeDisplay();
+        UpdateSizeInputFields();
+    }
+
+    private void PercentageModeToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (PixelModeToggle is not null && PixelModeToggle.IsChecked is false)
+        {
+            PixelModeToggle.IsChecked = true;
+        }
+    }
+
+    private void AspectRatioLockToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        isAspectRatioLocked = true;
+        MainImage.Stretch = Stretch.Uniform;
+        if (AspectRatioIcon is not null)
+            AspectRatioIcon.Symbol = SymbolRegular.Link24;
+    }
+
+    private void AspectRatioLockToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        isAspectRatioLocked = false;
+        MainImage.Stretch = Stretch.Fill; // Allow stretching without maintaining aspect ratio
+        if (AspectRatioIcon is not null)
+            AspectRatioIcon.Symbol = SymbolRegular.LinkDismiss24;
     }
 
     private void UndoMenuItem_Click(object sender, RoutedEventArgs e)
@@ -2991,7 +3162,7 @@ public partial class MainWindow : FluentWindow
     }
 }
 
-enum AnglePlacementStep
+internal enum AnglePlacementStep
 {
     None,
     DraggingFirstLeg,
