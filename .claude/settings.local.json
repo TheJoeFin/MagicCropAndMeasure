@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rg:*)",
+      "Bash(/usr/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-linux/rg -n \"private.*MouseDown|private.*MouseUp|private.*MouseMove|ToolSelector_Checked|ShapeCanvas_MouseDown\" /mnt/d/source/TheJoeFin/MagickCrop/MagickCrop/MainWindow.xaml.cs)",
+      "Bash(/usr/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-linux/rg -n \"ShapeCanvas_MouseMove|isPlacingAngleMeasurement|isPlacingRectangleMeasurement|AnglePlacementStep\" /mnt/d/source/TheJoeFin/MagickCrop/MagickCrop/MainWindow.xaml.cs)",
+      "Bash(/usr/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-linux/rg:*)",
+      "Bash(grep:*)",
+      "Bash(dotnet build)",
+      "Bash(msbuild:*)",
+      "Bash(export PATH=\"$PATH:/home/josep/.dotnet\")",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet --version)",
+      "Bash(find:*)",
+      "Bash(ls:*)"
+    ],
+    "deny": []
+  }
+}

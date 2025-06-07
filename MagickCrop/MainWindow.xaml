@@ -18,9 +18,9 @@
     MouseMove="TopLeft_MouseMove"
     PreviewDragOver="FluentWindow_PreviewDragOver"
     PreviewDrop="FluentWindow_PreviewDrop"
+    PreviewKeyDown="FluentWindow_PreviewKeyDown"
     WindowStyle="None"
-    mc:Ignorable="d"
-    PreviewKeyDown="FluentWindow_PreviewKeyDown">
+    mc:Ignorable="d">
     <Window.Resources>
         <Style TargetType="Ellipse">
             <Setter Property="Height" Value="12" />
@@ -459,6 +459,19 @@
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="SplitVertical24" />
                                                         <TextBlock VerticalAlignment="Center" Text="Vertical Line" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                            <ToggleButton
+                                                x:Name="PolygonMeasureToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="ToolSelector_Checked"
+                                                Click="ToolSelector_Clicked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="SelectObjectSkewEdit24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Add Polygon" />
                                                     </StackPanel>
                                                 </ToggleButton.Content>
                                             </ToggleButton>

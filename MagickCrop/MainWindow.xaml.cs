@@ -52,6 +52,8 @@ public partial class MainWindow : FluentWindow
     private AngleMeasurementControl? activeAngleMeasureControl;
     private readonly ObservableCollection<RectangleMeasurementControl> rectangleMeasurementTools = [];
     private RectangleMeasurementControl? activeRectangleMeasureControl;
+    private readonly ObservableCollection<PolygonMeasurementControl> polygonMeasurementTools = [];
+    private PolygonMeasurementControl? activePolygonMeasureControl;
 
     private readonly ObservableCollection<VerticalLineControl> verticalLineControls = [];
     private readonly ObservableCollection<HorizontalLineControl> horizontalLineControls = [];
@@ -87,6 +89,10 @@ public partial class MainWindow : FluentWindow
     // --- Rectangle measurement placement state ---
     private bool isPlacingRectangleMeasurement = false;
     private RectangleMeasurementControl? activeRectanglePlacementControl = null;
+
+    // --- Polygon measurement placement state ---
+    private bool isPlacingPolygonMeasurement = false;
+    private PolygonMeasurementControl? activePolygonPlacementControl = null;
 
     public MainWindow()
     {
@@ -201,6 +207,15 @@ public partial class MainWindow : FluentWindow
             return;
         }
 
+        // --- POLYGON MEASUREMENT PLACEMENT LOGIC ---
+        if (isPlacingPolygonMeasurement && activePolygonPlacementControl != null && !activePolygonPlacementControl.IsClosed)
+        {
+            Point mousePos = e.GetPosition(ShapeCanvas);
+            activePolygonPlacementControl.UpdatePreviewLine(mousePos);
+            e.Handled = true;
+            return;
+        }
+
         if (Mouse.MiddleButton == MouseButtonState.Released && Mouse.LeftButton == MouseButtonState.Released)
         {
             if (draggingMode == DraggingMode.Panning)
@@ -222,6 +237,12 @@ public partial class MainWindow : FluentWindow
             {
                 activeRectangleMeasureControl.ResetActivePoint();
                 activeRectangleMeasureControl = null;
+            }
+
+            if (draggingMode == DraggingMode.MeasurePolygon && activePolygonMeasureControl is not null)
+            {
+                activePolygonMeasureControl.ResetActivePoint();
+                activePolygonMeasureControl = null;
             }
 
             clickedElement = null;
@@ -272,6 +293,17 @@ public partial class MainWindow : FluentWindow
             if (pointIndex >= 0)
             {
                 activeRectangleMeasureControl.MovePoint(pointIndex, movingPoint);
+            }
+            e.Handled = true;
+            return;
+        }
+
+        if (draggingMode == DraggingMode.MeasurePolygon && activePolygonMeasureControl is not null)
+        {
+            int pointIndex = activePolygonMeasureControl.GetActivePointIndex();
+            if (pointIndex >= 0)
+            {
+                activePolygonMeasureControl.MovePoint(pointIndex, movingPoint);
             }
             e.Handled = true;
             return;
@@ -840,10 +872,13 @@ public partial class MainWindow : FluentWindow
 
     private void ShapeCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        System.Diagnostics.Debug.WriteLine($"ShapeCanvas_MouseDown: Button={e.ChangedButton}, isCreatingMeasurement={isCreatingMeasurement}, isPlacingPolygon={isPlacingPolygonMeasurement}, ToolSelected={IsAnyToolSelected()}");
+        
         if ((Mouse.MiddleButton == MouseButtonState.Pressed 
             || Mouse.LeftButton == MouseButtonState.Pressed && !isCreatingMeasurement)
             && !IsAnyToolSelected())
         {
+            System.Diagnostics.Debug.WriteLine("Entering panning mode");
             clickedPoint = e.GetPosition(this);
             draggingMode = DraggingMode.Panning;
             return;
@@ -851,7 +886,10 @@ public partial class MainWindow : FluentWindow
 
         // Check if we're in the measure tab and starting a measurement
         if (Mouse.LeftButton != MouseButtonState.Pressed)
+        {
+            System.Diagnostics.Debug.WriteLine($"Left button not pressed, returning. Button state: {Mouse.LeftButton}");
             return;
+        }
 
         clickedPoint =  e.GetPosition(ShapeCanvas);
 
@@ -935,6 +973,46 @@ public partial class MainWindow : FluentWindow
             activeRectanglePlacementControl.MovePoint(1, clickedPoint); // Set bottom-right to initial click, will be updated on mouse move/up
             ShapeCanvas.Children.Add(activeRectanglePlacementControl);
             ShapeCanvas.CaptureMouse();
+            e.Handled = true;
+        }
+        else if (PolygonMeasureToggle.IsChecked is true)
+        {
+            System.Diagnostics.Debug.WriteLine($"Polygon tool clicked at: ({clickedPoint.X:F1}, {clickedPoint.Y:F1})");
+            
+            if (!isPlacingPolygonMeasurement)
+            {
+                // Start new polygon
+                System.Diagnostics.Debug.WriteLine("Starting new polygon");
+                isPlacingPolygonMeasurement = true;
+                isCreatingMeasurement = true; // This prevents panning interference
+                activePolygonPlacementControl = new PolygonMeasurementControl
+                {
+                    ScaleFactor = ScaleInput.Value ?? 1.0,
+                    Units = MeasurementUnits.Text
+                };
+                ShapeCanvas.Children.Add(activePolygonPlacementControl);
+                // Don't capture mouse for polygon - we need to allow multiple clicks
+            }
+
+            if (activePolygonPlacementControl != null)
+            {
+                System.Diagnostics.Debug.WriteLine($"Adding vertex to existing polygon. Current count: {activePolygonPlacementControl.VertexCount}");
+                activePolygonPlacementControl.AddVertex(clickedPoint);
+                
+                // If polygon was closed, finalize it
+                if (activePolygonPlacementControl.IsClosed)
+                {
+                    System.Diagnostics.Debug.WriteLine("Polygon closed, finalizing");
+                    polygonMeasurementTools.Add(activePolygonPlacementControl);
+                    System.Diagnostics.Debug.WriteLine($"Added polygon to collection. Total polygons: {polygonMeasurementTools.Count}");
+                    activePolygonPlacementControl.MeasurementPointMouseDown += PolygonMeasurementPoint_MouseDown;
+                    activePolygonPlacementControl.RemoveControlRequested += PolygonMeasurementControl_RemoveControlRequested;
+                    isPlacingPolygonMeasurement = false;
+                    isCreatingMeasurement = false; // Reset this when polygon is complete
+                    activePolygonPlacementControl = null;
+                    System.Diagnostics.Debug.WriteLine("Polygon finalization complete");
+                }
+            }
             e.Handled = true;
         }
         else if (isPlacingAngleMeasurement)
@@ -1687,6 +1765,15 @@ public partial class MainWindow : FluentWindow
         }
     }
 
+    private void PolygonMeasurementControl_RemoveControlRequested(object sender, EventArgs e)
+    {
+        if (sender is PolygonMeasurementControl control)
+        {
+            ShapeCanvas.Children.Remove(control);
+            polygonMeasurementTools.Remove(control);
+        }
+    }
+
     private async void MeasurementControl_SetRealWorldLengthRequested(object sender, double pixelDistance)
     {
         if (sender is not DistanceMeasurementControl measurementControl)
@@ -1762,6 +1849,15 @@ public partial class MainWindow : FluentWindow
 
         rectangleMeasurementTools.Clear();
 
+        foreach (PolygonMeasurementControl measurementControl in polygonMeasurementTools)
+        {
+            measurementControl.MeasurementPointMouseDown -= PolygonMeasurementPoint_MouseDown;
+            measurementControl.RemoveControlRequested -= PolygonMeasurementControl_RemoveControlRequested;
+            ShapeCanvas.Children.Remove(measurementControl);
+        }
+
+        polygonMeasurementTools.Clear();
+
         foreach (VerticalLineControl lineControl in verticalLineControls)
         {
             lineControl.RemoveControlRequested -= VerticalLineControl_RemoveControlRequested;
@@ -1826,6 +1922,19 @@ public partial class MainWindow : FluentWindow
         }
     }
 
+    private void PolygonMeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is System.Windows.Shapes.Ellipse senderEllipse &&
+            senderEllipse.Parent is Canvas measureCanvas &&
+            measureCanvas.Parent is PolygonMeasurementControl measureControl)
+        {
+            activePolygonMeasureControl = measureControl;
+            draggingMode = DraggingMode.MeasurePolygon;
+            clickedPoint = e.GetPosition(ShapeCanvas);
+            CaptureMouse();
+        }
+    }
+
     private void ScaleInput_ValueChanged(object sender, RoutedEventArgs e)
     {
         double newScale = ScaleInput.Value ?? 1.0;
@@ -1833,6 +1942,9 @@ public partial class MainWindow : FluentWindow
             tool.ScaleFactor = newScale;
 
         foreach (RectangleMeasurementControl tool in rectangleMeasurementTools)
+            tool.ScaleFactor = newScale;
+
+        foreach (PolygonMeasurementControl tool in polygonMeasurementTools)
             tool.ScaleFactor = newScale;
 
         // Update stroke measurements
@@ -1848,6 +1960,9 @@ public partial class MainWindow : FluentWindow
             tool.Units = textBox.Text;
 
         foreach (RectangleMeasurementControl tool in rectangleMeasurementTools)
+            tool.Units = textBox.Text;
+
+        foreach (PolygonMeasurementControl tool in polygonMeasurementTools)
             tool.Units = textBox.Text;
 
         // Update stroke measurements
@@ -1930,6 +2045,12 @@ public partial class MainWindow : FluentWindow
         {
             package.Measurements.RectangleMeasurements.Add(control.ToDto());
         }
+
+        foreach (PolygonMeasurementControl control in polygonMeasurementTools)
+        {
+            package.Measurements.PolygonMeasurements.Add(control.ToDto());
+        }
+        System.Diagnostics.Debug.WriteLine($"Saved {polygonMeasurementTools.Count} polygon measurements to package");
 
         foreach (VerticalLineControl control in verticalLineControls)
         {
@@ -2099,6 +2220,23 @@ public partial class MainWindow : FluentWindow
             ShapeCanvas.Children.Add(control);
         }
 
+        // Add polygon measurements
+        System.Diagnostics.Debug.WriteLine($"Loading {package.Measurements.PolygonMeasurements.Count} polygon measurements from package");
+        foreach (PolygonMeasurementControlDto dto in package.Measurements.PolygonMeasurements)
+        {
+            PolygonMeasurementControl control = new()
+            {
+                ScaleFactor = dto.ScaleFactor,
+                Units = dto.Units
+            };
+            control.FromDto(dto);
+            control.MeasurementPointMouseDown += PolygonMeasurementPoint_MouseDown;
+            control.RemoveControlRequested += PolygonMeasurementControl_RemoveControlRequested;
+            polygonMeasurementTools.Add(control);
+            ShapeCanvas.Children.Add(control);
+        }
+        System.Diagnostics.Debug.WriteLine($"Loaded polygon measurements. Total in collection: {polygonMeasurementTools.Count}");
+
         MagickImage image = new(package.ImagePath);
         double aspectRatio = (double)image.Width / image.Height;
         double imageHeight = ImageWidthConst / aspectRatio;
@@ -2241,6 +2379,10 @@ public partial class MainWindow : FluentWindow
 
             foreach (RectangleMeasurementControl control in rectangleMeasurementTools)
                 package.Measurements.RectangleMeasurements.Add(control.ToDto());
+
+            foreach (PolygonMeasurementControl control in polygonMeasurementTools)
+                package.Measurements.PolygonMeasurements.Add(control.ToDto());
+            System.Diagnostics.Debug.WriteLine($"AutoSave: Saved {polygonMeasurementTools.Count} polygon measurements");
 
             foreach (VerticalLineControl control in verticalLineControls)
                 package.Measurements.VerticalLines.Add(control.ToDto());
@@ -2686,6 +2828,14 @@ public partial class MainWindow : FluentWindow
             anglePlacementStep = AnglePlacementStep.None;
             ShapeCanvas.Children.Remove(activeAngleMeasureControl);
             activeAnglePlacementControl = null;
+
+            isPlacingPolygonMeasurement = false;
+            if (activePolygonPlacementControl != null)
+            {
+                ShapeCanvas.Children.Remove(activePolygonPlacementControl);
+                activePolygonPlacementControl = null;
+            }
+
             isCreatingMeasurement = false;
             draggingMode = DraggingMode.None;
             ShapeCanvas.ReleaseMouseCapture();

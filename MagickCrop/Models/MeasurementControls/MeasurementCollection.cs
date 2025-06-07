@@ -39,6 +39,11 @@ public class MeasurementCollection
     public List<RectangleMeasurementControlDto> RectangleMeasurements { get; set; } = [];
 
     /// <summary>
+    /// Collection of polygon measurement control data
+    /// </summary>
+    public List<PolygonMeasurementControlDto> PolygonMeasurements { get; set; } = [];
+
+    /// <summary>
     /// Collection of serialized ink strokes
     /// </summary>
     public List<StrokeDto> InkStrokes { get; set; } = [];
