@@ -837,6 +837,9 @@ public partial class MainWindow : FluentWindow
         imagePath = tempFileName;
         openedFileName = System.IO.Path.GetFileNameWithoutExtension(imageFilePath);
         MainImage.Source = bitmapImage.ToBitmapSource();
+        
+        // Update original size after image is loaded (will be the default ImageWidthConst height calculated from aspect ratio)
+        originalImageSize = new Size(ImageGrid.Width, ImageGrid.Height);
 
         BottomBorder.Visibility = Visibility.Visible;
         SetUiForCompletedTask();
@@ -1584,7 +1587,6 @@ public partial class MainWindow : FluentWindow
     private void StretchMenuItem_Click(object sender, RoutedEventArgs e)
     {
         oldGridSize = new(ImageGrid.ActualWidth, ImageGrid.ActualHeight);
-        originalImageSize = new(MainImage.ActualWidth, MainImage.ActualHeight);
         ShowResizeControls();
     }
 
@@ -1688,10 +1690,25 @@ public partial class MainWindow : FluentWindow
             return;
 
         MagickImage magickImage = new(imagePath);
-        Percentage imageWidthChangePercentage = new(MainImage.ActualWidth / originalImageSize.Width * 100);
-        Percentage imageHeightChangePercentage = new(MainImage.ActualHeight / originalImageSize.Height * 100);
+        
+        // Get target dimensions from user input
+        int targetWidth, targetHeight;
+        
+        if (isPixelMode)
+        {
+            targetWidth = int.Parse(WidthTextBox.Text);
+            targetHeight = int.Parse(HeightTextBox.Text);
+        }
+        else
+        {
+            // Convert percentage to pixels based on current image size
+            double widthPercent = double.Parse(WidthTextBox.Text) / 100.0;
+            double heightPercent = double.Parse(HeightTextBox.Text) / 100.0;
+            targetWidth = (int)(actualImageSize.Width * widthPercent);
+            targetHeight = (int)(actualImageSize.Height * heightPercent);
+        }
 
-        MagickGeometry resizeGeometry = new(imageWidthChangePercentage, imageHeightChangePercentage)
+        MagickGeometry resizeGeometry = new((uint)targetWidth, (uint)targetHeight)
         {
             IgnoreAspectRatio = true
         };
@@ -2298,7 +2315,10 @@ public partial class MainWindow : FluentWindow
             ImagePath = imagePath,
             Metadata = new PackageMetadata
             {
-                OriginalFilename = openedFileName
+                OriginalFilename = openedFileName,
+                OriginalImageSize = originalImageSize,
+                CurrentImageSize = new Size(ImageGrid.Width, ImageGrid.Height),
+                ImageStretch = MainImage.Stretch
             },
             Measurements = new MeasurementCollection
             {
@@ -2454,6 +2474,22 @@ public partial class MainWindow : FluentWindow
 
         // Clear existing measurements
         RemoveMeasurementControls();
+
+        // Apply saved resize if different from original
+        if (package.Metadata.CurrentImageSize.Width > 0 && package.Metadata.CurrentImageSize.Height > 0)
+        {
+            if (package.Metadata.OriginalImageSize.Width > 0 && package.Metadata.OriginalImageSize.Height > 0)
+            {
+                originalImageSize = package.Metadata.OriginalImageSize;
+            }
+            
+            // Apply the saved resize to the ImageGrid
+            ImageGrid.Width = package.Metadata.CurrentImageSize.Width;
+            ImageGrid.Height = package.Metadata.CurrentImageSize.Height;
+        }
+
+        // Restore the saved stretch mode
+        MainImage.Stretch = package.Metadata.ImageStretch;
 
         // Set global measurement properties
         ScaleInput.Value = package.Measurements.GlobalScaleFactor;
@@ -2644,13 +2680,19 @@ public partial class MainWindow : FluentWindow
             {
                 OriginalFilename = openedFileName,
                 ProjectId = currentProjectId,
-                LastModified = DateTime.Now
+                LastModified = DateTime.Now,
+                OriginalImageSize = originalImageSize,
+                CurrentImageSize = new Size(ImageGrid.Width, ImageGrid.Height),
+                ImageStretch = MainImage.Stretch
             };
 
             if (openedPackage is not null)
             {
                 packageMetadata = openedPackage.Metadata;
                 packageMetadata.LastModified = DateTime.Now;
+                packageMetadata.OriginalImageSize = originalImageSize;
+                packageMetadata.CurrentImageSize = new Size(ImageGrid.Width, ImageGrid.Height);
+                packageMetadata.ImageStretch = MainImage.Stretch;
             }
 
             // Create a package with the current state

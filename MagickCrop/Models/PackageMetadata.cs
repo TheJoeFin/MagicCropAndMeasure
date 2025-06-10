@@ -1,3 +1,6 @@
+using System.Windows;
+using System.Windows.Media;
+
 namespace MagickCrop.Models;
 
 /// <summary>
@@ -34,4 +37,19 @@ public class PackageMetadata
     /// Date the package was last modified
     /// </summary>
     public DateTime LastModified { get; set; } = DateTime.Now;
+
+    /// <summary>
+    /// Original image dimensions when first loaded
+    /// </summary>
+    public Size OriginalImageSize { get; set; } = new();
+
+    /// <summary>
+    /// Current image dimensions after any resize operations
+    /// </summary>
+    public Size CurrentImageSize { get; set; } = new();
+
+    /// <summary>
+    /// Image stretch mode (Uniform or Fill)
+    /// </summary>
+    public Stretch ImageStretch { get; set; } = Stretch.Uniform;
 }
