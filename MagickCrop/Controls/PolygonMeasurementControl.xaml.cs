@@ -266,17 +266,17 @@ public partial class PolygonMeasurementControl : UserControl
         if (isClosed)
         {
             double area = CalculateArea();
-            PolygonTextBlock.Text = $"Perimeter: {perimeter:F1} {Units}, Area: {area:F1} sq {Units}";
+            PolygonTextBlock.Text = $"P: {perimeter:N2} {Units}, A: {area:N2} {Units}²";
         }
         else
         {
             if (vertices.Count < 3)
             {
-                PolygonTextBlock.Text = $"Perimeter: {perimeter:F1} {Units} (Need {3 - vertices.Count} more points)";
+                PolygonTextBlock.Text = $"P: {perimeter:N2} {Units} (Need {3 - vertices.Count} more points)";
             }
             else
             {
-                PolygonTextBlock.Text = $"Perimeter: {perimeter:F1} {Units} (Click orange point to close)";
+                PolygonTextBlock.Text = $"P: {perimeter:N2} {Units} (Click orange point to close)";
             }
         }
     }

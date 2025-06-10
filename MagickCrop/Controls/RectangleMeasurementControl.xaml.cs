@@ -88,7 +88,7 @@ public partial class RectangleMeasurementControl : UserControl
         double scaledHeight = height * ScaleFactor;
         double scaledArea = area * ScaleFactor * ScaleFactor; // Area scales by factor squared
 
-        RectangleTextBlock.Text = $"{scaledWidth:F1} {Units} \u00D7 {scaledHeight:F1} {Units} (Area: {scaledArea:F1} sq {Units})";
+        RectangleTextBlock.Text = $"{scaledWidth:N2} \u00D7 {scaledHeight:N2} {Units} (A: {scaledArea:N2} {Units}²)";
     }
 
     private void MeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)

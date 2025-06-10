@@ -107,7 +107,7 @@ public partial class CircleMeasurementControl : UserControl
         double scaledCircumference = circumference * ScaleFactor;
         double scaledArea = area * ScaleFactor * ScaleFactor; // Area scales by factor squared
 
-        CircleTextBlock.Text = $"Radius: {scaledRadius:F1} {Units}, Circumference: {scaledCircumference:F1} {Units}, Area: {scaledArea:F1} sq {Units}";
+        CircleTextBlock.Text = $"r: {scaledRadius:N2} {Units}, C: {scaledCircumference:N2} {Units}, A: {scaledArea:N2} {Units}²";
     }
 
     private void MeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)

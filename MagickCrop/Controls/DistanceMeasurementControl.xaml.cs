@@ -78,7 +78,7 @@ public partial class DistanceMeasurementControl : UserControl
         // Calculate distance and update text
         double distance = CalculateDistance();
         double scaledDistance = distance * ScaleFactor;
-        DistanceTextBlock.Text = $"{scaledDistance:F2} {Units}";
+        DistanceTextBlock.Text = $"{scaledDistance:N2} {Units}";
 
         // Position the measurement text in the middle of the line
         Point midPoint = new(
