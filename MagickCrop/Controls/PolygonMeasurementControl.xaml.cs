@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using MagickCrop.Models.MeasurementControls;
+using MagickCrop.Helpers;
 
 namespace MagickCrop.Controls;
 
@@ -16,7 +17,6 @@ public partial class PolygonMeasurementControl : UserControl
     private readonly List<Ellipse> vertexPoints = new();
     private bool isClosed = false;
     private int pointDraggingIndex = -1;
-    private const double VertexTolerance = 15.0; // Pixels to detect close action - increased for easier clicking
 
     private double scaleFactor = 1.0;
     public double ScaleFactor
@@ -25,7 +25,7 @@ public partial class PolygonMeasurementControl : UserControl
         set
         {
             scaleFactor = value;
-            UpdateMeasurementText();
+            UpdateDisplay();
         }
     }
 
@@ -36,7 +36,7 @@ public partial class PolygonMeasurementControl : UserControl
         set
         {
             units = value;
-            UpdateMeasurementText();
+            UpdateDisplay();
         }
     }
 
@@ -69,7 +69,7 @@ public partial class PolygonMeasurementControl : UserControl
         vertices.Add(vertex);
         CreateVertexPoint(vertex, vertices.Count - 1);
         UpdatePolygonPath();
-        UpdateMeasurementText();
+        UpdateDisplay();
         
         // Highlight first vertex when we have enough vertices to close
         if (vertices.Count == 3)
@@ -115,8 +115,7 @@ public partial class PolygonMeasurementControl : UserControl
         ResetFirstVertexAppearance();
         
         UpdatePolygonPath();
-        UpdateMeasurementText();
-        PositionMeasurementText();
+        UpdateDisplay();
         
         System.Diagnostics.Debug.WriteLine("ClosePolygon: Polygon successfully closed");
     }
@@ -125,12 +124,14 @@ public partial class PolygonMeasurementControl : UserControl
     {
         if (vertices.Count == 0) return false;
         Point firstVertex = vertices[0];
-        double distance = Math.Sqrt(Math.Pow(point.X - firstVertex.X, 2) + Math.Pow(point.Y - firstVertex.Y, 2));
+        double dx = point.X - firstVertex.X;
+        double dy = point.Y - firstVertex.Y;
+        double distance = Math.Sqrt(dx * dx + dy * dy);
         
         // Debug: Output distance for troubleshooting
-        System.Diagnostics.Debug.WriteLine($"Distance from click to first vertex: {distance:F1}, Tolerance: {VertexTolerance}");
+        System.Diagnostics.Debug.WriteLine($"Distance from click to first vertex: {distance:F1}, Tolerance: {Defaults.VertexCloseTolerance}");
         
-        return distance <= VertexTolerance;
+        return distance <= Defaults.VertexCloseTolerance;
     }
 
     private void CreateVertexPoint(Point position, int index)
@@ -228,35 +229,15 @@ public partial class PolygonMeasurementControl : UserControl
 
     private double CalculatePerimeter()
     {
-        if (vertices.Count < 2) return 0;
-
-        double perimeter = 0;
-        for (int i = 0; i < vertices.Count; i++)
-        {
-            Point current = vertices[i];
-            Point next = vertices[(i + 1) % vertices.Count];
-            
-            // For open polygons, don't include the closing edge
-            if (!isClosed && i == vertices.Count - 1) break;
-            
-            perimeter += Math.Sqrt(Math.Pow(next.X - current.X, 2) + Math.Pow(next.Y - current.Y, 2));
-        }
-        return perimeter * ScaleFactor;
+        double p = GeometryMathHelper.PolygonPerimeter(vertices, isClosed);
+        return p * ScaleFactor;
     }
 
     private double CalculateArea()
     {
-        if (!isClosed || vertices.Count < 3) return 0;
-
-        // Shoelace formula for polygon area
-        double area = 0;
-        for (int i = 0; i < vertices.Count; i++)
-        {
-            Point current = vertices[i];
-            Point next = vertices[(i + 1) % vertices.Count];
-            area += current.X * next.Y - next.X * current.Y;
-        }
-        return Math.Abs(area) / 2 * ScaleFactor * ScaleFactor;
+        if (!isClosed) return 0;
+        double a = GeometryMathHelper.PolygonArea(vertices);
+        return a * ScaleFactor * ScaleFactor;
     }
 
     private void UpdateMeasurementText()
@@ -266,17 +247,17 @@ public partial class PolygonMeasurementControl : UserControl
         if (isClosed)
         {
             double area = CalculateArea();
-            PolygonTextBlock.Text = $"P: {perimeter:N2} {Units}, A: {area:N2} {Units}²";
+            PolygonTextBlock.Text = MeasurementFormattingHelper.FormatPerimeterArea(perimeter, area, Units);
         }
         else
         {
             if (vertices.Count < 3)
             {
-                PolygonTextBlock.Text = $"P: {perimeter:N2} {Units} (Need {3 - vertices.Count} more points)";
+                PolygonTextBlock.Text = MeasurementFormattingHelper.FormatNeedMorePoints(perimeter, Units, 3 - vertices.Count);
             }
             else
             {
-                PolygonTextBlock.Text = $"P: {perimeter:N2} {Units} (Click orange point to close)";
+                PolygonTextBlock.Text = MeasurementFormattingHelper.FormatClickToClose(perimeter, Units);
             }
         }
     }
@@ -293,6 +274,12 @@ public partial class PolygonMeasurementControl : UserControl
         Canvas.SetTop(MeasurementText, centerY - MeasurementText.ActualHeight - 10);
     }
 
+    private void UpdateDisplay()
+    {
+        UpdateMeasurementText();
+        PositionMeasurementText();
+    }
+
     public void MovePoint(int pointIndex, Point newPosition)
     {
         if (pointIndex < 0 || pointIndex >= vertices.Count) return;
@@ -300,8 +287,7 @@ public partial class PolygonMeasurementControl : UserControl
         vertices[pointIndex] = newPosition;
         UpdatePolygonPath();
         UpdateVertexPositions();
-        UpdateMeasurementText();
-        PositionMeasurementText();
+        UpdateDisplay();
     }
 
     public int GetActivePointIndex() => pointDraggingIndex;
@@ -401,8 +387,7 @@ public partial class PolygonMeasurementControl : UserControl
         }
 
         UpdatePolygonPath();
-        UpdateMeasurementText();
-        PositionMeasurementText();
+        UpdateDisplay();
         
         System.Diagnostics.Debug.WriteLine($"FromDto: Polygon restoration complete");
     }
