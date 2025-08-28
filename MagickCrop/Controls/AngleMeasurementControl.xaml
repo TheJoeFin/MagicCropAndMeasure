@@ -12,7 +12,8 @@
             Opacity="0.8"
             Stroke="#0066FF"
             StrokeDashArray="4,2"
-            StrokeThickness="2" />
+            StrokeThickness="2"
+            ToolTip="Angle leg" />
 
         <Line
             x:Name="Line2"
@@ -20,7 +21,8 @@
             Opacity="0.8"
             Stroke="#0066FF"
             StrokeDashArray="4,2"
-            StrokeThickness="2" />
+            StrokeThickness="2"
+            ToolTip="Angle leg" />
 
         <Path
             x:Name="AngleArc"
@@ -29,7 +31,8 @@
             Opacity="0.8"
             Stroke="#0066FF"
             StrokeLineJoin="Round"
-            StrokeThickness="2" />
+            StrokeThickness="2"
+            ToolTip="Angle arc" />
 
         <Ellipse
             x:Name="Point1"
@@ -41,7 +44,8 @@
             Opacity="0.8"
             Stroke="White"
             StrokeThickness="1"
-            Tag="0" />
+            Tag="0"
+            ToolTip="Drag to move first point" />
 
         <Ellipse
             x:Name="VertexPoint"
@@ -53,7 +57,8 @@
             Opacity="0.8"
             Stroke="White"
             StrokeThickness="1"
-            Tag="1" />
+            Tag="1"
+            ToolTip="Drag to move vertex" />
 
         <Ellipse
             x:Name="Point3"
@@ -65,17 +70,19 @@
             Opacity="0.8"
             Stroke="White"
             StrokeThickness="1"
-            Tag="2" />
+            Tag="2"
+            ToolTip="Drag to move third point" />
 
         <Border
             x:Name="MeasurementText"
             Padding="5,2"
             Background="#7F000000"
-            CornerRadius="3">
+            CornerRadius="3"
+            ToolTip="Angle measurement options">
             <Border.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Click="CopyMeasurementMenuItem_Click" Header="Copy Measurement" />
-                    <MenuItem Click="RemoveMeasurementMenuItem_Click" Header="Remove Measurement" />
+                    <MenuItem Click="CopyMeasurementMenuItem_Click" Header="Copy Measurement" ToolTip="Copy the angle value" />
+                    <MenuItem Click="RemoveMeasurementMenuItem_Click" Header="Remove Measurement" ToolTip="Delete this measurement" />
                 </ContextMenu>
             </Border.ContextMenu>
             <Button
@@ -83,7 +90,8 @@
                 Padding="0"
                 Background="Transparent"
                 BorderThickness="0"
-                Click="MeasurementButton_Click">
+                Click="MeasurementButton_Click"
+                ToolTip="Click to open options">
                 <TextBlock
                     x:Name="AngleTextBlock"
                     FontWeight="Bold"

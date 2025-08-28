@@ -98,13 +98,15 @@
                     <Image
                         x:Name="MainImage"
                         MouseDown="ShapeCanvas_MouseDown"
-                        Stretch="Uniform" />
+                        Stretch="Uniform"
+                        ToolTip="Image preview. Click and drag to pan when no tool is active." />
                     <InkCanvas
                         x:Name="DrawingCanvas"
                         Background="Transparent"
                         IsEnabled="False"
                         IsHitTestVisible="False"
-                        StrokeCollected="DrawingCanvas_StrokeCollected" />
+                        StrokeCollected="DrawingCanvas_StrokeCollected"
+                        ToolTip="Ink drawing layer" />
                     <ResizeGrip
                         x:Name="ImageResizeGrip"
                         Grid.Row="1"
@@ -124,25 +126,29 @@
                     Canvas.Left="100"
                     Canvas.Top="100"
                     MouseDown="TopLeft_MouseDown"
-                    Tag="0" />
+                    Tag="0"
+                    ToolTip="Drag to move top-left marker" />
                 <Ellipse
                     x:Name="TopRight"
                     Canvas.Left="700"
                     Canvas.Top="100"
                     MouseDown="TopLeft_MouseDown"
-                    Tag="1" />
+                    Tag="1"
+                    ToolTip="Drag to move top-right marker" />
                 <Ellipse
                     x:Name="BottomRight"
                     Canvas.Left="700"
                     Canvas.Top="525"
                     MouseDown="TopLeft_MouseDown"
-                    Tag="2" />
+                    Tag="2"
+                    ToolTip="Drag to move bottom-right marker" />
                 <Ellipse
                     x:Name="BottomLeft"
                     Canvas.Left="100"
                     Canvas.Top="525"
                     MouseDown="TopLeft_MouseDown"
-                    Tag="3" />
+                    Tag="3"
+                    ToolTip="Drag to move bottom-left marker" />
 
                 <local:ResizableRectangle x:Name="CroppingRectangle" Visibility="Collapsed" />
             </Canvas>
@@ -182,13 +188,15 @@
                                 x:Name="ImageIconOpenedName"
                                 Grid.Column="0"
                                 Margin="0,0,5,0"
-                                Symbol="Image24" />
+                                Symbol="Image24"
+                                ToolTip="Currently opened image" />
                             <TextBlock
                                 x:Name="ReOpenFileText"
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
                                 Text="Image File Name"
-                                TextTrimming="CharacterEllipsis" />
+                                TextTrimming="CharacterEllipsis"
+                                ToolTip="Opened image file name" />
                             <wpfui:SymbolIcon
                                 x:Name="CloseFileIcon"
                                 Grid.Column="2"
@@ -206,6 +214,7 @@
                                 x:Name="UndoMenuItem"
                                 Click="UndoMenuItem_Click"
                                 Header="Undo"
+                                ToolTip="Undo last action"
                                 IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor,
                                                                                    AncestorType={x:Type wpfui:FluentWindow}},
                                                     Path=undoRedo.CanUndo,
@@ -218,6 +227,7 @@
                                 x:Name="RedoMenuItem"
                                 Click="RedoMenuItem_Click"
                                 Header=""
+                                ToolTip="Redo last undone action"
                                 IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor,
                                                                                    AncestorType={x:Type wpfui:FluentWindow}},
                                                     Path=undoRedo.CanRedo,
@@ -255,7 +265,8 @@
                                     <MenuItem
                                         Name="FlipHozMenuItem"
                                         Click="FlipHozMenuItem_Click"
-                                        Header="Flip Horizontal">
+                                        Header="Flip Horizontal"
+                                        ToolTip="Flip image horizontally">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Symbol="FlipHorizontal24" />
                                         </MenuItem.Icon>
@@ -263,7 +274,8 @@
                                     <MenuItem
                                         Name="FlipVertMenuItem"
                                         Click="FlipVertMenuItem_Click"
-                                        Header="Flip Vertical">
+                                        Header="Flip Vertical"
+                                        ToolTip="Flip image vertically">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Symbol="FlipVertical24" />
                                         </MenuItem.Icon>
@@ -274,7 +286,8 @@
                                     <MenuItem
                                         Name="StretchMenuItem"
                                         Click="StretchMenuItem_Click"
-                                        Header="Resize Image">
+                                        Header="Resize Image"
+                                        ToolTip="Resize the image by pixels or percentage">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon RenderTransformOrigin="0.5, 0.5" Symbol="Resize24">
                                                 <wpfui:SymbolIcon.RenderTransform>
@@ -286,7 +299,8 @@
                                     <MenuItem
                                         Name="CropImage"
                                         Click="CropImage_Click"
-                                        Header="Crop Image">
+                                        Header="Crop Image"
+                                        ToolTip="Crop a portion of the image">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Symbol="Crop24" />
                                         </MenuItem.Icon>
@@ -294,7 +308,8 @@
                                     <MenuItem
                                         Name="PerspectiveCorrectionMenuItem"
                                         Click="PerspectiveCorrectionMenuItem_Click"
-                                        Header="Transform Image">
+                                        Header="Transform Image"
+                                        ToolTip="Correct perspective using corner markers">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Foreground="#0066FF" Symbol="SelectObjectSkewEdit24" />
                                         </MenuItem.Icon>
@@ -309,7 +324,8 @@
                                     <MenuItem
                                         Name="AutoContrastMenuItem"
                                         Click="AutoContrastMenuItem_Click"
-                                        Header="10% Auto Contrast">
+                                        Header="10% Auto Contrast"
+                                        ToolTip="Increase contrast automatically">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Symbol="DarkTheme24" />
                                         </MenuItem.Icon>
@@ -317,7 +333,8 @@
                                     <MenuItem
                                         Name="BlackPointMenuItem"
                                         Click="BlackPointMenuItem_Click"
-                                        Header="10% Black Threshold">
+                                        Header="10% Black Threshold"
+                                        ToolTip="Adjust black point threshold">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Symbol="WeatherMoon24" />
                                         </MenuItem.Icon>
@@ -325,7 +342,8 @@
                                     <MenuItem
                                         Name="WhitePointMenuItem"
                                         Click="WhitePointMenuItem_Click"
-                                        Header="10% White Threshold">
+                                        Header="10% White Threshold"
+                                        ToolTip="Adjust white point threshold">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Symbol="BrightnessHigh24" />
                                         </MenuItem.Icon>
@@ -334,7 +352,8 @@
                                     <MenuItem
                                         Name="GrayscaleMenuItem"
                                         Click="GrayscaleMenuItem_Click"
-                                        Header="Grayscale">
+                                        Header="Grayscale"
+                                        ToolTip="Convert image to grayscale">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Symbol="Color24" />
                                         </MenuItem.Icon>
@@ -342,7 +361,8 @@
                                     <MenuItem
                                         Name="InvertMenuItem"
                                         Click="InvertMenuItem_Click"
-                                        Header="Invert Colors">
+                                        Header="Invert Colors"
+                                        ToolTip="Invert image colors">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Symbol="SquareShadow20" />
                                         </MenuItem.Icon>
@@ -350,7 +370,8 @@
                                     <MenuItem
                                         Name="WhiteBalanceMenuItem"
                                         Click="WhiteBalanceMenuItem_Click"
-                                        Header="Auto White Balance">
+                                        Header="Auto White Balance"
+                                        ToolTip="Balance colors automatically">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Symbol="Whiteboard24" />
                                         </MenuItem.Icon>
@@ -358,7 +379,8 @@
                                     <MenuItem
                                         Name="AutoLevelsMenuItem"
                                         Click="AutoLevelsMenuItem_Click"
-                                        Header="Auto Level">
+                                        Header="Auto Level"
+                                        ToolTip="Auto-adjust levels">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Symbol="BezierCurveSquare20" />
                                         </MenuItem.Icon>
@@ -366,7 +388,8 @@
                                     <MenuItem
                                         Name="AutoGammaMenuItem"
                                         Click="AutoGammaMenuItem_Click"
-                                        Header="Auto Gamma">
+                                        Header="Auto Gamma"
+                                        ToolTip="Auto-adjust gamma">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Symbol="AddSubtractCircle24" />
                                         </MenuItem.Icon>
@@ -375,7 +398,8 @@
                                     <MenuItem
                                         Name="BlurMenuItem"
                                         Click="BlurMenuItem_Click"
-                                        Header="Gaussian Blur">
+                                        Header="Gaussian Blur"
+                                        ToolTip="Apply Gaussian blur">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Symbol="Blur24" />
                                         </MenuItem.Icon>
@@ -383,7 +407,8 @@
                                     <MenuItem
                                         Name="FindEdgesMenuItem"
                                         Click="FindEdgesMenuItem_Click"
-                                        Header="Find Edges">
+                                        Header="Find Edges"
+                                        ToolTip="Detect edges in image">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Symbol="Triangle24" />
                                         </MenuItem.Icon>
@@ -402,7 +427,8 @@
                                                 Width="150"
                                                 Margin="0,4"
                                                 Checked="ToolSelector_Checked"
-                                                Click="ToolSelector_Clicked">
+                                                Click="ToolSelector_Clicked"
+                                                ToolTip="Add a distance measurement">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Ruler24" />
@@ -415,7 +441,8 @@
                                                 Width="150"
                                                 Margin="0,4"
                                                 Checked="ToolSelector_Checked"
-                                                Click="ToolSelector_Clicked">
+                                                Click="ToolSelector_Clicked"
+                                                ToolTip="Add an angle measurement">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="DataPie24" />
@@ -428,7 +455,8 @@
                                                 Width="150"
                                                 Margin="0,4"
                                                 Checked="ToolSelector_Checked"
-                                                Click="ToolSelector_Clicked">
+                                                Click="ToolSelector_Clicked"
+                                                ToolTip="Add a rectangle measurement">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="RectangleLandscape24" />
@@ -441,7 +469,8 @@
                                                 Width="150"
                                                 Margin="0,4"
                                                 Checked="ToolSelector_Checked"
-                                                Click="ToolSelector_Clicked">
+                                                Click="ToolSelector_Clicked"
+                                                ToolTip="Add a circle measurement">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Circle24" />
@@ -454,7 +483,8 @@
                                                 Width="150"
                                                 Margin="0,4"
                                                 Checked="ToolSelector_Checked"
-                                                Click="ToolSelector_Clicked">
+                                                Click="ToolSelector_Clicked"
+                                                ToolTip="Add a horizontal guide line">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="SplitHorizontal24" />
@@ -467,7 +497,8 @@
                                                 Width="150"
                                                 Margin="0,4"
                                                 Checked="ToolSelector_Checked"
-                                                Click="ToolSelector_Clicked">
+                                                Click="ToolSelector_Clicked"
+                                                ToolTip="Add a vertical guide line">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="SplitVertical24" />
@@ -480,7 +511,8 @@
                                                 Width="150"
                                                 Margin="0,4"
                                                 Checked="ToolSelector_Checked"
-                                                Click="ToolSelector_Clicked">
+                                                Click="ToolSelector_Clicked"
+                                                ToolTip="Add a polygon measurement">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="SelectObjectSkewEdit24" />
@@ -494,7 +526,8 @@
                                                 Margin="0,4"
                                                 Checked="DrawingLinesRadio_Checked"
                                                 Click="ToolSelector_Clicked"
-                                                Unchecked="DrawingLinesRadio_Unchecked">
+                                                Unchecked="DrawingLinesRadio_Unchecked"
+                                                ToolTip="Draw freehand lines on the image">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Pen24" />
@@ -532,6 +565,7 @@
                                             AcceptsReturn="False"
                                             AcceptsTab="False"
                                             Text="Pixels"
+                                            ToolTip="Units label displayed with measurements"
                                             TextChanged="MeasurementUnits_TextChanged" />
 
                                         <StackPanel x:Name="DrawingOptionsPanel" Visibility="Collapsed">
@@ -541,6 +575,7 @@
                                                 Width="150"
                                                 Maximum="10"
                                                 Minimum="1"
+                                                ToolTip="Set stroke thickness for drawn lines"
                                                 ValueChanged="StrokeThicknessSlider_ValueChanged"
                                                 Value="2" />
                                         </StackPanel>
@@ -551,7 +586,8 @@
                                             Appearance="Danger"
                                             Click="CloseMeasurementButton_Click"
                                             Content="Clear all"
-                                            Foreground="Red">
+                                            Foreground="Red"
+                                            ToolTip="Remove all measurements from the image">
                                             <wpfui:HyperlinkButton.Icon>
                                                 <wpfui:SymbolIcon Symbol="Dismiss24" />
                                             </wpfui:HyperlinkButton.Icon>
@@ -576,7 +612,8 @@
                         Appearance="Primary"
                         Click="ApplyCropButton_Click"
                         Content="Apply Crop"
-                        Foreground="White">
+                        Foreground="White"
+                        ToolTip="Apply the crop to the image">
                         <wpfui:Button.Icon>
                             <wpfui:SymbolIcon Symbol="Crop24" />
                         </wpfui:Button.Icon>
@@ -586,7 +623,8 @@
                         Width="180"
                         Appearance="Danger"
                         Click="CancelCrop_Click"
-                        Content="Cancel">
+                        Content="Cancel"
+                        ToolTip="Cancel cropping">
                         <wpfui:Button.Icon>
                             <wpfui:SymbolIcon Symbol="Dismiss24" />
                         </wpfui:Button.Icon>
@@ -631,6 +669,7 @@
                                     Width="150"
                                     VerticalAlignment="Center"
                                     Minimum="0"
+                                    ToolTip="Custom width"
                                     ValueChanged="CustomWidth_ValueChanged"
                                     Value="10" />
                                 <Label
@@ -646,6 +685,7 @@
                                     Width="150"
                                     VerticalAlignment="Center"
                                     Minimum="0"
+                                    ToolTip="Custom height"
                                     ValueChanged="CustomWidth_ValueChanged"
                                     Value="5" />
                             </Grid>
@@ -654,7 +694,8 @@
                             x:Name="EditToggleButton"
                             Width="180"
                             Margin="0,4"
-                            HorizontalContentAlignment="Left">
+                            HorizontalContentAlignment="Left"
+                            ToolTip="Toggle custom aspect ratio input">
                             <StackPanel Orientation="Horizontal">
                                 <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="ResizeImage24" />
                                 <TextBlock x:Name="AspectRatioTextBox" Text="Ratio: 0.5" />
@@ -666,7 +707,8 @@
                         Width="180"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
-                        SelectionChanged="AspectRatioComboBox_SelectionChanged">
+                        SelectionChanged="AspectRatioComboBox_SelectionChanged"
+                        ToolTip="Choose a preset aspect ratio">
                         <ComboBox.ItemTemplate>
                             <DataTemplate DataType="models:AspectRatioItem">
                                 <StackPanel Orientation="Horizontal">
@@ -684,7 +726,8 @@
                         Appearance="Primary"
                         Click="ApplyButton_Click"
                         Content="Apply Transform"
-                        Foreground="White">
+                        Foreground="White"
+                        ToolTip="Apply the perspective transform">
                         <wpfui:Button.Icon>
                             <wpfui:SymbolIcon Symbol="SelectObjectSkewEdit24" />
                         </wpfui:Button.Icon>
@@ -694,7 +737,8 @@
                         Width="180"
                         Appearance="Danger"
                         Click="CancelTransformButton_Click"
-                        Content="Cancel">
+                        Content="Cancel"
+                        ToolTip="Cancel transform">
                         <wpfui:Button.Icon>
                             <wpfui:SymbolIcon Symbol="Dismiss24" />
                         </wpfui:Button.Icon>
@@ -718,16 +762,19 @@
                                 <TextBlock
                                     x:Name="CurrentWidthDisplay"
                                     FontFamily="Consolas"
-                                    Text="0" />
+                                    Text="0"
+                                    ToolTip="Current image width" />
                                 <TextBlock Margin="6,0" Text=" × " />
                                 <TextBlock
                                     x:Name="CurrentHeightDisplay"
                                     FontFamily="Consolas"
-                                    Text="0" />
+                                    Text="0"
+                                    ToolTip="Current image height" />
                                 <TextBlock
                                     x:Name="CurrentUnitsDisplay"
                                     Margin="6,0,0,0"
-                                    Text=" px" />
+                                    Text=" px"
+                                    ToolTip="Current units" />
                             </StackPanel>
                         </StackPanel>
                     </wpfui:Card>
@@ -754,6 +801,7 @@
                                         Checked="PixelModeToggle_Checked"
                                         Content="px"
                                         IsChecked="True"
+                                        ToolTip="Enter width and height in pixels"
                                         Unchecked="PixelModeToggle_Unchecked" />
                                     <ToggleButton
                                         x:Name="PercentageModeToggle"
@@ -762,6 +810,7 @@
                                         Padding="0"
                                         Checked="PercentageModeToggle_Checked"
                                         Content="%"
+                                        ToolTip="Enter width and height as a percentage of current size"
                                         Unchecked="PercentageModeToggle_Unchecked" />
                                 </StackPanel>
                             </Grid>
@@ -776,7 +825,8 @@
                                     <wpfui:TextBox
                                         x:Name="WidthTextBox"
                                         PlaceholderText="Width"
-                                        TextChanged="SizeTextBox_TextChanged" />
+                                        TextChanged="SizeTextBox_TextChanged"
+                                        ToolTip="Enter the new width" />
                                 </StackPanel>
 
                                 <!--  Aspect Ratio Lock  -->
@@ -804,7 +854,8 @@
                                     <wpfui:TextBox
                                         x:Name="HeightTextBox"
                                         PlaceholderText="Height"
-                                        TextChanged="SizeTextBox_TextChanged" />
+                                        TextChanged="SizeTextBox_TextChanged"
+                                        ToolTip="Enter the new height" />
                                 </StackPanel>
                             </StackPanel>
                         </StackPanel>
@@ -818,7 +869,8 @@
                         Appearance="Primary"
                         Click="ApplyResizeButton_Click"
                         Content="Apply Resize"
-                        Foreground="White">
+                        Foreground="White"
+                        ToolTip="Apply resizing with the specified values">
                         <wpfui:Button.Icon>
                             <wpfui:SymbolIcon RenderTransformOrigin="0.5, 0.5" Symbol="Resize24">
                                 <wpfui:SymbolIcon.RenderTransform>
@@ -832,7 +884,8 @@
                         Width="180"
                         Appearance="Danger"
                         Click="CancelResizeButton_Click"
-                        Content="Cancel">
+                        Content="Cancel"
+                        ToolTip="Cancel resizing">
                         <wpfui:Button.Icon>
                             <wpfui:SymbolIcon Symbol="Dismiss24" />
                         </wpfui:Button.Icon>
@@ -889,7 +942,8 @@
             VerticalAlignment="Center"
             Foreground="#0066FF"
             IsIndeterminate="True"
-            Visibility="Collapsed" />
+            Visibility="Collapsed"
+            ToolTip="Processing..." />
 
         <ContentPresenter
             x:Name="Presenter"
@@ -901,7 +955,8 @@
                 <MenuItem
                     x:Name="ResetMenuItem"
                     Click="ResetMenuItem_Click"
-                    Header="Reset" />
+                    Header="Reset"
+                    ToolTip="Reset the workspace" />
             </ContextMenu>
         </Grid.ContextMenu>
     </Grid>

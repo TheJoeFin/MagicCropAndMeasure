@@ -12,7 +12,8 @@
             StrokeDashArray="4,2"
             StrokeThickness="2"
             Fill="#200066FF"
-            Opacity="0.4" />
+            Opacity="0.4"
+            ToolTip="Measured rectangle" />
         <Ellipse
             x:Name="TopLeftPoint"
             Width="12" Height="12"
@@ -22,7 +23,8 @@
             Opacity="0.8"
             Stroke="White"
             StrokeThickness="1"
-            Tag="0" />
+            Tag="0"
+            ToolTip="Drag to move top-left corner" />
         <Ellipse
             x:Name="BottomRightPoint"
             Width="12" Height="12"
@@ -32,16 +34,18 @@
             Opacity="0.8"
             Stroke="White"
             StrokeThickness="1"
-            Tag="1" />
+            Tag="1"
+            ToolTip="Drag to move bottom-right corner" />
         <Border
             x:Name="MeasurementText"
             Padding="5,2"
             Background="#7F000000"
-            CornerRadius="3">
+            CornerRadius="3"
+            ToolTip="Rectangle measurement options">
             <Border.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Click="CopyMeasurementMenuItem_Click" Header="Copy Measurement" />
-                    <MenuItem Click="RemoveMeasurementMenuItem_Click" Header="Remove Measurement" />
+                    <MenuItem Click="CopyMeasurementMenuItem_Click" Header="Copy Measurement" ToolTip="Copy the rectangle dimensions" />
+                    <MenuItem Click="RemoveMeasurementMenuItem_Click" Header="Remove Measurement" ToolTip="Delete this measurement" />
                 </ContextMenu>
             </Border.ContextMenu>
             <Button
@@ -49,7 +53,8 @@
                 Padding="0"
                 Background="Transparent"
                 BorderThickness="0"
-                Click="MeasurementButton_Click">
+                Click="MeasurementButton_Click"
+                ToolTip="Click to open options">
                 <TextBlock
                     x:Name="RectangleTextBlock"
                     FontWeight="Bold"

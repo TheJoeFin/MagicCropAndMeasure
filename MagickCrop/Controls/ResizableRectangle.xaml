@@ -34,6 +34,9 @@
             <Rectangle.Fill>
                 <SolidColorBrush Opacity="0.06" Color="Blue" />
             </Rectangle.Fill>
+            <Rectangle.ToolTip>
+                Drag to pan the crop rectangle
+            </Rectangle.ToolTip>
         </Rectangle>
 
         <Ellipse
@@ -43,7 +46,8 @@
             Cursor="SizeNWSE"
             Fill="Blue"
             MouseDown="element_MouseDown"
-            Tag="TopLeft" />
+            Tag="TopLeft"
+            ToolTip="Resize from top-left" />
         <Ellipse
             Margin="0,-5,-5,0"
             HorizontalAlignment="Right"
@@ -51,7 +55,8 @@
             Cursor="SizeNESW"
             Fill="Blue"
             MouseDown="element_MouseDown"
-            Tag="TopRight" />
+            Tag="TopRight"
+            ToolTip="Resize from top-right" />
         <Ellipse
             Margin="0,0,-5,-5"
             HorizontalAlignment="Right"
@@ -59,7 +64,8 @@
             Cursor="SizeNWSE"
             Fill="Blue"
             MouseDown="element_MouseDown"
-            Tag="BottomRight" />
+            Tag="BottomRight"
+            ToolTip="Resize from bottom-right" />
         <Ellipse
             Margin="-5,0,0,-5"
             HorizontalAlignment="Left"
@@ -67,7 +73,8 @@
             Cursor="SizeNESW"
             Fill="Blue"
             MouseDown="element_MouseDown"
-            Tag="BottomLeft" />
+            Tag="BottomLeft"
+            ToolTip="Resize from bottom-left" />
 
         <Rectangle
             Width="20"
@@ -82,7 +89,8 @@
             RadiusY="4"
             Stroke="White"
             StrokeThickness=".6"
-            Tag="Top" />
+            Tag="Top"
+            ToolTip="Resize from top edge" />
         <Rectangle
             Width="8"
             Height="20"
@@ -96,7 +104,8 @@
             RadiusY="4"
             Stroke="White"
             StrokeThickness=".6"
-            Tag="Right" />
+            Tag="Right"
+            ToolTip="Resize from right edge" />
         <Rectangle
             Width="20"
             Height="8"
@@ -110,7 +119,8 @@
             RadiusY="4"
             Stroke="White"
             StrokeThickness=".6"
-            Tag="Bottom" />
+            Tag="Bottom"
+            ToolTip="Resize from bottom edge" />
         <Rectangle
             Width="8"
             Height="20"
@@ -124,6 +134,7 @@
             RadiusY="4"
             Stroke="White"
             StrokeThickness=".6"
-            Tag="Left" />
+            Tag="Left"
+            ToolTip="Resize from left edge" />
     </Grid>
 </UserControl>
