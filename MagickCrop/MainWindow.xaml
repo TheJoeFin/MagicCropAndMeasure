@@ -31,7 +31,10 @@
             <Setter Property="Opacity" Value="0.8" />
             <Setter Property="StrokeThickness" Value="1" />
         </Style>
-
+        <Style x:Key="SmallToggleButton" TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="MinWidth" Value="100" />
+        </Style>
         <!--  Add a style for narrow Tab Headers  -->
         <Style
             x:Key="NarrowTabHeaderStyle"
@@ -152,6 +155,20 @@
 
                 <local:ResizableRectangle x:Name="CroppingRectangle" Visibility="Collapsed" />
             </Canvas>
+            <!-- Rotation angle overlay label -->
+            <TextBlock
+                x:Name="RotationOverlayLabel"
+                Text="0°"
+                Visibility="Collapsed"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Margin="60,10,0,0"
+                Padding="4,2"
+                Background="#66000000"
+                Foreground="White"
+                FontWeight="SemiBold"
+                FontSize="14"
+                IsHitTestVisible="False" />
         </Grid>
 
         <c:WelcomeMessage
@@ -262,6 +279,81 @@
                                             <wpfui:SymbolIcon Symbol="RotateLeft24" />
                                         </MenuItem.Icon>
                                     </MenuItem>
+                                    <MenuItem
+                                        Name="PreciseRotateMenuItem"
+                                        Click="PreciseRotateMenuItem_Click"
+                                        Header="Rotate (Precise)"
+                                        ToolTip="Rotate image by arbitrary angle">
+                                        <MenuItem.Icon>
+                                            <wpfui:SymbolIcon Symbol="ArrowRotateClockwise24" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <StackPanel x:Name="RotateControlsPanel" Margin="0,4,0,8" Visibility="Collapsed">
+                                        <Border Padding="8" BorderBrush="#2A2A2A" BorderThickness="1" CornerRadius="4">
+                                            <StackPanel>
+                                                <TextBlock Margin="0,0,0,6" FontWeight="SemiBold" Text="Rotation" />
+                                                <Grid Margin="0,0,0,4">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="60" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Slider
+                                                        x:Name="RotateAngleSlider"
+                                                        Margin="0,0,8,0"
+                                                        Minimum="-180"
+                                                        Maximum="180"
+                                                        SmallChange="0.1"
+                                                        LargeChange="5"
+                                                        TickFrequency="15"
+                                                        IsSnapToTickEnabled="False"
+                                                        ValueChanged="RotateAngleSlider_ValueChanged" />
+                                                    <wpfui:NumberBox
+                                                        x:Name="RotateAngleNumberBox"
+                                                        Grid.Column="1"
+                                                        Minimum="-180"
+                                                        Maximum="180"
+                                                        SmallChange="0.1"
+                                                        HorizontalContentAlignment="Center"
+                                                        ValueChanged="RotateAngleNumberBox_ValueChanged"
+                                                        Value="0" />
+                                                </Grid>
+                                                <ToggleButton
+                                                    x:Name="FreeRotateToggle"
+                                                    Style="{StaticResource SmallToggleButton}"
+                                                    Margin="0,4,0,4"
+                                                    Checked="FreeRotateToggle_Checked"
+                                                    Unchecked="FreeRotateToggle_Unchecked"
+                                                    ToolTip="Click then drag on image to rotate freely">
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                        <wpfui:SymbolIcon Margin="0,0,6,0" Symbol="ArrowClockwise24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Free Rotate" />
+                                                    </StackPanel>
+                                                </ToggleButton>
+                                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0" HorizontalAlignment="Center">
+                                                    <wpfui:Button
+                                                        x:Name="ApplyRotationButton"
+                                                        Width="70"
+                                                        Margin="0,0,6,0"
+                                                        Appearance="Primary"
+                                                        Click="ApplyRotationButton_Click"
+                                                        Content="Apply"
+                                                        Foreground="White" />
+                                                    <wpfui:Button
+                                                        x:Name="ResetRotationButton"
+                                                        Width="70"
+                                                        Margin="0,0,6,0"
+                                                        Click="ResetRotationButton_Click"
+                                                        Content="Reset" />
+                                                    <wpfui:Button
+                                                        x:Name="CancelRotationButton"
+                                                        Width="70"
+                                                        Appearance="Danger"
+                                                        Click="CancelRotationButton_Click"
+                                                        Content="Cancel" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
                                     <MenuItem
                                         Name="FlipHozMenuItem"
                                         Click="FlipHozMenuItem_Click"
