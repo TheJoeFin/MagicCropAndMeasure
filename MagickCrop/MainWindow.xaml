@@ -12,14 +12,11 @@
     Width="1000"
     Height="800"
     AllowDrop="True"
-    AllowsTransparency="True"
     DataContext="{Binding RelativeSource={RelativeSource Self}}"
-    ExtendsContentIntoTitleBar="True"
     MouseMove="TopLeft_MouseMove"
     PreviewDragOver="FluentWindow_PreviewDragOver"
     PreviewDrop="FluentWindow_PreviewDrop"
     PreviewKeyDown="FluentWindow_PreviewKeyDown"
-    WindowStyle="None"
     mc:Ignorable="d">
     <Window.Resources>
         <Style TargetType="Ellipse">
@@ -31,7 +28,10 @@
             <Setter Property="Opacity" Value="0.8" />
             <Setter Property="StrokeThickness" Value="1" />
         </Style>
-        <Style x:Key="SmallToggleButton" TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
+        <Style
+            x:Key="SmallToggleButton"
+            BasedOn="{StaticResource {x:Type ToggleButton}}"
+            TargetType="ToggleButton">
             <Setter Property="Padding" Value="6,4" />
             <Setter Property="MinWidth" Value="100" />
         </Style>
@@ -155,20 +155,20 @@
 
                 <local:ResizableRectangle x:Name="CroppingRectangle" Visibility="Collapsed" />
             </Canvas>
-            <!-- Rotation angle overlay label -->
+            <!--  Rotation angle overlay label  -->
             <TextBlock
                 x:Name="RotationOverlayLabel"
-                Text="0°"
-                Visibility="Collapsed"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Top"
                 Margin="60,10,0,0"
                 Padding="4,2"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
                 Background="#66000000"
-                Foreground="White"
-                FontWeight="SemiBold"
                 FontSize="14"
-                IsHitTestVisible="False" />
+                FontWeight="SemiBold"
+                Foreground="White"
+                IsHitTestVisible="False"
+                Text="0°"
+                Visibility="Collapsed" />
         </Grid>
 
         <c:WelcomeMessage
@@ -231,11 +231,11 @@
                                 x:Name="UndoMenuItem"
                                 Click="UndoMenuItem_Click"
                                 Header="Undo"
-                                ToolTip="Undo last action"
                                 IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor,
                                                                                    AncestorType={x:Type wpfui:FluentWindow}},
                                                     Path=undoRedo.CanUndo,
-                                                    Mode=OneWay}">
+                                                    Mode=OneWay}"
+                                ToolTip="Undo last action">
                                 <MenuItem.Icon>
                                     <wpfui:SymbolIcon Symbol="ArrowUndo24" />
                                 </MenuItem.Icon>
@@ -244,11 +244,11 @@
                                 x:Name="RedoMenuItem"
                                 Click="RedoMenuItem_Click"
                                 Header=""
-                                ToolTip="Redo last undone action"
                                 IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor,
                                                                                    AncestorType={x:Type wpfui:FluentWindow}},
                                                     Path=undoRedo.CanRedo,
-                                                    Mode=OneWay}">
+                                                    Mode=OneWay}"
+                                ToolTip="Redo last undone action">
                                 <MenuItem.Icon>
                                     <wpfui:SymbolIcon Symbol="ArrowRedo24" />
                                 </MenuItem.Icon>
@@ -288,10 +288,20 @@
                                             <wpfui:SymbolIcon Symbol="ArrowRotateClockwise24" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-                                    <StackPanel x:Name="RotateControlsPanel" Margin="0,4,0,8" Visibility="Collapsed">
-                                        <Border Padding="8" BorderBrush="#2A2A2A" BorderThickness="1" CornerRadius="4">
+                                    <StackPanel
+                                        x:Name="RotateControlsPanel"
+                                        Margin="0,4,0,8"
+                                        Visibility="Collapsed">
+                                        <Border
+                                            Padding="8"
+                                            BorderBrush="#2A2A2A"
+                                            BorderThickness="1"
+                                            CornerRadius="4">
                                             <StackPanel>
-                                                <TextBlock Margin="0,0,0,6" FontWeight="SemiBold" Text="Rotation" />
+                                                <TextBlock
+                                                    Margin="0,0,0,6"
+                                                    FontWeight="SemiBold"
+                                                    Text="Rotation" />
                                                 <Grid Margin="0,0,0,4">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*" />
@@ -300,39 +310,42 @@
                                                     <Slider
                                                         x:Name="RotateAngleSlider"
                                                         Margin="0,0,8,0"
-                                                        Minimum="-180"
-                                                        Maximum="180"
-                                                        SmallChange="0.1"
-                                                        LargeChange="5"
-                                                        TickFrequency="15"
                                                         IsSnapToTickEnabled="False"
+                                                        LargeChange="5"
+                                                        Maximum="180"
+                                                        Minimum="-180"
+                                                        SmallChange="0.1"
+                                                        TickFrequency="15"
                                                         ValueChanged="RotateAngleSlider_ValueChanged" />
                                                     <wpfui:NumberBox
                                                         x:Name="RotateAngleNumberBox"
                                                         Grid.Column="1"
-                                                        Minimum="-180"
-                                                        Maximum="180"
-                                                        SmallChange="0.1"
                                                         HorizontalContentAlignment="Center"
+                                                        Maximum="180"
+                                                        Minimum="-180"
+                                                        SmallChange="0.1"
                                                         ValueChanged="RotateAngleNumberBox_ValueChanged"
                                                         Value="0" />
                                                 </Grid>
                                                 <ToggleButton
                                                     x:Name="FreeRotateToggle"
-                                                    Style="{StaticResource SmallToggleButton}"
                                                     Margin="0,4,0,4"
                                                     Checked="FreeRotateToggle_Checked"
-                                                    Unchecked="FreeRotateToggle_Unchecked"
-                                                    ToolTip="Click then drag on image to rotate freely">
-                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                    Style="{StaticResource SmallToggleButton}"
+                                                    ToolTip="Click then drag on image to rotate freely"
+                                                    Unchecked="FreeRotateToggle_Unchecked">
+                                                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,6,0" Symbol="ArrowClockwise24" />
                                                         <TextBlock VerticalAlignment="Center" Text="Free Rotate" />
                                                     </StackPanel>
                                                 </ToggleButton>
-                                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0" HorizontalAlignment="Center">
+                                                <StackPanel
+                                                    Margin="0,4,0,0"
+                                                    HorizontalAlignment="Left"
+                                                    Orientation="Vertical">
                                                     <wpfui:Button
                                                         x:Name="ApplyRotationButton"
-                                                        Width="70"
+                                                        Width="150"
                                                         Margin="0,0,6,0"
                                                         Appearance="Primary"
                                                         Click="ApplyRotationButton_Click"
@@ -340,13 +353,13 @@
                                                         Foreground="White" />
                                                     <wpfui:Button
                                                         x:Name="ResetRotationButton"
-                                                        Width="70"
-                                                        Margin="0,0,6,0"
+                                                        Width="150"
+                                                        Margin="0,6,6,6"
                                                         Click="ResetRotationButton_Click"
                                                         Content="Reset" />
                                                     <wpfui:Button
                                                         x:Name="CancelRotationButton"
-                                                        Width="70"
+                                                        Width="150"
                                                         Appearance="Danger"
                                                         Click="CancelRotationButton_Click"
                                                         Content="Cancel" />
@@ -618,8 +631,8 @@
                                                 Margin="0,4"
                                                 Checked="DrawingLinesRadio_Checked"
                                                 Click="ToolSelector_Clicked"
-                                                Unchecked="DrawingLinesRadio_Unchecked"
-                                                ToolTip="Draw freehand lines on the image">
+                                                ToolTip="Draw freehand lines on the image"
+                                                Unchecked="DrawingLinesRadio_Unchecked">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Pen24" />
@@ -657,8 +670,8 @@
                                             AcceptsReturn="False"
                                             AcceptsTab="False"
                                             Text="Pixels"
-                                            ToolTip="Units label displayed with measurements"
-                                            TextChanged="MeasurementUnits_TextChanged" />
+                                            TextChanged="MeasurementUnits_TextChanged"
+                                            ToolTip="Units label displayed with measurements" />
 
                                         <StackPanel x:Name="DrawingOptionsPanel" Visibility="Collapsed">
                                             <Label Margin="0,8,0,0" Content="Stroke Thickness:" />
@@ -1034,8 +1047,8 @@
             VerticalAlignment="Center"
             Foreground="#0066FF"
             IsIndeterminate="True"
-            Visibility="Collapsed"
-            ToolTip="Processing..." />
+            ToolTip="Processing..."
+            Visibility="Collapsed" />
 
         <ContentPresenter
             x:Name="Presenter"

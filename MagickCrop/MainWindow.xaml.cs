@@ -128,6 +128,9 @@ public partial class MainWindow : FluentWindow
         ApplicationAccentColorManager.Apply(teal);
 
         InitializeComponent();
+        // Ensure zoom still works if mouse wheel fires at window level (after a pan or when mouse over other element)
+        PreviewMouseWheel += ShapeCanvas_PreviewMouseWheel;
+
         DrawPolyLine();
         _polygonElements = [lines, TopLeft, TopRight, BottomRight, BottomLeft];
 
@@ -153,7 +156,14 @@ public partial class MainWindow : FluentWindow
         UpdateOpenedFileNameText();
 
         ShapeCanvas.MouseUp += ShapeCanvas_MouseUp;
+        ShapeCanvas.LostMouseCapture += ShapeCanvas_LostMouseCapture; // safety to ensure capture released
         rotationOverlayLabel = FindName("RotationOverlayLabel") as WpfTextBlock; // cache
+    }
+
+    private void ShapeCanvas_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (draggingMode == DraggingMode.Panning)
+            draggingMode = DraggingMode.None;
     }
 
     private void DrawPolyLine()
@@ -220,20 +230,12 @@ public partial class MainWindow : FluentWindow
             Point mousePos = e.GetPosition(ShapeCanvas);
             if (anglePlacementStep == AnglePlacementStep.DraggingFirstLeg)
             {
-                // During first leg dragging: 
-                // - Point1 should be placed at initial click
-                // - Vertex follows the mouse
-                // - Point3 stays at vertex position for now
                 activeAnglePlacementControl.MovePoint(1, mousePos); // Move point1 to follow mouse
                 e.Handled = true;
                 return;
             }
             else if (anglePlacementStep == AnglePlacementStep.PlacingThirdPoint)
             {
-                // During third point placement:
-                // - Point1 is already fixed
-                // - Vertex is already fixed
-                // - Point3 follows the mouse
                 activeAnglePlacementControl.MovePoint(2, mousePos);
                 e.Handled = true;
                 return;
@@ -268,13 +270,15 @@ public partial class MainWindow : FluentWindow
         if (Mouse.MiddleButton == MouseButtonState.Released && Mouse.LeftButton == MouseButtonState.Released)
         {
             if (draggingMode == DraggingMode.Panning)
-                // Remove cursor setting - will be handled by XAML
+            {
+                // panning release handled in MouseUp, nothing else here
+            }
 
-                if (draggingMode == DraggingMode.MeasureDistance && activeMeasureControl is not null)
-                {
-                    activeMeasureControl.ResetActivePoint();
-                    activeMeasureControl = null;
-                }
+            if (draggingMode == DraggingMode.MeasureDistance && activeMeasureControl is not null)
+            {
+                activeMeasureControl.ResetActivePoint();
+                activeMeasureControl = null;
+            }
 
             if (draggingMode == DraggingMode.MeasureAngle && activeAngleMeasureControl is not null)
             {
@@ -791,12 +795,12 @@ public partial class MainWindow : FluentWindow
         }
         catch (Exception ex)
         {
+            WelcomeMessageModal.Visibility = Visibility.Visible;
             Wpf.Ui.Controls.MessageBox uiMessageBox = new()
             {
                 Title = "Error",
                 Content = $"Error pasting image: {ex.Message}",
             };
-            await uiMessageBox.ShowDialogAsync();
         }
         finally
         {
@@ -829,24 +833,24 @@ public partial class MainWindow : FluentWindow
         ReOpenFileText.Text = "Overlay Mode";
     }
 
-    protected override void OnExtendsContentIntoTitleBarChanged(bool oldValue, bool newValue)
-    {
-        SetCurrentValue(WindowStyleProperty, WindowStyle); // CHANGE THIS
+    //protected override void OnExtendsContentIntoTitleBarChanged(bool oldValue, bool newValue)
+    //{
+    //    SetCurrentValue(WindowStyleProperty, WindowStyle);
 
-        WindowChrome.SetWindowChrome(
-            this,
-            new WindowChrome
-            {
-                CaptionHeight = 0,
-                CornerRadius = default,
-                GlassFrameThickness = new Thickness(-1),
-                ResizeBorderThickness = ResizeMode == ResizeMode.NoResize ? default : new Thickness(4),
-                UseAeroCaptionButtons = false,
-            }
-        );
+    //    WindowChrome.SetWindowChrome(
+    //        this,
+    //        new WindowChrome
+    //        {
+    //            CaptionHeight = 0,
+    //            CornerRadius = default,
+    //            GlassFrameThickness = new Thickness(-1),
+    //            ResizeBorderThickness = ResizeMode == ResizeMode.NoResize ? default : new Thickness(4),
+    //            UseAeroCaptionButtons = false,
+    //        }
+    //    );
 
-        _ = UnsafeNativeMethods.RemoveWindowTitlebarContents(this);
-    }
+    //    _ = UnsafeNativeMethods.RemoveWindowTitlebarContents(this);
+    //}
 
     private async Task OpenImagePath(string imageFilePath)
     {
@@ -941,7 +945,7 @@ public partial class MainWindow : FluentWindow
 
     private void ShapeCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"ShapeCanvas_MouseDown: Button={e.ChangedButton}, isCreatingMeasurement={isCreatingMeasurement}, isPlacingPolygon={isPlacingPolygonMeasurement}, ToolSelected={IsAnyToolSelected()}");
+        Debug.WriteLine($"ShapeCanvas_MouseDown: Button={e.ChangedButton}, isCreatingMeasurement={isCreatingMeasurement}, isPlacingPolygon={isPlacingPolygonMeasurement}, ToolSelected={IsAnyToolSelected()}");
 
         // If in rotate mode with free rotate enabled and click on image start exclusive rotation drag
         if (isRotateMode && FreeRotateToggle != null && FreeRotateToggle.IsChecked == true && e.LeftButton == MouseButtonState.Pressed)
@@ -959,10 +963,20 @@ public partial class MainWindow : FluentWindow
             }
         }
 
+        // Middle mouse always initiates panning regardless of tool (quick navigation)
+        if (e.ChangedButton == MouseButton.Middle)
+        {
+            draggingMode = DraggingMode.Panning;
+            clickedPoint = e.GetPosition(this);
+            ShapeCanvas.CaptureMouse();
+            e.Handled = true;
+            return;
+        }
+
         // Check if we're in the measure tab and starting a measurement
         if (Mouse.LeftButton != MouseButtonState.Pressed)
         {
-            System.Diagnostics.Debug.WriteLine($"Left button not pressed, returning. Button state: {Mouse.LeftButton}");
+            Debug.WriteLine($"Left button not pressed, returning. Button state: {Mouse.LeftButton}");
             return;
         }
 
@@ -1052,12 +1066,12 @@ public partial class MainWindow : FluentWindow
         }
         else if (PolygonMeasureToggle.IsChecked is true)
         {
-            System.Diagnostics.Debug.WriteLine($"Polygon tool clicked at: ({clickedPoint.X:F1}, {clickedPoint.Y:F1})");
+            Debug.WriteLine($"Polygon tool clicked at: ({clickedPoint.X:F1}, {clickedPoint.Y:F1})");
 
             if (!isPlacingPolygonMeasurement)
             {
                 // Start new polygon
-                System.Diagnostics.Debug.WriteLine("Starting new polygon");
+                Debug.WriteLine("Starting new polygon");
                 isPlacingPolygonMeasurement = true;
                 isCreatingMeasurement = true; // This prevents panning interference
                 activePolygonPlacementControl = new PolygonMeasurementControl
@@ -1071,21 +1085,21 @@ public partial class MainWindow : FluentWindow
 
             if (activePolygonPlacementControl != null)
             {
-                System.Diagnostics.Debug.WriteLine($"Adding vertex to existing polygon. Current count: {activePolygonPlacementControl.VertexCount}");
+                Debug.WriteLine($"Adding vertex to existing polygon. Current count: {activePolygonPlacementControl.VertexCount}");
                 activePolygonPlacementControl.AddVertex(clickedPoint);
 
                 // If polygon was closed, finalize it
                 if (activePolygonPlacementControl.IsClosed)
                 {
-                    System.Diagnostics.Debug.WriteLine("Polygon closed, finalizing");
+                    Debug.WriteLine("Polygon closed, finalizing");
                     polygonMeasurementTools.Add(activePolygonPlacementControl);
-                    System.Diagnostics.Debug.WriteLine($"Added polygon to collection. Total polygons: {polygonMeasurementTools.Count}");
+                    Debug.WriteLine($"Added polygon to collection. Total polygons: {polygonMeasurementTools.Count}");
                     activePolygonPlacementControl.MeasurementPointMouseDown += PolygonMeasurementPoint_MouseDown;
                     activePolygonPlacementControl.RemoveControlRequested += PolygonMeasurementControl_RemoveControlRequested;
                     isPlacingPolygonMeasurement = false;
                     isCreatingMeasurement = false; // Reset this when polygon is complete
                     activePolygonPlacementControl = null;
-                    System.Diagnostics.Debug.WriteLine("Polygon finalization complete");
+                    Debug.WriteLine("Polygon finalization complete");
                 }
             }
             e.Handled = true;
@@ -1130,20 +1144,34 @@ public partial class MainWindow : FluentWindow
         {
             AddVerticalLineAtPosition(clickedPoint.X);
         }
+        else
+        {
+            // No tools active -> begin panning
+            if (!IsAnyToolSelected() && !isRotateMode)
+            {
+                draggingMode = DraggingMode.Panning;
+                clickedPoint = e.GetPosition(this);
+                ShapeCanvas.CaptureMouse();
+                e.Handled = true;
+            }
+        }
     }
 
     private void ShapeCanvas_MouseUp(object sender, MouseButtonEventArgs e)
     {
+        // If we were panning, release immediately so wheel events work even without a post-release move
+        if (draggingMode == DraggingMode.Panning)
+        {
+            draggingMode = DraggingMode.None;
+            ShapeCanvas.ReleaseMouseCapture();
+            e.Handled = true;
+            return;
+        }
+
         // --- ANGLE MEASUREMENT PLACEMENT LOGIC ---
         if (isPlacingAngleMeasurement && anglePlacementStep == AnglePlacementStep.DraggingFirstLeg && activeAnglePlacementControl != null)
         {
-            // On mouse up after dragging, we want to finalize the position of the first arm (point1)
-            // The vertex should stay at the original clicked position
-            // Note: We don't move point1 here - it's already been moved during MouseMove
-
-            // Now move to step 2: track mouse for third point
             anglePlacementStep = AnglePlacementStep.PlacingThirdPoint;
-            // Release mouse capture so we can track movement for the third point
             ShapeCanvas.ReleaseMouseCapture();
             e.Handled = true;
             return;
@@ -1152,21 +1180,13 @@ public partial class MainWindow : FluentWindow
         if (isCreatingMeasurement && draggingMode == DraggingMode.CreatingMeasurement)
         {
             Point endPoint = e.GetPosition(ShapeCanvas);
-
-            // Only create a measurement if there was some actual dragging (to avoid accidental clicks)
-            if (Math.Abs(endPoint.X - clickedPoint.X) > 5 ||
-                Math.Abs(endPoint.Y - clickedPoint.Y) > 5)
+            if (Math.Abs(endPoint.X - clickedPoint.X) > 5 || Math.Abs(endPoint.Y - clickedPoint.Y) > 5)
             {
                 if (isPlacingRectangleMeasurement && activeRectanglePlacementControl != null)
                 {
-                    // Make sure the control has the latest scale and units
                     activeRectanglePlacementControl.ScaleFactor = ScaleInput.Value ?? 1.0;
                     activeRectanglePlacementControl.Units = MeasurementUnits.Text;
-
-                    // Finalize bottom-right point
                     activeRectanglePlacementControl.MovePoint(1, endPoint);
-
-                    // Add to the collection of rectangle measurements
                     rectangleMeasurementTools.Add(activeRectanglePlacementControl);
                     activeRectanglePlacementControl.MeasurementPointMouseDown += RectangleMeasurementPoint_MouseDown;
                     activeRectanglePlacementControl.RemoveControlRequested += RectangleMeasurementControl_RemoveControlRequested;
@@ -1175,14 +1195,9 @@ public partial class MainWindow : FluentWindow
                 }
                 else if (isPlacingCircleMeasurement && activeCirclePlacementControl != null)
                 {
-                    // Make sure the control has the latest scale and units
                     activeCirclePlacementControl.ScaleFactor = ScaleInput.Value ?? 1.0;
                     activeCirclePlacementControl.Units = MeasurementUnits.Text;
-
-                    // Finalize edge point
                     activeCirclePlacementControl.MovePoint(1, endPoint);
-
-                    // Add to the collection of circle measurements
                     circleMeasurementTools.Add(activeCirclePlacementControl);
                     activeCirclePlacementControl.MeasurementPointMouseDown += CircleMeasurementPoint_MouseDown;
                     activeCirclePlacementControl.RemoveControlRequested += CircleMeasurementControl_RemoveControlRequested;
@@ -1194,22 +1209,19 @@ public partial class MainWindow : FluentWindow
                     CreateMeasurementFromDrag(clickedPoint, endPoint);
                 }
             }
-            else if (isPlacingRectangleMeasurement && activeRectanglePlacementControl != null) // Click without drag
+            else if (isPlacingRectangleMeasurement && activeRectanglePlacementControl != null)
             {
-                // If it was a click without drag for rectangle, remove the temp control
                 ShapeCanvas.Children.Remove(activeRectanglePlacementControl);
                 activeRectanglePlacementControl = null;
                 isPlacingRectangleMeasurement = false;
             }
-            else if (isPlacingCircleMeasurement && activeCirclePlacementControl != null) // Click without drag
+            else if (isPlacingCircleMeasurement && activeCirclePlacementControl != null)
             {
-                // If it was a click without drag for circle, remove the temp control
                 ShapeCanvas.Children.Remove(activeCirclePlacementControl);
                 activeCirclePlacementControl = null;
                 isPlacingCircleMeasurement = false;
             }
 
-            // Reset state
             isCreatingMeasurement = false;
             draggingMode = DraggingMode.None;
             ShapeCanvas.ReleaseMouseCapture();
@@ -2390,7 +2402,7 @@ public partial class MainWindow : FluentWindow
         {
             package.Measurements.PolygonMeasurements.Add(control.ToDto());
         }
-        System.Diagnostics.Debug.WriteLine($"Saved {polygonMeasurementTools.Count} polygon measurements");
+        Debug.WriteLine($"Saved {polygonMeasurementTools.Count} polygon measurements");
 
         foreach (VerticalLineControl control in verticalLineControls)
             package.Measurements.VerticalLines.Add(control.ToDto());
@@ -2588,7 +2600,7 @@ public partial class MainWindow : FluentWindow
         }
 
         // Add polygon measurements
-        System.Diagnostics.Debug.WriteLine($"Loading {package.Measurements.PolygonMeasurements.Count} polygon measurements from package");
+        Debug.WriteLine($"Loading {package.Measurements.PolygonMeasurements.Count} polygon measurements from package");
         foreach (PolygonMeasurementControlDto dto in package.Measurements.PolygonMeasurements)
         {
             PolygonMeasurementControl control = new()
@@ -2602,13 +2614,8 @@ public partial class MainWindow : FluentWindow
             polygonMeasurementTools.Add(control);
             ShapeCanvas.Children.Add(control);
         }
-        System.Diagnostics.Debug.WriteLine($"Loaded polygon measurements. Total in collection: {polygonMeasurementTools.Count}");
+        Debug.WriteLine($"Loaded polygon measurements. Total in collection: {polygonMeasurementTools.Count}");
 
-        MagickImage image = new(package.ImagePath);
-        double aspectRatio = (double)image.Width / image.Height;
-        double imageHeight = ImageWidthConst / aspectRatio;
-
-        // Add vertical line controls
         foreach (VerticalLineControlDto dto in package.Measurements.VerticalLines)
         {
             VerticalLineControl control = new();
@@ -2616,12 +2623,8 @@ public partial class MainWindow : FluentWindow
             control.RemoveControlRequested += VerticalLineControl_RemoveControlRequested;
             verticalLineControls.Add(control);
             ShapeCanvas.Children.Add(control);
-
-            // Make sure the line spans the full height of the canvas
-            control.Resize(imageHeight);
         }
 
-        // Add horizontal line controls
         foreach (HorizontalLineControlDto dto in package.Measurements.HorizontalLines)
         {
             HorizontalLineControl control = new();
@@ -2629,9 +2632,6 @@ public partial class MainWindow : FluentWindow
             control.RemoveControlRequested += HorizontalLineControl_RemoveControlRequested;
             horizontalLineControls.Add(control);
             ShapeCanvas.Children.Add(control);
-
-            // Make sure the line spans the full width of the canvas
-            control.Resize(ImageWidthConst);
         }
 
         ClearAllStrokesAndLengths();
@@ -2758,7 +2758,7 @@ public partial class MainWindow : FluentWindow
 
             foreach (PolygonMeasurementControl control in polygonMeasurementTools)
                 package.Measurements.PolygonMeasurements.Add(control.ToDto());
-            System.Diagnostics.Debug.WriteLine($"AutoSave: Saved {polygonMeasurementTools.Count} polygon measurements");
+            Debug.WriteLine($"AutoSave: Saved {polygonMeasurementTools.Count} polygon measurements");
 
             recentProjectsManager.AutosaveProject(package, MainImage.Source as BitmapSource);
         }
@@ -3409,18 +3409,6 @@ public partial class MainWindow : FluentWindow
         }
     }
 
-    // Patch rotation start inside existing ShapeCanvas_MouseDown: add overlay display
-    private void RotationCaptureMouseDown(MouseButtonEventArgs e)
-    {
-        if (isRotateMode && FreeRotateToggle != null && FreeRotateToggle.IsChecked == true && e.LeftButton == MouseButtonState.Pressed)
-        {
-            freeRotateLastPoint = e.GetPosition(MainImage);
-            ShowRotationOverlay();
-            UpdateRotationOverlay();
-        }
-    }
-
-    // Add missing free-rotate drag handler (with snapping & fine control)
     private void HandleFreeRotateDrag(MouseEventArgs e)
     {
         if (!isRotateMode || FreeRotateToggle == null || FreeRotateToggle.IsChecked != true)
@@ -3461,10 +3449,7 @@ public partial class MainWindow : FluentWindow
             return;
         ToggleRotateMode(true);
     }
-
-    // --- existing code continues below ---
 }
-
 internal enum AnglePlacementStep
 {
     None,
