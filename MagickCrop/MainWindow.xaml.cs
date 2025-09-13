@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Ink;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -117,7 +118,15 @@ public partial class MainWindow : FluentWindow
     private bool isFreeRotatingDrag = false;
 
     // runtime reference to angle overlay
-    private WpfTextBlock? rotationOverlayLabel; 
+    private WpfTextBlock? rotationOverlayLabel;
+    private long lastRotateUpdateTicks = 0;
+    private double lastAppliedAdornerAngle = 0.0;
+    private const int RotateUpdateMinIntervalMs = 12; // throttle to reduce UI thrash
+    private const double RotateMinDelta = 0.1; // degrees
+
+    private RotateAdorner? rotateAdorner;
+    private AdornerLayer? rotateAdornerLayer;
+    private bool isAdornerRotatingDrag = false; // true while adorner has the mouse captured
 
     public MainWindow()
     {
@@ -196,6 +205,11 @@ public partial class MainWindow : FluentWindow
 
     private void TopLeft_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            e.Handled = true;
+            return;
+        }
         if (sender is not Ellipse ellipse || ellipse.Tag is not string intAsString)
             return;
 
@@ -208,6 +222,11 @@ public partial class MainWindow : FluentWindow
 
     private void TopLeft_MouseMove(object sender, MouseEventArgs e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            e.Handled = true;
+            return;
+        }
         if (isFreeRotatingDrag)
         {
             if (e.LeftButton == MouseButtonState.Pressed)
@@ -874,7 +893,7 @@ public partial class MainWindow : FluentWindow
         imagePath = tempFileName;
         openedFileName = System.IO.Path.GetFileNameWithoutExtension(imageFilePath);
         MainImage.Source = bitmapImage.ToBitmapSource();
-        
+
         // Update original size after image is loaded (will be the default ImageWidthConst height calculated from aspect ratio)
         originalImageSize = new Size(ImageGrid.Width, ImageGrid.Height);
 
@@ -945,10 +964,16 @@ public partial class MainWindow : FluentWindow
 
     private void ShapeCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            e.Handled = true;
+            return;
+        }
         Debug.WriteLine($"ShapeCanvas_MouseDown: Button={e.ChangedButton}, isCreatingMeasurement={isCreatingMeasurement}, isPlacingPolygon={isPlacingPolygonMeasurement}, ToolSelected={IsAnyToolSelected()}");
 
         // If in rotate mode with free rotate enabled and click on image start exclusive rotation drag
-        if (isRotateMode && FreeRotateToggle != null && FreeRotateToggle.IsChecked == true && e.LeftButton == MouseButtonState.Pressed)
+        // Only use legacy drag path when the RotateAdorner is not active
+        if (isRotateMode && FreeRotateToggle != null && FreeRotateToggle.IsChecked == true && rotateAdorner == null && e.LeftButton == MouseButtonState.Pressed)
         {
             Point p = e.GetPosition(MainImage);
             // ensure point lies within image bounds to avoid starting when clicking UI overlays
@@ -1286,7 +1311,9 @@ public partial class MainWindow : FluentWindow
         if (e.Data.GetDataPresent("Text"))
         {
             if (e.Data.GetData("Text") is string filePath && File.Exists(filePath))
+            {
                 await OpenImagePath(filePath);
+            }
             return;
         }
 
@@ -1728,6 +1755,11 @@ public partial class MainWindow : FluentWindow
 
     private void ImageResizeGrip_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            e.Handled = true;
+            return;
+        }
         if (Mouse.LeftButton == MouseButtonState.Pressed)
         {
             clickedPoint = e.GetPosition(ShapeCanvas);
@@ -1741,10 +1773,10 @@ public partial class MainWindow : FluentWindow
             return;
 
         MagickImage magickImage = new(imagePath);
-        
+
         // Get target dimensions from user input
         int targetWidth, targetHeight;
-        
+
         if (isPixelMode)
         {
             targetWidth = int.Parse(WidthTextBox.Text);
@@ -2206,6 +2238,11 @@ public partial class MainWindow : FluentWindow
 
     private void MeasurementPoint_MouseDown(object sender, MouseButtonEventArgs? e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            if (e is not null) e.Handled = true;
+            return;
+        }
         if (sender is Ellipse senderEllipse
             && senderEllipse.Parent is Canvas measureCanvas
             && measureCanvas.Parent is DistanceMeasurementControl measureControl
@@ -2222,6 +2259,11 @@ public partial class MainWindow : FluentWindow
 
     private void AngleMeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            e.Handled = true;
+            return;
+        }
         if (sender is Ellipse senderEllipse
             && senderEllipse.Parent is Canvas measureCanvas
             && measureCanvas.Parent is AngleMeasurementControl measureControl
@@ -2237,6 +2279,11 @@ public partial class MainWindow : FluentWindow
 
     private void RectangleMeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            e.Handled = true;
+            return;
+        }
         if (sender is System.Windows.Shapes.Ellipse senderEllipse &&
             senderEllipse.Parent is Canvas measureCanvas &&
             measureCanvas.Parent is RectangleMeasurementControl measureControl)
@@ -2250,6 +2297,11 @@ public partial class MainWindow : FluentWindow
 
     private void PolygonMeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            e.Handled = true;
+            return;
+        }
         if (sender is System.Windows.Shapes.Ellipse senderEllipse &&
             senderEllipse.Parent is Canvas measureCanvas &&
             measureCanvas.Parent is PolygonMeasurementControl measureControl)
@@ -2263,6 +2315,11 @@ public partial class MainWindow : FluentWindow
 
     private void CircleMeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            e.Handled = true;
+            return;
+        }
         if (sender is System.Windows.Shapes.Ellipse senderEllipse &&
             senderEllipse.Parent is Canvas measureCanvas &&
             measureCanvas.Parent is CircleMeasurementControl measureControl)
@@ -2531,7 +2588,7 @@ public partial class MainWindow : FluentWindow
                 ImageGrid.Width = originalImageSize.Width;
                 ImageGrid.Height = originalImageSize.Height;
             }
-            
+
             // Apply the saved resize to the ImageGrid
             ImageGrid.Width = package.Metadata.CurrentImageSize.Width;
             ImageGrid.Height = package.Metadata.CurrentImageSize.Height;
@@ -3246,6 +3303,24 @@ public partial class MainWindow : FluentWindow
             EnsurePreviewRotateTransform();
             ApplyPreviewRotation();
             UpdateRotationOverlay();
+            // If user had Free Rotate checked, ensure adorner is present
+            try
+            {
+                if (FreeRotateToggle != null && FreeRotateToggle.IsChecked == true)
+                {
+                    if (rotateAdornerLayer == null)
+                        rotateAdornerLayer = AdornerLayer.GetAdornerLayer(ImageGrid);
+                    if (rotateAdornerLayer != null && rotateAdorner == null)
+                    {
+                        rotateAdorner = new Controls.RotateAdorner(ImageGrid);
+                        rotateAdorner.Angle = currentPreviewRotation;
+                        rotateAdorner.AngleChanging += RotateAdorner_AngleChanging;
+                        rotateAdorner.AngleChangedFinal += RotateAdorner_AngleChangedFinal;
+                        rotateAdornerLayer.Add(rotateAdorner);
+                    }
+                }
+            }
+            catch { /* ignore if controls not yet available */ }
         }
         else
         {
@@ -3255,6 +3330,10 @@ public partial class MainWindow : FluentWindow
             currentPreviewRotation = 0;
             UpdateRotationUiValues(0);
             HideRotationOverlay();
+            // Ensure adorner is removed and toggle unchecked
+            RemoveRotateAdorner();
+            try { if (FreeRotateToggle != null) FreeRotateToggle.IsChecked = false; } catch { }
+            isFreeRotatingDrag = false;
         }
     }
 
@@ -3318,6 +3397,9 @@ public partial class MainWindow : FluentWindow
         RotateAngleSlider.Value = angle;
         RotateAngleNumberBox.Value = angle;
         suppressRotateEvents = false;
+        // Keep adorner handle in sync with current angle when not actively dragging via adorner
+        if (!isAdornerRotatingDrag && rotateAdorner != null)
+            rotateAdorner.SetAngle(angle);
     }
 
     private void RotateAngleSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -3327,6 +3409,8 @@ public partial class MainWindow : FluentWindow
         currentPreviewRotation = e.NewValue;
         UpdateRotationUiValues(currentPreviewRotation); // keep number box in sync
         ApplyPreviewRotation();
+        if (!isAdornerRotatingDrag && rotateAdorner != null)
+            rotateAdorner.SetAngle(currentPreviewRotation);
     }
 
     private void RotateAngleNumberBox_ValueChanged(object sender, RoutedEventArgs e)
@@ -3338,18 +3422,89 @@ public partial class MainWindow : FluentWindow
             currentPreviewRotation = val;
             UpdateRotationUiValues(currentPreviewRotation); // keep slider in sync
             ApplyPreviewRotation();
+            if (!isAdornerRotatingDrag && rotateAdorner != null)
+                rotateAdorner.SetAngle(currentPreviewRotation);
         }
     }
 
     private void FreeRotateToggle_Checked(object sender, RoutedEventArgs e)
     {
         if (!isRotateMode)
+        {
             FreeRotateToggle.IsChecked = false;
+            return;
+        }
+
+        // Add RotateAdorner to MainImage
+        if (rotateAdornerLayer == null)
+            rotateAdornerLayer = AdornerLayer.GetAdornerLayer(ImageGrid);
+        if (rotateAdornerLayer != null && rotateAdorner == null)
+        {
+            rotateAdorner = new Controls.RotateAdorner(ImageGrid);
+            rotateAdorner.Angle = currentPreviewRotation;
+            rotateAdorner.AngleChanging += RotateAdorner_AngleChanging;
+            rotateAdorner.AngleChangedFinal += RotateAdorner_AngleChangedFinal;
+            rotateAdornerLayer.Add(rotateAdorner);
+        }
     }
 
     private void FreeRotateToggle_Unchecked(object sender, RoutedEventArgs e)
     {
-        // nothing special; drag disabled
+        RemoveRotateAdorner();
+    }
+
+    private void RotateAdorner_AngleChanging(object? sender, double angle)
+    {
+        if (!isAdornerRotatingDrag)
+        {
+            isAdornerRotatingDrag = true;
+            // Ensure no other element holds mouse capture to avoid contention
+            if (Mouse.Captured != rotateAdorner)
+            {
+                try { Mouse.Captured?.ReleaseMouseCapture(); } catch { }
+            }
+            try { if (ShapeCanvas != null) ShapeCanvas.IsHitTestVisible = false; } catch { }
+        }
+        // Throttle to reduce jitter and UI thrash
+        long now = Environment.TickCount64;
+        if (now - lastRotateUpdateTicks < RotateUpdateMinIntervalMs && Math.Abs(angle - lastAppliedAdornerAngle) < RotateMinDelta)
+            return;
+
+        lastRotateUpdateTicks = now;
+        lastAppliedAdornerAngle = angle;
+
+        currentPreviewRotation = angle;
+        UpdateRotationUiValues(currentPreviewRotation);
+        ApplyPreviewRotation();
+        ShowRotationOverlay();
+        UpdateRotationOverlay();
+    }
+
+    private void RotateAdorner_AngleChangedFinal(object? sender, double angle)
+    {
+        // Finalize rotation preview
+        currentPreviewRotation = angle;
+        lastAppliedAdornerAngle = angle;
+        lastRotateUpdateTicks = Environment.TickCount64;
+        UpdateRotationUiValues(currentPreviewRotation);
+        ApplyPreviewRotation();
+        ShowRotationOverlay();
+        UpdateRotationOverlay();
+        isAdornerRotatingDrag = false;
+        try { if (ShapeCanvas != null) ShapeCanvas.IsHitTestVisible = true; } catch { }
+    }
+
+    private void RemoveRotateAdorner()
+    {
+        if (rotateAdornerLayer != null && rotateAdorner != null)
+        {
+            rotateAdorner.AngleChanging -= RotateAdorner_AngleChanging;
+            rotateAdorner.AngleChangedFinal -= RotateAdorner_AngleChangedFinal;
+            rotateAdornerLayer.Remove(rotateAdorner);
+            rotateAdorner = null;
+        }
+        isAdornerRotatingDrag = false;
+        try { if (ShapeCanvas != null) ShapeCanvas.IsHitTestVisible = true; } catch { }
     }
 
     private void ResetRotationButton_Click(object sender, RoutedEventArgs e)
