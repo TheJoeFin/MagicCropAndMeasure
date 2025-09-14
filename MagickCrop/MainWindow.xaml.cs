@@ -10,19 +10,16 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Ink;
 using System.Windows.Documents;
+using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using System.Windows.Shell;
 using Windows.ApplicationModel;
 using Wpf.Ui;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
-using Wpf.Ui.Interop;
-using System.Linq; // Added for LINQ operations
 using WpfTextBlock = System.Windows.Controls.TextBlock;
 
 namespace MagickCrop;
@@ -895,7 +892,7 @@ public partial class MainWindow : FluentWindow
         MainImage.Source = bitmapImage.ToBitmapSource();
 
         // Update original size after image is loaded (will be the default ImageWidthConst height calculated from aspect ratio)
-        originalImageSize = new Size(ImageGrid.Width, ImageGrid.Height);
+        originalImageSize = new Size(bitmapImage.Width, bitmapImage.Height);
 
         BottomBorder.Visibility = Visibility.Visible;
         SetUiForCompletedTask();
@@ -2425,7 +2422,7 @@ public partial class MainWindow : FluentWindow
             {
                 OriginalFilename = openedFileName,
                 OriginalImageSize = originalImageSize,
-                CurrentImageSize = new Size(ImageGrid.Width, ImageGrid.Height),
+                CurrentImageSize = new Size(ImageGrid.ActualWidth, ImageGrid.ActualHeight),
                 ImageStretch = MainImage.Stretch
             },
             Measurements = new MeasurementCollection
@@ -2776,7 +2773,7 @@ public partial class MainWindow : FluentWindow
                 ProjectId = currentProjectId,
                 LastModified = DateTime.Now,
                 OriginalImageSize = originalImageSize,
-                CurrentImageSize = new Size(ImageGrid.Width, ImageGrid.Height),
+                CurrentImageSize = new Size(ImageGrid.ActualWidth, ImageGrid.ActualHeight),
                 ImageStretch = MainImage.Stretch
             };
 
@@ -2785,7 +2782,7 @@ public partial class MainWindow : FluentWindow
                 packageMetadata = openedPackage.Metadata;
                 packageMetadata.LastModified = DateTime.Now;
                 packageMetadata.OriginalImageSize = originalImageSize;
-                packageMetadata.CurrentImageSize = new Size(ImageGrid.Width, ImageGrid.Height);
+                packageMetadata.CurrentImageSize = new Size(ImageGrid.ActualWidth, ImageGrid.ActualHeight);
                 packageMetadata.ImageStretch = MainImage.Stretch;
             }
 

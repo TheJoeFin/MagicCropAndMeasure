@@ -48,7 +48,8 @@ public class MagickCropMeasurementPackage
             {
                 // Save metadata
                 string metadataPath = Path.Combine(tempDir, MetadataFileName);
-                File.WriteAllText(metadataPath, JsonSerializer.Serialize(Metadata));
+                string jsonString = JsonSerializer.Serialize(Metadata);
+                File.WriteAllText(metadataPath, jsonString);
 
                 // Save measurements
                 string measurementsPath = Path.Combine(tempDir, MeasurementsFileName);
@@ -64,6 +65,13 @@ public class MagickCropMeasurementPackage
 
                 ZipFile.CreateFromDirectory(tempDir, packagePath);
                 return true;
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Error saving package: {ex.Message}");
+#if DEBUG
+                throw;
+#endif
             }
             finally
             {
