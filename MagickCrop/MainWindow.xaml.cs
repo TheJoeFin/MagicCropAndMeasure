@@ -3300,21 +3300,25 @@ public partial class MainWindow : FluentWindow
             EnsurePreviewRotateTransform();
             ApplyPreviewRotation();
             UpdateRotationOverlay();
+
             // If user had Free Rotate checked, ensure adorner is present
+            if (FreeRotateToggle == null || FreeRotateToggle.IsChecked != true)
+            {
+                return;
+            }
+            
             try
             {
-                if (FreeRotateToggle != null && FreeRotateToggle.IsChecked == true)
+                rotateAdornerLayer ??= AdornerLayer.GetAdornerLayer(ImageGrid);
+                if (rotateAdornerLayer != null && rotateAdorner == null)
                 {
-                    if (rotateAdornerLayer == null)
-                        rotateAdornerLayer = AdornerLayer.GetAdornerLayer(ImageGrid);
-                    if (rotateAdornerLayer != null && rotateAdorner == null)
+                    rotateAdorner = new RotateAdorner(ImageGrid)
                     {
-                        rotateAdorner = new Controls.RotateAdorner(ImageGrid);
-                        rotateAdorner.Angle = currentPreviewRotation;
-                        rotateAdorner.AngleChanging += RotateAdorner_AngleChanging;
-                        rotateAdorner.AngleChangedFinal += RotateAdorner_AngleChangedFinal;
-                        rotateAdornerLayer.Add(rotateAdorner);
-                    }
+                        Angle = currentPreviewRotation
+                    };
+                    rotateAdorner.AngleChanging += RotateAdorner_AngleChanging;
+                    rotateAdorner.AngleChangedFinal += RotateAdorner_AngleChangedFinal;
+                    rotateAdornerLayer.Add(rotateAdorner);
                 }
             }
             catch { /* ignore if controls not yet available */ }
@@ -3351,7 +3355,7 @@ public partial class MainWindow : FluentWindow
         else if (current == null || current == Transform.Identity)
         {
             previewRotateTransform = new RotateTransform(0);
-            MainImage.RenderTransform = new TransformGroup { Children = new TransformCollection { previewRotateTransform } };
+            MainImage.RenderTransform = new TransformGroup { Children = [previewRotateTransform] };
         }
         else
         {
@@ -3433,12 +3437,13 @@ public partial class MainWindow : FluentWindow
         }
 
         // Add RotateAdorner to MainImage
-        if (rotateAdornerLayer == null)
-            rotateAdornerLayer = AdornerLayer.GetAdornerLayer(ImageGrid);
+        rotateAdornerLayer ??= AdornerLayer.GetAdornerLayer(ImageGrid);
         if (rotateAdornerLayer != null && rotateAdorner == null)
         {
-            rotateAdorner = new Controls.RotateAdorner(ImageGrid);
-            rotateAdorner.Angle = currentPreviewRotation;
+            rotateAdorner = new RotateAdorner(ImageGrid)
+            {
+                Angle = currentPreviewRotation
+            };
             rotateAdorner.AngleChanging += RotateAdorner_AngleChanging;
             rotateAdorner.AngleChangedFinal += RotateAdorner_AngleChangedFinal;
             rotateAdornerLayer.Add(rotateAdorner);
@@ -3496,7 +3501,7 @@ public partial class MainWindow : FluentWindow
         if (rotateAdornerLayer != null && rotateAdorner != null)
         {
             rotateAdorner.AngleChanging -= RotateAdorner_AngleChanging;
-            rotateAdorner.AngleChangedFinal -= RotateAdorner_AngleChangedFinal;
+            rotateAdorner.AngleChangedFinal -= RotateAdorner_AngleChangedFinal;            
             rotateAdornerLayer.Remove(rotateAdorner);
             rotateAdorner = null;
         }
