@@ -747,6 +747,7 @@ public partial class MainWindow : FluentWindow
         if (openFileDialog.ShowDialog() != true)
         {
             SetUiForCompletedTask();
+            WelcomeMessageModal.Visibility = Visibility.Visible;
             return;
         }
 

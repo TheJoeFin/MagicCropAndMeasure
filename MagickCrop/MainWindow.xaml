@@ -101,15 +101,13 @@
                     <Image
                         x:Name="MainImage"
                         MouseDown="ShapeCanvas_MouseDown"
-                        Stretch="Uniform"
-                        ToolTip="Image preview. Click and drag to pan when no tool is active." />
+                        Stretch="Uniform" />
                     <InkCanvas
                         x:Name="DrawingCanvas"
                         Background="Transparent"
                         IsEnabled="False"
                         IsHitTestVisible="False"
-                        StrokeCollected="DrawingCanvas_StrokeCollected"
-                        ToolTip="Ink drawing layer" />
+                        StrokeCollected="DrawingCanvas_StrokeCollected" />
                     <ResizeGrip
                         x:Name="ImageResizeGrip"
                         Grid.Row="1"
