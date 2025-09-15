@@ -8,6 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="clr-namespace:MagickCrop.Models"
     xmlns:wpfui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:behaviors="clr-namespace:MagickCrop.Behaviors"
     Title="Magick Crop &amp; Measure"
     Width="1000"
     Height="800"
@@ -80,6 +81,11 @@
             Grid.Column="0"
             Background="Gray"
             ClipToBounds="True"
+            IsManipulationEnabled="True"
+            behaviors:PinchZoomBehavior.IsEnabled="True"
+            behaviors:PinchZoomBehavior.ZoomElement="{Binding ElementName=ShapeCanvas}"
+            behaviors:PinchZoomBehavior.MinScale="0.1"
+            behaviors:PinchZoomBehavior.MaxScale="8"
             PreviewMouseWheel="ShapeCanvas_PreviewMouseWheel">
             <Canvas x:Name="ShapeCanvas" Margin="50,50,0,0">
                 <Canvas.RenderTransform>
