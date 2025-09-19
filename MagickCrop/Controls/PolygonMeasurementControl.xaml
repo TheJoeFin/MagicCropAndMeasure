@@ -13,7 +13,8 @@
             StrokeThickness="2"
             Fill="#200066FF"
             Opacity="0.4"
-            IsHitTestVisible="False" />
+            IsHitTestVisible="False"
+            ToolTip="Measured polygon" />
         
         <Line
             x:Name="PreviewLine"
@@ -22,17 +23,19 @@
             StrokeThickness="1"
             Opacity="0.6"
             Visibility="Collapsed"
-            IsHitTestVisible="False" />
+            IsHitTestVisible="False"
+            ToolTip="Preview segment" />
 
         <Border
             x:Name="MeasurementText"
             Padding="5,2"
             Background="#7F000000"
-            CornerRadius="3">
+            CornerRadius="3"
+            ToolTip="Polygon measurement options">
             <Border.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Click="CopyMeasurementMenuItem_Click" Header="Copy Measurement" />
-                    <MenuItem Click="RemoveMeasurementMenuItem_Click" Header="Remove Measurement" />
+                    <MenuItem Click="CopyMeasurementMenuItem_Click" Header="Copy Measurement" ToolTip="Copy the polygon properties" />
+                    <MenuItem Click="RemoveMeasurementMenuItem_Click" Header="Remove Measurement" ToolTip="Delete this measurement" />
                 </ContextMenu>
             </Border.ContextMenu>
             <Button
@@ -40,7 +43,8 @@
                 Padding="0"
                 Background="Transparent"
                 BorderThickness="0"
-                Click="MeasurementButton_Click">
+                Click="MeasurementButton_Click"
+                ToolTip="Click to open options">
                 <TextBlock
                     x:Name="PolygonTextBlock"
                     FontWeight="Bold"

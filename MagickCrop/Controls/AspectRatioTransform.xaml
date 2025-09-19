@@ -10,7 +10,7 @@
     d:DesignHeight="36"
     d:DesignWidth="80"
     mc:Ignorable="d">
-    <Grid>
+    <Grid ToolTip="Preview of perspective transform from polygon to rectangle">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="*" />
@@ -22,7 +22,8 @@
             Grid.Column="0"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
-            Background="Transparent">
+            Background="Transparent"
+            ToolTip="Original quadrilateral">
             <Polygon
                 x:Name="Polygon"
                 d:Points="5,5 -2,16 18,16 15,5"
@@ -39,7 +40,8 @@
             Grid.Column="3"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
-            Background="Transparent">
+            Background="Transparent"
+            ToolTip="Resulting rectangle">
             <Polygon
                 x:Name="RectanglePoly"
                 d:Points="-6,-6 -6,6 6,6 6,-6"

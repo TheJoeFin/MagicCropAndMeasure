@@ -12,7 +12,8 @@
             Opacity="0.4"
             Stroke="#0066FF"
             StrokeDashArray="4,2"
-            StrokeThickness="2" />
+            StrokeThickness="2"
+            ToolTip="Measured circle" />
         <Ellipse
             x:Name="CenterPoint"
             Width="12"
@@ -23,7 +24,8 @@
             Opacity="0.8"
             Stroke="White"
             StrokeThickness="1"
-            Tag="0" />
+            Tag="0"
+            ToolTip="Drag to move center" />
         <Ellipse
             x:Name="EdgePoint"
             Width="12"
@@ -34,16 +36,18 @@
             Opacity="0.8"
             Stroke="White"
             StrokeThickness="1"
-            Tag="1" />
+            Tag="1"
+            ToolTip="Drag to set radius" />
         <Border
             x:Name="MeasurementText"
             Padding="5,2"
             Background="#7F000000"
-            CornerRadius="3">
+            CornerRadius="3"
+            ToolTip="Circle measurement options">
             <Border.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Click="CopyMeasurementMenuItem_Click" Header="Copy Measurement" />
-                    <MenuItem Click="RemoveMeasurementMenuItem_Click" Header="Remove Measurement" />
+                    <MenuItem Click="CopyMeasurementMenuItem_Click" Header="Copy Measurement" ToolTip="Copy the circle properties" />
+                    <MenuItem Click="RemoveMeasurementMenuItem_Click" Header="Remove Measurement" ToolTip="Delete this measurement" />
                 </ContextMenu>
             </Border.ContextMenu>
             <Button
@@ -51,7 +55,8 @@
                 Padding="0"
                 Background="Transparent"
                 BorderThickness="0"
-                Click="MeasurementButton_Click">
+                Click="MeasurementButton_Click"
+                ToolTip="Click to open options">
                 <TextBlock
                     x:Name="CircleTextBlock"
                     FontWeight="Bold"

@@ -72,14 +72,14 @@ public class MagickImageUndoRedoItem : UndoRedoItem
 
     public override string Undo()
     {
-        MagickImage undoImage = new(_previous);
+        using MagickImage undoImage = new(_previous);
         _image.Source = undoImage.ToBitmapSource();
         return _previous;
     }
 
     public override string Redo()
     {
-        MagickImage redoImage = new(_next);
+        using MagickImage redoImage = new(_next);
         _image.Source = redoImage.ToBitmapSource();
         return _next;
     }
@@ -104,7 +104,7 @@ public class ResizeUndoRedoItem : UndoRedoItem
 
     public override string Undo()
     {
-        MagickImage undoImage = new(_previous);
+        using MagickImage undoImage = new(_previous);
         _image.Source = undoImage.ToBitmapSource();
         _image.Stretch = Stretch.Uniform;
         _grid.Width = 700;
@@ -114,7 +114,7 @@ public class ResizeUndoRedoItem : UndoRedoItem
 
     public override string Redo()
     {
-        MagickImage redoImage = new(_next);
+        using MagickImage redoImage = new(_next);
         _image.Source = redoImage.ToBitmapSource();
         _image.Stretch = Stretch.Fill;
         _grid.Width = _oldSize.Width;

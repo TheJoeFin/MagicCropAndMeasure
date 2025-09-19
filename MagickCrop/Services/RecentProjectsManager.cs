@@ -5,6 +5,7 @@ using System.IO;
 using System.Text.Json;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using MagickCrop.Helpers;
 
 namespace MagickCrop.Services;
 
@@ -18,7 +19,7 @@ public class RecentProjectsManager
     private readonly string _appDataFolder;
     private readonly string _projectsFolder;
     private readonly string _thumbnailsFolder;
-    private readonly int _maxRecentProjects = 10;
+    private readonly int _maxRecentProjects = Defaults.MaxRecentProjects;
 
     public ObservableCollection<RecentProjectInfo> RecentProjects { get; private set; } = [];
 
@@ -67,12 +68,14 @@ public class RecentProjectsManager
             foreach (RecentProjectInfo project in projects)
                 project.LoadThumbnail();
 
-            RecentProjects = [.. projects];
+            // Do not replace the ObservableCollection instance to preserve bindings
+            foreach (var p in projects)
+                RecentProjects.Add(p);
         }
         catch (Exception)
         {
             // If loading fails, start with an empty list
-            RecentProjects = [];
+            RecentProjects.Clear();
         }
     }
 
@@ -110,7 +113,7 @@ public class RecentProjectsManager
         try
         {
             // Create a smaller version for the thumbnail
-            int thumbnailWidth = 200;
+            int thumbnailWidth = Defaults.ThumbnailWidth;
             double scale = thumbnailWidth / imageSource.Width;
             int thumbnailHeight = (int)(imageSource.Height * scale);
 

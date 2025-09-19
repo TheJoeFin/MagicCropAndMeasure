@@ -10,9 +10,9 @@
     <UserControl.ContextMenu>
         <ContextMenu>
             <!--<MenuItem Click="ChangeColorMenuItem_Click" Header="Change Color" />-->
-            <MenuItem Click="ChangeThicknessMenuItem_Click" Header="Change Thickness" />
+            <MenuItem Click="ChangeThicknessMenuItem_Click" Header="Change Thickness" ToolTip="Change line thickness" />
             <Separator />
-            <MenuItem Click="RemoveLineMenuItem_Click" Header="Remove Line" />
+            <MenuItem Click="RemoveLineMenuItem_Click" Header="Remove Line" ToolTip="Delete this guide line" />
         </ContextMenu>
     </UserControl.ContextMenu>
     <Canvas x:Name="LineCanvas">
@@ -27,6 +27,7 @@
             X1="0"
             X2="4000"
             Y1="0"
-            Y2="0" />
+            Y2="0"
+            ToolTip="Drag to move horizontal guide" />
     </Canvas>
 </UserControl>

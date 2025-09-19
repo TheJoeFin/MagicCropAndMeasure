@@ -11,7 +11,8 @@
             Opacity="0.8"
             Stroke="#0066FF"
             StrokeDashArray="4,2"
-            StrokeThickness="2" />
+            StrokeThickness="2"
+            ToolTip="Distance line" />
 
         <Ellipse
             x:Name="StartPoint"
@@ -23,7 +24,8 @@
             Opacity="0.8"
             Stroke="White"
             StrokeThickness="1"
-            Tag="0" />
+            Tag="0"
+            ToolTip="Drag to set start point" />
         <Ellipse
             x:Name="EndPoint"
             Width="12"
@@ -34,18 +36,20 @@
             Opacity="0.8"
             Stroke="White"
             StrokeThickness="1"
-            Tag="1" />
+            Tag="1"
+            ToolTip="Drag to set end point" />
 
         <Border
             x:Name="MeasurementText"
             Padding="5,2"
             Background="#7F000000"
-            CornerRadius="3">
+            CornerRadius="3"
+            ToolTip="Distance measurement options">
             <Border.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Click="CopyMeasurementMenuItem_Click" Header="Copy Measurement" />
-                    <MenuItem Click="SetRealWorldLengthMenuItem_Click" Header="Set Real World Length" />
-                    <MenuItem Click="RemoveMeasurementMenuItem_Click" Header="Remove Measurement" />
+                    <MenuItem Click="CopyMeasurementMenuItem_Click" Header="Copy Measurement" ToolTip="Copy the measurement value" />
+                    <MenuItem Click="SetRealWorldLengthMenuItem_Click" Header="Set Real World Length" ToolTip="Set a real-world length for this line" />
+                    <MenuItem Click="RemoveMeasurementMenuItem_Click" Header="Remove Measurement" ToolTip="Delete this measurement" />
                 </ContextMenu>
             </Border.ContextMenu>
             <Button
@@ -53,7 +57,8 @@
                 Padding="0"
                 Background="Transparent"
                 BorderThickness="0"
-                Click="MeasurementButton_Click">
+                Click="MeasurementButton_Click"
+                ToolTip="Click to open options">
                 <TextBlock
                     x:Name="DistanceTextBlock"
                     FontWeight="Bold"

@@ -10,17 +10,17 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using System.Windows.Shell;
 using Windows.ApplicationModel;
 using Wpf.Ui;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
-using Wpf.Ui.Interop;
+using WpfTextBlock = System.Windows.Controls.TextBlock;
 
 namespace MagickCrop;
 
@@ -103,6 +103,28 @@ public partial class MainWindow : FluentWindow
     private bool isPlacingCircleMeasurement = false;
     private CircleMeasurementControl? activeCirclePlacementControl = null;
 
+    // Precise rotation state
+    private bool isRotateMode = false;
+    private double currentPreviewRotation = 0.0; // degrees
+    private bool suppressRotateEvents = false; // prevent feedback loops
+    private Point freeRotateLastPoint;
+    private RotateTransform? previewRotateTransform; // applied only during preview
+    private const double FreeRotateSensitivity = 0.3; // degrees per pixel dragged
+
+    // new flag
+    private bool isFreeRotatingDrag = false;
+
+    // runtime reference to angle overlay
+    private WpfTextBlock? rotationOverlayLabel;
+    private long lastRotateUpdateTicks = 0;
+    private double lastAppliedAdornerAngle = 0.0;
+    private const int RotateUpdateMinIntervalMs = 12; // throttle to reduce UI thrash
+    private const double RotateMinDelta = 0.1; // degrees
+
+    private RotateAdorner? rotateAdorner;
+    private AdornerLayer? rotateAdornerLayer;
+    private bool isAdornerRotatingDrag = false; // true while adorner has the mouse captured
+
     public MainWindow()
     {
         ThemeService themeService = new();
@@ -112,6 +134,9 @@ public partial class MainWindow : FluentWindow
         ApplicationAccentColorManager.Apply(teal);
 
         InitializeComponent();
+        // Ensure zoom still works if mouse wheel fires at window level (after a pan or when mouse over other element)
+        PreviewMouseWheel += ShapeCanvas_PreviewMouseWheel;
+
         DrawPolyLine();
         _polygonElements = [lines, TopLeft, TopRight, BottomRight, BottomLeft];
 
@@ -137,6 +162,14 @@ public partial class MainWindow : FluentWindow
         UpdateOpenedFileNameText();
 
         ShapeCanvas.MouseUp += ShapeCanvas_MouseUp;
+        ShapeCanvas.LostMouseCapture += ShapeCanvas_LostMouseCapture; // safety to ensure capture released
+        rotationOverlayLabel = FindName("RotationOverlayLabel") as WpfTextBlock; // cache
+    }
+
+    private void ShapeCanvas_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (draggingMode == DraggingMode.Panning)
+            draggingMode = DraggingMode.None;
     }
 
     private void DrawPolyLine()
@@ -169,6 +202,11 @@ public partial class MainWindow : FluentWindow
 
     private void TopLeft_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            e.Handled = true;
+            return;
+        }
         if (sender is not Ellipse ellipse || ellipse.Tag is not string intAsString)
             return;
 
@@ -181,26 +219,39 @@ public partial class MainWindow : FluentWindow
 
     private void TopLeft_MouseMove(object sender, MouseEventArgs e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            e.Handled = true;
+            return;
+        }
+        if (isFreeRotatingDrag)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                HandleFreeRotateDrag(e);
+                e.Handled = true;
+                return; // skip other drag behaviors while rotating
+            }
+            else
+            {
+                // mouse released
+                isFreeRotatingDrag = false;
+                HideRotationOverlay();
+            }
+        }
+
         // --- ANGLE MEASUREMENT PLACEMENT LOGIC ---
         if (isPlacingAngleMeasurement && activeAnglePlacementControl != null)
         {
             Point mousePos = e.GetPosition(ShapeCanvas);
             if (anglePlacementStep == AnglePlacementStep.DraggingFirstLeg)
             {
-                // During first leg dragging: 
-                // - Point1 should be placed at initial click
-                // - Vertex follows the mouse
-                // - Point3 stays at vertex position for now
                 activeAnglePlacementControl.MovePoint(1, mousePos); // Move point1 to follow mouse
                 e.Handled = true;
                 return;
             }
             else if (anglePlacementStep == AnglePlacementStep.PlacingThirdPoint)
             {
-                // During third point placement:
-                // - Point1 is already fixed
-                // - Vertex is already fixed
-                // - Point3 follows the mouse
                 activeAnglePlacementControl.MovePoint(2, mousePos);
                 e.Handled = true;
                 return;
@@ -235,13 +286,15 @@ public partial class MainWindow : FluentWindow
         if (Mouse.MiddleButton == MouseButtonState.Released && Mouse.LeftButton == MouseButtonState.Released)
         {
             if (draggingMode == DraggingMode.Panning)
-                // Remove cursor setting - will be handled by XAML
+            {
+                // panning release handled in MouseUp, nothing else here
+            }
 
-                if (draggingMode == DraggingMode.MeasureDistance && activeMeasureControl is not null)
-                {
-                    activeMeasureControl.ResetActivePoint();
-                    activeMeasureControl = null;
-                }
+            if (draggingMode == DraggingMode.MeasureDistance && activeMeasureControl is not null)
+            {
+                activeMeasureControl.ResetActivePoint();
+                activeMeasureControl = null;
+            }
 
             if (draggingMode == DraggingMode.MeasureAngle && activeAngleMeasureControl is not null)
             {
@@ -694,6 +747,7 @@ public partial class MainWindow : FluentWindow
         if (openFileDialog.ShowDialog() != true)
         {
             SetUiForCompletedTask();
+            WelcomeMessageModal.Visibility = Visibility.Visible;
             return;
         }
 
@@ -758,12 +812,12 @@ public partial class MainWindow : FluentWindow
         }
         catch (Exception ex)
         {
+            WelcomeMessageModal.Visibility = Visibility.Visible;
             Wpf.Ui.Controls.MessageBox uiMessageBox = new()
             {
                 Title = "Error",
                 Content = $"Error pasting image: {ex.Message}",
             };
-            await uiMessageBox.ShowDialogAsync();
         }
         finally
         {
@@ -796,24 +850,24 @@ public partial class MainWindow : FluentWindow
         ReOpenFileText.Text = "Overlay Mode";
     }
 
-    protected override void OnExtendsContentIntoTitleBarChanged(bool oldValue, bool newValue)
-    {
-        SetCurrentValue(WindowStyleProperty, WindowStyle); // CHANGE THIS
+    //protected override void OnExtendsContentIntoTitleBarChanged(bool oldValue, bool newValue)
+    //{
+    //    SetCurrentValue(WindowStyleProperty, WindowStyle);
 
-        WindowChrome.SetWindowChrome(
-            this,
-            new WindowChrome
-            {
-                CaptionHeight = 0,
-                CornerRadius = default,
-                GlassFrameThickness = new Thickness(-1),
-                ResizeBorderThickness = ResizeMode == ResizeMode.NoResize ? default : new Thickness(4),
-                UseAeroCaptionButtons = false,
-            }
-        );
+    //    WindowChrome.SetWindowChrome(
+    //        this,
+    //        new WindowChrome
+    //        {
+    //            CaptionHeight = 0,
+    //            CornerRadius = default,
+    //            GlassFrameThickness = new Thickness(-1),
+    //            ResizeBorderThickness = ResizeMode == ResizeMode.NoResize ? default : new Thickness(4),
+    //            UseAeroCaptionButtons = false,
+    //        }
+    //    );
 
-        _ = UnsafeNativeMethods.RemoveWindowTitlebarContents(this);
-    }
+    //    _ = UnsafeNativeMethods.RemoveWindowTitlebarContents(this);
+    //}
 
     private async Task OpenImagePath(string imageFilePath)
     {
@@ -837,9 +891,9 @@ public partial class MainWindow : FluentWindow
         imagePath = tempFileName;
         openedFileName = System.IO.Path.GetFileNameWithoutExtension(imageFilePath);
         MainImage.Source = bitmapImage.ToBitmapSource();
-        
+
         // Update original size after image is loaded (will be the default ImageWidthConst height calculated from aspect ratio)
-        originalImageSize = new Size(ImageGrid.Width, ImageGrid.Height);
+        originalImageSize = new Size(bitmapImage.Width, bitmapImage.Height);
 
         BottomBorder.Visibility = Visibility.Visible;
         SetUiForCompletedTask();
@@ -908,22 +962,44 @@ public partial class MainWindow : FluentWindow
 
     private void ShapeCanvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"ShapeCanvas_MouseDown: Button={e.ChangedButton}, isCreatingMeasurement={isCreatingMeasurement}, isPlacingPolygon={isPlacingPolygonMeasurement}, ToolSelected={IsAnyToolSelected()}");
-
-        if ((Mouse.MiddleButton == MouseButtonState.Pressed
-            || (Mouse.LeftButton == MouseButtonState.Pressed && !isCreatingMeasurement))
-            && !IsAnyToolSelected())
+        if (isAdornerRotatingDrag)
         {
-            System.Diagnostics.Debug.WriteLine("Entering panning mode");
-            clickedPoint = e.GetPosition(this);
+            e.Handled = true;
+            return;
+        }
+        Debug.WriteLine($"ShapeCanvas_MouseDown: Button={e.ChangedButton}, isCreatingMeasurement={isCreatingMeasurement}, isPlacingPolygon={isPlacingPolygonMeasurement}, ToolSelected={IsAnyToolSelected()}");
+
+        // If in rotate mode with free rotate enabled and click on image start exclusive rotation drag
+        // Only use legacy drag path when the RotateAdorner is not active
+        if (isRotateMode && FreeRotateToggle != null && FreeRotateToggle.IsChecked == true && rotateAdorner == null && e.LeftButton == MouseButtonState.Pressed)
+        {
+            Point p = e.GetPosition(MainImage);
+            // ensure point lies within image bounds to avoid starting when clicking UI overlays
+            if (p.X >= 0 && p.Y >= 0 && p.X <= MainImage.ActualWidth && p.Y <= MainImage.ActualHeight)
+            {
+                isFreeRotatingDrag = true;
+                freeRotateLastPoint = p;
+                ShowRotationOverlay();
+                UpdateRotationOverlay();
+                e.Handled = true; // prevent panning setup
+                return; // skip rest so other modes don't activate
+            }
+        }
+
+        // Middle mouse always initiates panning regardless of tool (quick navigation)
+        if (e.ChangedButton == MouseButton.Middle)
+        {
             draggingMode = DraggingMode.Panning;
+            clickedPoint = e.GetPosition(this);
+            ShapeCanvas.CaptureMouse();
+            e.Handled = true;
             return;
         }
 
         // Check if we're in the measure tab and starting a measurement
         if (Mouse.LeftButton != MouseButtonState.Pressed)
         {
-            System.Diagnostics.Debug.WriteLine($"Left button not pressed, returning. Button state: {Mouse.LeftButton}");
+            Debug.WriteLine($"Left button not pressed, returning. Button state: {Mouse.LeftButton}");
             return;
         }
 
@@ -1013,12 +1089,12 @@ public partial class MainWindow : FluentWindow
         }
         else if (PolygonMeasureToggle.IsChecked is true)
         {
-            System.Diagnostics.Debug.WriteLine($"Polygon tool clicked at: ({clickedPoint.X:F1}, {clickedPoint.Y:F1})");
+            Debug.WriteLine($"Polygon tool clicked at: ({clickedPoint.X:F1}, {clickedPoint.Y:F1})");
 
             if (!isPlacingPolygonMeasurement)
             {
                 // Start new polygon
-                System.Diagnostics.Debug.WriteLine("Starting new polygon");
+                Debug.WriteLine("Starting new polygon");
                 isPlacingPolygonMeasurement = true;
                 isCreatingMeasurement = true; // This prevents panning interference
                 activePolygonPlacementControl = new PolygonMeasurementControl
@@ -1032,21 +1108,21 @@ public partial class MainWindow : FluentWindow
 
             if (activePolygonPlacementControl != null)
             {
-                System.Diagnostics.Debug.WriteLine($"Adding vertex to existing polygon. Current count: {activePolygonPlacementControl.VertexCount}");
+                Debug.WriteLine($"Adding vertex to existing polygon. Current count: {activePolygonPlacementControl.VertexCount}");
                 activePolygonPlacementControl.AddVertex(clickedPoint);
 
                 // If polygon was closed, finalize it
                 if (activePolygonPlacementControl.IsClosed)
                 {
-                    System.Diagnostics.Debug.WriteLine("Polygon closed, finalizing");
+                    Debug.WriteLine("Polygon closed, finalizing");
                     polygonMeasurementTools.Add(activePolygonPlacementControl);
-                    System.Diagnostics.Debug.WriteLine($"Added polygon to collection. Total polygons: {polygonMeasurementTools.Count}");
+                    Debug.WriteLine($"Added polygon to collection. Total polygons: {polygonMeasurementTools.Count}");
                     activePolygonPlacementControl.MeasurementPointMouseDown += PolygonMeasurementPoint_MouseDown;
                     activePolygonPlacementControl.RemoveControlRequested += PolygonMeasurementControl_RemoveControlRequested;
                     isPlacingPolygonMeasurement = false;
                     isCreatingMeasurement = false; // Reset this when polygon is complete
                     activePolygonPlacementControl = null;
-                    System.Diagnostics.Debug.WriteLine("Polygon finalization complete");
+                    Debug.WriteLine("Polygon finalization complete");
                 }
             }
             e.Handled = true;
@@ -1091,20 +1167,34 @@ public partial class MainWindow : FluentWindow
         {
             AddVerticalLineAtPosition(clickedPoint.X);
         }
+        else
+        {
+            // No tools active -> begin panning
+            if (!IsAnyToolSelected() && !isRotateMode)
+            {
+                draggingMode = DraggingMode.Panning;
+                clickedPoint = e.GetPosition(this);
+                ShapeCanvas.CaptureMouse();
+                e.Handled = true;
+            }
+        }
     }
 
     private void ShapeCanvas_MouseUp(object sender, MouseButtonEventArgs e)
     {
+        // If we were panning, release immediately so wheel events work even without a post-release move
+        if (draggingMode == DraggingMode.Panning)
+        {
+            draggingMode = DraggingMode.None;
+            ShapeCanvas.ReleaseMouseCapture();
+            e.Handled = true;
+            return;
+        }
+
         // --- ANGLE MEASUREMENT PLACEMENT LOGIC ---
         if (isPlacingAngleMeasurement && anglePlacementStep == AnglePlacementStep.DraggingFirstLeg && activeAnglePlacementControl != null)
         {
-            // On mouse up after dragging, we want to finalize the position of the first arm (point1)
-            // The vertex should stay at the original clicked position
-            // Note: We don't move point1 here - it's already been moved during MouseMove
-
-            // Now move to step 2: track mouse for third point
             anglePlacementStep = AnglePlacementStep.PlacingThirdPoint;
-            // Release mouse capture so we can track movement for the third point
             ShapeCanvas.ReleaseMouseCapture();
             e.Handled = true;
             return;
@@ -1113,21 +1203,13 @@ public partial class MainWindow : FluentWindow
         if (isCreatingMeasurement && draggingMode == DraggingMode.CreatingMeasurement)
         {
             Point endPoint = e.GetPosition(ShapeCanvas);
-
-            // Only create a measurement if there was some actual dragging (to avoid accidental clicks)
-            if (Math.Abs(endPoint.X - clickedPoint.X) > 5 ||
-                Math.Abs(endPoint.Y - clickedPoint.Y) > 5)
+            if (Math.Abs(endPoint.X - clickedPoint.X) > 5 || Math.Abs(endPoint.Y - clickedPoint.Y) > 5)
             {
                 if (isPlacingRectangleMeasurement && activeRectanglePlacementControl != null)
                 {
-                    // Make sure the control has the latest scale and units
                     activeRectanglePlacementControl.ScaleFactor = ScaleInput.Value ?? 1.0;
                     activeRectanglePlacementControl.Units = MeasurementUnits.Text;
-
-                    // Finalize bottom-right point
                     activeRectanglePlacementControl.MovePoint(1, endPoint);
-
-                    // Add to the collection of rectangle measurements
                     rectangleMeasurementTools.Add(activeRectanglePlacementControl);
                     activeRectanglePlacementControl.MeasurementPointMouseDown += RectangleMeasurementPoint_MouseDown;
                     activeRectanglePlacementControl.RemoveControlRequested += RectangleMeasurementControl_RemoveControlRequested;
@@ -1136,14 +1218,9 @@ public partial class MainWindow : FluentWindow
                 }
                 else if (isPlacingCircleMeasurement && activeCirclePlacementControl != null)
                 {
-                    // Make sure the control has the latest scale and units
                     activeCirclePlacementControl.ScaleFactor = ScaleInput.Value ?? 1.0;
                     activeCirclePlacementControl.Units = MeasurementUnits.Text;
-
-                    // Finalize edge point
                     activeCirclePlacementControl.MovePoint(1, endPoint);
-
-                    // Add to the collection of circle measurements
                     circleMeasurementTools.Add(activeCirclePlacementControl);
                     activeCirclePlacementControl.MeasurementPointMouseDown += CircleMeasurementPoint_MouseDown;
                     activeCirclePlacementControl.RemoveControlRequested += CircleMeasurementControl_RemoveControlRequested;
@@ -1155,22 +1232,19 @@ public partial class MainWindow : FluentWindow
                     CreateMeasurementFromDrag(clickedPoint, endPoint);
                 }
             }
-            else if (isPlacingRectangleMeasurement && activeRectanglePlacementControl != null) // Click without drag
+            else if (isPlacingRectangleMeasurement && activeRectanglePlacementControl != null)
             {
-                // If it was a click without drag for rectangle, remove the temp control
                 ShapeCanvas.Children.Remove(activeRectanglePlacementControl);
                 activeRectanglePlacementControl = null;
                 isPlacingRectangleMeasurement = false;
             }
-            else if (isPlacingCircleMeasurement && activeCirclePlacementControl != null) // Click without drag
+            else if (isPlacingCircleMeasurement && activeCirclePlacementControl != null)
             {
-                // If it was a click without drag for circle, remove the temp control
                 ShapeCanvas.Children.Remove(activeCirclePlacementControl);
                 activeCirclePlacementControl = null;
                 isPlacingCircleMeasurement = false;
             }
 
-            // Reset state
             isCreatingMeasurement = false;
             draggingMode = DraggingMode.None;
             ShapeCanvas.ReleaseMouseCapture();
@@ -1235,7 +1309,9 @@ public partial class MainWindow : FluentWindow
         if (e.Data.GetDataPresent("Text"))
         {
             if (e.Data.GetData("Text") is string filePath && File.Exists(filePath))
+            {
                 await OpenImagePath(filePath);
+            }
             return;
         }
 
@@ -1677,6 +1753,11 @@ public partial class MainWindow : FluentWindow
 
     private void ImageResizeGrip_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            e.Handled = true;
+            return;
+        }
         if (Mouse.LeftButton == MouseButtonState.Pressed)
         {
             clickedPoint = e.GetPosition(ShapeCanvas);
@@ -1690,10 +1771,10 @@ public partial class MainWindow : FluentWindow
             return;
 
         MagickImage magickImage = new(imagePath);
-        
+
         // Get target dimensions from user input
         int targetWidth, targetHeight;
-        
+
         if (isPixelMode)
         {
             targetWidth = int.Parse(WidthTextBox.Text);
@@ -2155,6 +2236,11 @@ public partial class MainWindow : FluentWindow
 
     private void MeasurementPoint_MouseDown(object sender, MouseButtonEventArgs? e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            if (e is not null) e.Handled = true;
+            return;
+        }
         if (sender is Ellipse senderEllipse
             && senderEllipse.Parent is Canvas measureCanvas
             && measureCanvas.Parent is DistanceMeasurementControl measureControl
@@ -2171,6 +2257,11 @@ public partial class MainWindow : FluentWindow
 
     private void AngleMeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            e.Handled = true;
+            return;
+        }
         if (sender is Ellipse senderEllipse
             && senderEllipse.Parent is Canvas measureCanvas
             && measureCanvas.Parent is AngleMeasurementControl measureControl
@@ -2186,6 +2277,11 @@ public partial class MainWindow : FluentWindow
 
     private void RectangleMeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            e.Handled = true;
+            return;
+        }
         if (sender is System.Windows.Shapes.Ellipse senderEllipse &&
             senderEllipse.Parent is Canvas measureCanvas &&
             measureCanvas.Parent is RectangleMeasurementControl measureControl)
@@ -2199,6 +2295,11 @@ public partial class MainWindow : FluentWindow
 
     private void PolygonMeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            e.Handled = true;
+            return;
+        }
         if (sender is System.Windows.Shapes.Ellipse senderEllipse &&
             senderEllipse.Parent is Canvas measureCanvas &&
             measureCanvas.Parent is PolygonMeasurementControl measureControl)
@@ -2212,6 +2313,11 @@ public partial class MainWindow : FluentWindow
 
     private void CircleMeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (isAdornerRotatingDrag)
+        {
+            e.Handled = true;
+            return;
+        }
         if (sender is System.Windows.Shapes.Ellipse senderEllipse &&
             senderEllipse.Parent is Canvas measureCanvas &&
             measureCanvas.Parent is CircleMeasurementControl measureControl)
@@ -2317,7 +2423,7 @@ public partial class MainWindow : FluentWindow
             {
                 OriginalFilename = openedFileName,
                 OriginalImageSize = originalImageSize,
-                CurrentImageSize = new Size(ImageGrid.Width, ImageGrid.Height),
+                CurrentImageSize = new Size(ImageGrid.ActualWidth, ImageGrid.ActualHeight),
                 ImageStretch = MainImage.Stretch
             },
             Measurements = new MeasurementCollection
@@ -2351,17 +2457,13 @@ public partial class MainWindow : FluentWindow
         {
             package.Measurements.PolygonMeasurements.Add(control.ToDto());
         }
-        System.Diagnostics.Debug.WriteLine($"Saved {polygonMeasurementTools.Count} polygon measurements to package");
+        Debug.WriteLine($"Saved {polygonMeasurementTools.Count} polygon measurements");
 
         foreach (VerticalLineControl control in verticalLineControls)
-        {
             package.Measurements.VerticalLines.Add(control.ToDto());
-        }
 
         foreach (HorizontalLineControl control in horizontalLineControls)
-        {
             package.Measurements.HorizontalLines.Add(control.ToDto());
-        }
 
         // Save ink strokes and their stroke length displays
         foreach (KeyValuePair<Stroke, StrokeInfo> entry in strokeMeasurements)
@@ -2481,8 +2583,10 @@ public partial class MainWindow : FluentWindow
             if (package.Metadata.OriginalImageSize.Width > 0 && package.Metadata.OriginalImageSize.Height > 0)
             {
                 originalImageSize = package.Metadata.OriginalImageSize;
+                ImageGrid.Width = originalImageSize.Width;
+                ImageGrid.Height = originalImageSize.Height;
             }
-            
+
             // Apply the saved resize to the ImageGrid
             ImageGrid.Width = package.Metadata.CurrentImageSize.Width;
             ImageGrid.Height = package.Metadata.CurrentImageSize.Height;
@@ -2551,7 +2655,7 @@ public partial class MainWindow : FluentWindow
         }
 
         // Add polygon measurements
-        System.Diagnostics.Debug.WriteLine($"Loading {package.Measurements.PolygonMeasurements.Count} polygon measurements from package");
+        Debug.WriteLine($"Loading {package.Measurements.PolygonMeasurements.Count} polygon measurements from package");
         foreach (PolygonMeasurementControlDto dto in package.Measurements.PolygonMeasurements)
         {
             PolygonMeasurementControl control = new()
@@ -2565,13 +2669,8 @@ public partial class MainWindow : FluentWindow
             polygonMeasurementTools.Add(control);
             ShapeCanvas.Children.Add(control);
         }
-        System.Diagnostics.Debug.WriteLine($"Loaded polygon measurements. Total in collection: {polygonMeasurementTools.Count}");
+        Debug.WriteLine($"Loaded polygon measurements. Total in collection: {polygonMeasurementTools.Count}");
 
-        MagickImage image = new(package.ImagePath);
-        double aspectRatio = (double)image.Width / image.Height;
-        double imageHeight = ImageWidthConst / aspectRatio;
-
-        // Add vertical line controls
         foreach (VerticalLineControlDto dto in package.Measurements.VerticalLines)
         {
             VerticalLineControl control = new();
@@ -2579,12 +2678,8 @@ public partial class MainWindow : FluentWindow
             control.RemoveControlRequested += VerticalLineControl_RemoveControlRequested;
             verticalLineControls.Add(control);
             ShapeCanvas.Children.Add(control);
-
-            // Make sure the line spans the full height of the canvas
-            control.Resize(imageHeight);
         }
 
-        // Add horizontal line controls
         foreach (HorizontalLineControlDto dto in package.Measurements.HorizontalLines)
         {
             HorizontalLineControl control = new();
@@ -2592,9 +2687,6 @@ public partial class MainWindow : FluentWindow
             control.RemoveControlRequested += HorizontalLineControl_RemoveControlRequested;
             horizontalLineControls.Add(control);
             ShapeCanvas.Children.Add(control);
-
-            // Make sure the line spans the full width of the canvas
-            control.Resize(ImageWidthConst);
         }
 
         ClearAllStrokesAndLengths();
@@ -2682,7 +2774,7 @@ public partial class MainWindow : FluentWindow
                 ProjectId = currentProjectId,
                 LastModified = DateTime.Now,
                 OriginalImageSize = originalImageSize,
-                CurrentImageSize = new Size(ImageGrid.Width, ImageGrid.Height),
+                CurrentImageSize = new Size(ImageGrid.ActualWidth, ImageGrid.ActualHeight),
                 ImageStretch = MainImage.Stretch
             };
 
@@ -2691,7 +2783,7 @@ public partial class MainWindow : FluentWindow
                 packageMetadata = openedPackage.Metadata;
                 packageMetadata.LastModified = DateTime.Now;
                 packageMetadata.OriginalImageSize = originalImageSize;
-                packageMetadata.CurrentImageSize = new Size(ImageGrid.Width, ImageGrid.Height);
+                packageMetadata.CurrentImageSize = new Size(ImageGrid.ActualWidth, ImageGrid.ActualHeight);
                 packageMetadata.ImageStretch = MainImage.Stretch;
             }
 
@@ -2711,7 +2803,9 @@ public partial class MainWindow : FluentWindow
                 package.Measurements.DistanceMeasurements.Add(control.ToDto());
 
             foreach (AngleMeasurementControl control in angleMeasurementTools)
-                package.Measurements.AngleMeasurements.Add(control.ToDto()); foreach (RectangleMeasurementControl control in rectangleMeasurementTools)
+                package.Measurements.AngleMeasurements.Add(control.ToDto());
+
+            foreach (RectangleMeasurementControl control in rectangleMeasurementTools)
                 package.Measurements.RectangleMeasurements.Add(control.ToDto());
 
             foreach (CircleMeasurementControl control in circleMeasurementTools)
@@ -2719,36 +2813,7 @@ public partial class MainWindow : FluentWindow
 
             foreach (PolygonMeasurementControl control in polygonMeasurementTools)
                 package.Measurements.PolygonMeasurements.Add(control.ToDto());
-            System.Diagnostics.Debug.WriteLine($"AutoSave: Saved {polygonMeasurementTools.Count} polygon measurements");
-
-            foreach (VerticalLineControl control in verticalLineControls)
-                package.Measurements.VerticalLines.Add(control.ToDto());
-
-            foreach (HorizontalLineControl control in horizontalLineControls)
-                package.Measurements.HorizontalLines.Add(control.ToDto());
-
-            // Save ink strokes and their stroke length displays
-            foreach (KeyValuePair<Stroke, StrokeInfo> entry in strokeMeasurements)
-            {
-                Stroke stroke = entry.Key;
-                StrokeInfo info = entry.Value;
-
-                // Find the corresponding display control
-                StrokeLengthDisplay? display = ShapeCanvas.Children.OfType<StrokeLengthDisplay>()
-                    .FirstOrDefault(d => d.GetStroke() == stroke);
-
-                double displayX = 0;
-                double displayY = 0;
-
-                if (display is not null)
-                {
-                    displayX = Canvas.GetLeft(display);
-                    displayY = Canvas.GetTop(display);
-                }
-
-                package.Measurements.InkStrokes.Add(StrokeDto.ConvertStrokeToDto(stroke));
-                package.Measurements.StrokeInfos.Add(StrokeInfoDto.FromStrokeInfo(info, displayX, displayY));
-            }
+            Debug.WriteLine($"AutoSave: Saved {polygonMeasurementTools.Count} polygon measurements");
 
             recentProjectsManager.AutosaveProject(package, MainImage.Source as BitmapSource);
         }
@@ -2843,7 +2908,7 @@ public partial class MainWindow : FluentWindow
         ShapeCanvas.Children.Add(lineControl);
 
         // Initialize with reasonable positions based on the canvas size
-        lineControl.Initialize(ShapeCanvas.ActualWidth, ShapeCanvas.ActualHeight);
+        lineControl.Initialize(MainImage.ActualHeight, MainImage.ActualHeight);
     }
 
     private void VerticalLineControl_RemoveControlRequested(object sender, EventArgs e)
@@ -2863,7 +2928,7 @@ public partial class MainWindow : FluentWindow
         ShapeCanvas.Children.Add(lineControl);
 
         // Initialize with reasonable positions based on the canvas size
-        lineControl.Initialize(ShapeCanvas.ActualWidth, ShapeCanvas.ActualHeight);
+        lineControl.Initialize(MainImage.ActualWidth, MainImage.ActualWidth);
     }
 
     private void HorizontalLineControl_RemoveControlRequested(object sender, EventArgs e)
@@ -3202,8 +3267,347 @@ public partial class MainWindow : FluentWindow
             ShapeCanvas.ReleaseMouseCapture();
         }
     }
-}
 
+    // Precise rotation implementation
+    private const double RotationSnapIncrement = 5.0; // degrees when Shift held
+    private const double FineRotationMultiplier = 0.25; // slow factor when Ctrl held
+
+    private void ShowRotationOverlay()
+    {
+        if (rotationOverlayLabel is not null)
+            rotationOverlayLabel.Visibility = Visibility.Visible;
+    }
+    private void HideRotationOverlay()
+    {
+        if (rotationOverlayLabel is not null)
+            rotationOverlayLabel.Visibility = Visibility.Collapsed;
+    }
+    private void UpdateRotationOverlay()
+    {
+        if (rotationOverlayLabel is not null)
+            rotationOverlayLabel.Text = $"{currentPreviewRotation:0.0}°";
+    }
+
+    private void ToggleRotateMode(bool enable)
+    {
+        if (enable)
+        {
+            // Hide other panels that conflict
+            HideCroppingControls();
+            HideTransformControls();
+            HideResizeControls();
+            RotateControlsPanel.Visibility = Visibility.Visible;
+            isRotateMode = true;
+            EnsurePreviewRotateTransform();
+            ApplyPreviewRotation();
+            UpdateRotationOverlay();
+
+            // If user had Free Rotate checked, ensure adorner is present
+            if (FreeRotateToggle == null || FreeRotateToggle.IsChecked != true)
+            {
+                return;
+            }
+            
+            try
+            {
+                rotateAdornerLayer ??= AdornerLayer.GetAdornerLayer(ImageGrid);
+                if (rotateAdornerLayer != null && rotateAdorner == null)
+                {
+                    rotateAdorner = new RotateAdorner(ImageGrid)
+                    {
+                        Angle = currentPreviewRotation
+                    };
+                    rotateAdorner.AngleChanging += RotateAdorner_AngleChanging;
+                    rotateAdorner.AngleChangedFinal += RotateAdorner_AngleChangedFinal;
+                    rotateAdornerLayer.Add(rotateAdorner);
+                }
+            }
+            catch { /* ignore if controls not yet available */ }
+        }
+        else
+        {
+            RotateControlsPanel.Visibility = Visibility.Collapsed;
+            isRotateMode = false;
+            RemovePreviewRotation();
+            currentPreviewRotation = 0;
+            UpdateRotationUiValues(0);
+            HideRotationOverlay();
+            // Ensure adorner is removed and toggle unchecked
+            RemoveRotateAdorner();
+            try { if (FreeRotateToggle != null) FreeRotateToggle.IsChecked = false; } catch { }
+            isFreeRotatingDrag = false;
+        }
+    }
+
+    private void EnsurePreviewRotateTransform()
+    {
+        if (previewRotateTransform != null)
+        {
+            ApplyPreviewRotation();
+            return;
+        }
+
+        Transform current = MainImage.RenderTransform;
+        if (current is TransformGroup tg)
+        {
+            previewRotateTransform = new RotateTransform(0);
+            tg.Children.Add(previewRotateTransform);
+        }
+        else if (current == null || current == Transform.Identity)
+        {
+            previewRotateTransform = new RotateTransform(0);
+            MainImage.RenderTransform = new TransformGroup { Children = [previewRotateTransform] };
+        }
+        else
+        {
+            // Wrap existing transform in group
+            TransformGroup group = new();
+            group.Children.Add(current);
+            previewRotateTransform = new RotateTransform(0);
+            group.Children.Add(previewRotateTransform);
+            MainImage.RenderTransform = group;
+        }
+
+        MainImage.RenderTransformOrigin = new Point(0.5, 0.5);
+    }
+
+    private void RemovePreviewRotation()
+    {
+        if (previewRotateTransform == null)
+            return;
+
+        if (MainImage.RenderTransform is TransformGroup tg)
+        {
+            tg.Children.Remove(previewRotateTransform);
+        }
+        previewRotateTransform = null;
+        MainImage.RenderTransformOrigin = new Point(0.5, 0.5);
+    }
+
+    private void ApplyPreviewRotation()
+    {
+        if (previewRotateTransform == null)
+            return;
+        previewRotateTransform.Angle = currentPreviewRotation;
+    }
+
+    private void UpdateRotationUiValues(double angle)
+    {
+        if (RotateAngleSlider == null || RotateAngleNumberBox == null)
+            return;
+        suppressRotateEvents = true;
+        RotateAngleSlider.Value = angle;
+        RotateAngleNumberBox.Value = angle;
+        suppressRotateEvents = false;
+        // Keep adorner handle in sync with current angle when not actively dragging via adorner
+        if (!isAdornerRotatingDrag && rotateAdorner != null)
+            rotateAdorner.SetAngle(angle);
+    }
+
+    private void RotateAngleSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (suppressRotateEvents || !isRotateMode)
+            return;
+        currentPreviewRotation = e.NewValue;
+        UpdateRotationUiValues(currentPreviewRotation); // keep number box in sync
+        ApplyPreviewRotation();
+        if (!isAdornerRotatingDrag && rotateAdorner != null)
+            rotateAdorner.SetAngle(currentPreviewRotation);
+    }
+
+    private void RotateAngleNumberBox_ValueChanged(object sender, RoutedEventArgs e)
+    {
+        if (suppressRotateEvents || !isRotateMode)
+            return;
+        if (RotateAngleNumberBox.Value is double val)
+        {
+            currentPreviewRotation = val;
+            UpdateRotationUiValues(currentPreviewRotation); // keep slider in sync
+            ApplyPreviewRotation();
+            if (!isAdornerRotatingDrag && rotateAdorner != null)
+                rotateAdorner.SetAngle(currentPreviewRotation);
+        }
+    }
+
+    private void FreeRotateToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!isRotateMode)
+        {
+            FreeRotateToggle.IsChecked = false;
+            return;
+        }
+
+        // Add RotateAdorner to MainImage
+        rotateAdornerLayer ??= AdornerLayer.GetAdornerLayer(ImageGrid);
+        if (rotateAdornerLayer != null && rotateAdorner == null)
+        {
+            rotateAdorner = new RotateAdorner(ImageGrid)
+            {
+                Angle = currentPreviewRotation
+            };
+            rotateAdorner.AngleChanging += RotateAdorner_AngleChanging;
+            rotateAdorner.AngleChangedFinal += RotateAdorner_AngleChangedFinal;
+            rotateAdornerLayer.Add(rotateAdorner);
+        }
+    }
+
+    private void FreeRotateToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        RemoveRotateAdorner();
+    }
+
+    private void RotateAdorner_AngleChanging(object? sender, double angle)
+    {
+        if (!isAdornerRotatingDrag)
+        {
+            isAdornerRotatingDrag = true;
+            // Ensure no other element holds mouse capture to avoid contention
+            if (Mouse.Captured != rotateAdorner)
+            {
+                try { Mouse.Captured?.ReleaseMouseCapture(); } catch { }
+            }
+            try { if (ShapeCanvas != null) ShapeCanvas.IsHitTestVisible = false; } catch { }
+        }
+        // Throttle to reduce jitter and UI thrash
+        long now = Environment.TickCount64;
+        if (now - lastRotateUpdateTicks < RotateUpdateMinIntervalMs && Math.Abs(angle - lastAppliedAdornerAngle) < RotateMinDelta)
+            return;
+
+        lastRotateUpdateTicks = now;
+        lastAppliedAdornerAngle = angle;
+
+        currentPreviewRotation = angle;
+        UpdateRotationUiValues(currentPreviewRotation);
+        ApplyPreviewRotation();
+        ShowRotationOverlay();
+        UpdateRotationOverlay();
+    }
+
+    private void RotateAdorner_AngleChangedFinal(object? sender, double angle)
+    {
+        // Finalize rotation preview
+        currentPreviewRotation = angle;
+        lastAppliedAdornerAngle = angle;
+        lastRotateUpdateTicks = Environment.TickCount64;
+        UpdateRotationUiValues(currentPreviewRotation);
+        ApplyPreviewRotation();
+        ShowRotationOverlay();
+        UpdateRotationOverlay();
+        isAdornerRotatingDrag = false;
+        try { if (ShapeCanvas != null) ShapeCanvas.IsHitTestVisible = true; } catch { }
+    }
+
+    private void RemoveRotateAdorner()
+    {
+        if (rotateAdornerLayer != null && rotateAdorner != null)
+        {
+            rotateAdorner.AngleChanging -= RotateAdorner_AngleChanging;
+            rotateAdorner.AngleChangedFinal -= RotateAdorner_AngleChangedFinal;            
+            rotateAdornerLayer.Remove(rotateAdorner);
+            rotateAdorner = null;
+        }
+        isAdornerRotatingDrag = false;
+        try { if (ShapeCanvas != null) ShapeCanvas.IsHitTestVisible = true; } catch { }
+    }
+
+    private void ResetRotationButton_Click(object sender, RoutedEventArgs e)
+    {
+        isFreeRotatingDrag = false;
+        HideRotationOverlay();
+        currentPreviewRotation = 0;
+        UpdateRotationUiValues(0);
+        ApplyPreviewRotation();
+        UpdateRotationOverlay();
+    }
+
+    private async void ApplyRotationButton_Click(object sender, RoutedEventArgs e)
+    {
+        isFreeRotatingDrag = false; // reset drag state
+        HideRotationOverlay();
+        if (!isRotateMode || string.IsNullOrWhiteSpace(imagePath))
+            return;
+
+        double angle = currentPreviewRotation;
+        if (Math.Abs(angle) < 0.0001)
+        {
+            ToggleRotateMode(false);
+            return; // no-op
+        }
+
+        SetUiForLongTask();
+        try
+        {
+            string previousPath = imagePath!;
+            string tempFileName = System.IO.Path.GetTempFileName();
+
+            await Task.Run(() =>
+            {
+                using MagickImage mi = new(previousPath);
+                mi.BackgroundColor = MagickColors.Transparent;
+                mi.VirtualPixelMethod = VirtualPixelMethod.Transparent;
+                mi.Rotate(angle);
+                mi.Write(tempFileName);
+            });
+
+            MagickImageUndoRedoItem undoItem = new(MainImage, previousPath, tempFileName);
+            undoRedo.AddUndo(undoItem);
+            imagePath = tempFileName;
+
+            using MagickImage newImage = new(imagePath);
+            MainImage.Source = newImage.ToBitmapSource();
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(ex.Message, "Rotation Error", System.Windows.MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            ToggleRotateMode(false);
+            SetUiForCompletedTask();
+        }
+    }
+
+    private void HandleFreeRotateDrag(MouseEventArgs e)
+    {
+        if (!isRotateMode || FreeRotateToggle == null || FreeRotateToggle.IsChecked != true)
+            return;
+        Point p = e.GetPosition(MainImage);
+        Vector delta = p - freeRotateLastPoint;
+        if (delta.LengthSquared < 0.25)
+            return;
+        freeRotateLastPoint = p;
+
+        double sensitivity = FreeRotateSensitivity;
+        if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            sensitivity *= FineRotationMultiplier; // fine adjustment
+
+        currentPreviewRotation += delta.X * sensitivity;
+        if (currentPreviewRotation > 180) currentPreviewRotation -= 360;
+        if (currentPreviewRotation < -180) currentPreviewRotation += 360;
+
+        if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
+            currentPreviewRotation = Math.Round(currentPreviewRotation / RotationSnapIncrement) * RotationSnapIncrement;
+
+        UpdateRotationUiValues(currentPreviewRotation);
+        ApplyPreviewRotation();
+        ShowRotationOverlay();
+        UpdateRotationOverlay();
+    }
+
+    private void CancelRotationButton_Click(object sender, RoutedEventArgs e)
+    {
+        isFreeRotatingDrag = false;
+        HideRotationOverlay();
+        ToggleRotateMode(false);
+    }
+
+    private void PreciseRotateMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return;
+        ToggleRotateMode(true);
+    }
+}
 internal enum AnglePlacementStep
 {
     None,
