@@ -72,6 +72,7 @@ public class MagickCropMeasurementPackage
 #if DEBUG
                 throw;
 #endif
+                return false;
             }
             finally
             {
