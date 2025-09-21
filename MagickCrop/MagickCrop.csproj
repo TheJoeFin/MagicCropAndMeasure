@@ -14,7 +14,7 @@
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
     <RuntimeIdentifiers>win-arm64;win-x86;win-x64</RuntimeIdentifiers>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>1.8.2</Version>
+    <Version>1.9.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
