@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -21,6 +22,14 @@ internal sealed class RotateAdorner : Adorner
     private const int MinorTickEvery = 15; // degrees
     private const int MajorTickEvery = 45; // degrees
 
+    private const double BasePenThickness = 1.5;
+    private const double BaseTickPenThickness = 1.0;
+    private const double BaseFontSize = 11.0;
+    private const double LabelRadialOffset = 14.0; // distance beyond circle to place labels
+
+    private const double EarlyStartFactor = 0.92; // start scaling a bit earlier to avoid clipping
+    private const double BaseInnerPaddingScreen = 8.0; // extra screen padding inside viewport
+
     private bool _isDragging;
     private Point _center;
     private double _radius;
@@ -29,10 +38,12 @@ internal sealed class RotateAdorner : Adorner
 
     private double _angle; // backing field
 
-    private readonly Pen _circlePen;
-    private readonly Pen _tickPen;
-    private readonly Brush _handleFill;
     private readonly Typeface _typeface = new("Segoe UI");
+
+#if DEBUG
+    private long _lastLogTick;
+    private const int LogIntervalMs = 333;
+#endif
 
     public event EventHandler<double>? AngleChanging;
     public event EventHandler<double>? AngleChangedFinal; // fired on mouse up
@@ -41,12 +52,6 @@ internal sealed class RotateAdorner : Adorner
     {
         IsHitTestVisible = true;
         SnapsToDevicePixels = true;
-        _circlePen = new Pen(new SolidColorBrush(Color.FromArgb(140, 0, 102, 255)), 1.5);
-        _circlePen.Freeze();
-        _tickPen = new Pen(new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)), 1);
-        _tickPen.Freeze();
-        _handleFill = new SolidColorBrush(Color.FromArgb(255, 0, 102, 255));
-        _handleFill.Freeze();
     }
 
     /// <summary>
@@ -71,66 +76,189 @@ internal sealed class RotateAdorner : Adorner
         Angle = angle;
     }
 
+    // Try to locate the AdornerLayer that hosts this adorner by walking up from this visual.
+    private static AdornerLayer? FindOwningAdornerLayer(DependencyObject start)
+    {
+        DependencyObject? v = start;
+        while (v != null)
+        {
+            if (v is AdornerLayer al)
+                return al;
+            v = VisualTreeHelper.GetParent(v);
+        }
+        return null;
+    }
+
+    // Returns scaling (sx, sy) from this adorner to its layer, the center mapped to that layer, and the layer size.
+    private (double sx, double sy, Point centerOnLayer, Size layerSize) GetLayerMetrics(Point localCenter)
+    {
+        // Use the adorner's own ancestor layer; TransformToAncestor requires the ancestor to be in THIS visual tree.
+        AdornerLayer? layer = FindOwningAdornerLayer(this);
+        if (layer is null)
+            return (1.0, 1.0, new Point(), new Size(double.PositiveInfinity, double.PositiveInfinity));
+
+        Size layerSize = layer.RenderSize;
+
+        try
+        {
+            GeneralTransform t = this.TransformToAncestor(layer);
+            // Map unit vectors to estimate scale (assumes no shear; acceptable for our purpose)
+            Point p0 = t.Transform(new Point(0, 0));
+            Point px = t.Transform(new Point(1, 0));
+            Point py = t.Transform(new Point(0, 1));
+            double sx = Math.Max(0.0001, (px - p0).Length);
+            double sy = Math.Max(0.0001, (py - p0).Length);
+            Point centerOnLayer = t.Transform(localCenter);
+            return (sx, sy, centerOnLayer, layerSize);
+        }
+        catch (InvalidOperationException)
+        {
+            // Occurs when not connected yet; return safe defaults
+            return (1.0, 1.0, new Point(), layerSize);
+        }
+    }
+
     protected override void OnRender(DrawingContext dc)
     {
         if (AdornedElement == null) return;
         Size sz = AdornedElement.RenderSize;
         _center = new Point(sz.Width / 2, sz.Height / 2);
-        _radius = Math.Max(sz.Width, sz.Height) / 2 + CircleMargin;
+
+        // Base radius surrounding the element with a fixed margin
+        double baseRadius = Math.Max(sz.Width, sz.Height) / 2 + CircleMargin;
+
+        // Viewport metrics
+        var (sx, sy, centerOnLayer, layerSize) = GetLayerMetrics(_center);
+        double zoom = (Math.Abs(sx) + Math.Abs(sy)) * 0.5;
+
+        // Estimate outward glyph extent in screen space assuming no scaling yet
+        double estFontSize = BaseFontSize;
+        double estLabelOffsetLocal = LabelRadialOffset;
+        double estTicksLocal = TickLengthMajor;
+        double estHandleLocal = HandleRadius;
+        double estPenLocal = BasePenThickness;
+        double estOutwardLocal = Math.Max(estHandleLocal, estTicksLocal + estLabelOffsetLocal + estFontSize * 0.5) + estPenLocal;
+        double extraPaddingScreen = BaseInnerPaddingScreen + (estOutwardLocal * zoom);
+
+        // Available radius in screen space from center to viewport edge, minus padding
+        double maxScreenR = Math.Max(0.0,
+            Math.Min(
+                Math.Min(centerOnLayer.X, layerSize.Width - centerOnLayer.X),
+                Math.Min(centerOnLayer.Y, layerSize.Height - centerOnLayer.Y)
+            ) - extraPaddingScreen);
+
+        // Convert screen-space cap back to local units using effective zoom
+        double capLocalRadius = zoom > 0 ? maxScreenR / zoom : baseRadius;
+
+        // Start shrinking a bit early to avoid last-moment clipping
+        double radiusScale = Math.Min(1.0, (capLocalRadius * EarlyStartFactor) / baseRadius);
+        if (radiusScale < 0) radiusScale = 0;
+
+        // Final radius to draw
+        _radius = baseRadius * radiusScale;
+
+        // Visual scale drives pen thickness, tick length, font size, handle size, and offsets
+        double visualScale = Math.Max(0.1, radiusScale); // keep a sane minimum for visibility
+
+        double circlePenThickness = BasePenThickness * visualScale;
+        double tickPenThickness = BaseTickPenThickness * visualScale;
+        double handleRadius = HandleRadius * visualScale;
+        double majorTickLen = TickLengthMajor * visualScale;
+        double minorTickLen = TickLengthMinor * visualScale;
+        double fontSize = BaseFontSize * visualScale;
+        double labelOffset = LabelRadialOffset * visualScale;
+
+        Pen circlePen = new(new SolidColorBrush(Color.FromArgb(140, 0, 102, 255)), circlePenThickness);
+        circlePen.Freeze();
+        Pen tickPen = new(new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)), tickPenThickness);
+        tickPen.Freeze();
+        Pen handleOutline = new(Brushes.White, Math.Max(0.75, 1.0 * visualScale));
+        handleOutline.Freeze();
+
+#if DEBUG
+        LogViewportMetrics(sz, baseRadius, sx, sy, zoom, centerOnLayer, layerSize, maxScreenR, capLocalRadius, _radius,
+            visualScale, circlePenThickness, tickPenThickness, handleRadius, fontSize, labelOffset, extraPaddingScreen);
+#endif
 
         // Circle
-        dc.DrawEllipse(null, _circlePen, _center, _radius, _radius);
+        dc.DrawEllipse(null, circlePen, _center, _radius, _radius);
 
         // Ticks
         for (int deg = -180; deg < 180; deg += MinorTickEvery)
         {
             bool major = deg % MajorTickEvery == 0;
-            double len = major ? TickLengthMajor : TickLengthMinor;
-            DrawTick(dc, deg, len, major);
+            double len = major ? majorTickLen : minorTickLen;
+            DrawTick(dc, tickPen, fontSize, labelOffset, deg, len, major);
         }
 
         // Handle position (0° is to the right, increasing clockwise)
         Point handlePoint = PointOnCircle(_center, _radius, Angle);
-        dc.DrawEllipse(_handleFill, new Pen(Brushes.White, 1), handlePoint, HandleRadius, HandleRadius);
+        dc.DrawEllipse(new SolidColorBrush(Color.FromArgb(255, 0, 102, 255)), handleOutline, handlePoint, handleRadius, handleRadius);
 
         // Optional current angle text near handle
-        FormattedText ft = CreateFormattedText($"{Angle:0.0}°");
-        Point textPos = handlePoint + new Vector(12, -12);
+        FormattedText ft = CreateFormattedText($"{Angle:0.0}°", fontSize);
+        Point textPos = handlePoint + new Vector(12 * visualScale, -12 * visualScale);
         dc.DrawText(ft, textPos);
     }
 
-    private void DrawTick(DrawingContext dc, double deg, double len, bool major)
+#if DEBUG
+    [Conditional("DEBUG")]
+    private void LogViewportMetrics(Size elementSize, double baseRadius, double sx, double sy, double zoom,
+        Point centerOnLayer, Size layerSize, double maxScreenR, double capLocalRadius, double finalRadius,
+        double visualScale, double circlePenThickness, double tickPenThickness, double handleRadius,
+        double fontSize, double labelOffset, double extraPaddingScreen)
+    {
+        long now = Environment.TickCount64;
+        if (now - _lastLogTick < LogIntervalMs)
+            return;
+        _lastLogTick = now;
+
+        Debug.WriteLine($"[RotateAdorner] ElementSize={elementSize.Width:F2}x{elementSize.Height:F2} CenterLocal=({_center.X:F2},{_center.Y:F2}) BaseR={baseRadius:F2}");
+        Debug.WriteLine($"[RotateAdorner] LayerSize={layerSize.Width:F2}x{layerSize.Height:F2} CenterOnLayer=({centerOnLayer.X:F2},{centerOnLayer.Y:F2}) sx={sx:F3} sy={sy:F3} zoom={zoom:F3}");
+        Debug.WriteLine($"[RotateAdorner] maxScreenR={maxScreenR:F2} capLocalR={capLocalRadius:F2} FinalR={finalRadius:F2} VisualScale={visualScale:F3}");
+        Debug.WriteLine($"[RotateAdorner] Pens(Circle={circlePenThickness:F2}, Tick={tickPenThickness:F2}) HandleR={handleRadius:F2} Font={fontSize:F2} LabelOffset={labelOffset:F2} PaddingScreen={extraPaddingScreen:F2}");
+    }
+#endif
+
+    private void DrawTick(DrawingContext dc, Pen tickPen, double fontSize, double labelOffset, double deg, double len, bool major)
     {
         Point outer = PointOnCircle(_center, _radius, deg);
         Point inner = PointOnCircle(_center, _radius - len, deg);
-        dc.DrawLine(_tickPen, inner, outer);
+        dc.DrawLine(tickPen, inner, outer);
 
         if (major)
         {
             // Draw label
-            FormattedText ft = CreateFormattedText(NormalizeAngle(deg).ToString("0"));
-            Vector dir = (outer - _center);
-            dir.Normalize();
-            Point labelPos = PointOnCircle(_center, _radius + 14, deg) - new Vector(ft.Width / 2, ft.Height / 2);
+            FormattedText ft = CreateFormattedText(NormalizeAngle(deg).ToString("0"), fontSize);
+            Point labelPos = PointOnCircle(_center, _radius + labelOffset, deg) - new Vector(ft.Width / 2, ft.Height / 2);
             dc.DrawText(ft, labelPos);
         }
     }
 
-    private FormattedText CreateFormattedText(string text) => new(
+    private FormattedText CreateFormattedText(string text, double fontSize) => new(
         text,
         System.Globalization.CultureInfo.CurrentUICulture,
         FlowDirection.LeftToRight,
         _typeface,
-        11,
+        fontSize,
         Brushes.White,
         VisualTreeHelper.GetDpi(this).PixelsPerDip);
 
     protected override HitTestResult? HitTestCore(PointHitTestParameters hitTestParameters)
     {
-        // Provide generous hit target around handle
+        // Provide generous hit target around handle, adjusted for zoom so it feels consistent
+        var (sx, sy, _, _) = GetLayerMetrics(_center);
+        double zoom = (Math.Abs(sx) + Math.Abs(sy)) * 0.5;
+
+        // Estimate current visual scale based on radius if available
+        double baseRadius = Math.Max(AdornedElement?.RenderSize.Width ?? 0, AdornedElement?.RenderSize.Height ?? 0) / 2 + CircleMargin;
+        double visualScale = baseRadius > 0 ? Math.Clamp(_radius / baseRadius, 0.1, 1.0) : 1.0;
+
+        double localHitRadius = (HandleHitRadius * visualScale) / Math.Max(0.0001, zoom);
+
         Point p = hitTestParameters.HitPoint;
         Point handle = PointOnCircle(_center, _radius, Angle);
-        if ((p - handle).Length <= HandleHitRadius)
+        if ((p - handle).Length <= localHitRadius)
             return new PointHitTestResult(this, p);
 
         return null;
@@ -185,7 +313,14 @@ internal sealed class RotateAdorner : Adorner
             // Update cursor when hovering handle
             Point p = e.GetPosition(this);
             Point handle = PointOnCircle(_center, _radius, Angle);
-            Cursor = (p - handle).Length <= HandleHitRadius ? Cursors.Hand : Cursors.Arrow;
+
+            var (sx, sy, _, _) = GetLayerMetrics(_center);
+            double zoom = (Math.Abs(sx) + Math.Abs(sy)) * 0.5;
+            double baseRadius = Math.Max(AdornedElement?.RenderSize.Width ?? 0, AdornedElement?.RenderSize.Height ?? 0) / 2 + CircleMargin;
+            double visualScale = baseRadius > 0 ? Math.Clamp(_radius / baseRadius, 0.1, 1.0) : 1.0;
+
+            double localHitRadius = (HandleHitRadius * visualScale) / Math.Max(0.0001, zoom);
+            Cursor = (p - handle).Length <= localHitRadius ? Cursors.Hand : Cursors.Arrow;
         }
         base.OnMouseMove(e);
     }
