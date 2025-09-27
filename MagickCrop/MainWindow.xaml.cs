@@ -527,12 +527,30 @@ public partial class MainWindow : FluentWindow
         return image;
     }
 
+    /// <summary>
+    /// Applies the perspective distortion correction to the currently loaded image.
+    /// This method also adjusts the position and size of any visible cropping rectangle
+    /// to account for changes in image dimensions after distortion correction.
+    /// </summary>
     private async void ApplyButton_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(imagePath))
             return;
 
         SetUiForLongTask();
+
+        // Capture original image dimensions and crop rectangle position before distortion
+        Size originalDisplaySize = new(MainImage.ActualWidth, MainImage.ActualHeight);
+        bool cropRectangleVisible = CroppingRectangle.Visibility == Visibility.Visible;
+        double originalCropLeft = 0, originalCropTop = 0, originalCropWidth = 0, originalCropHeight = 0;
+        
+        if (cropRectangleVisible)
+        {
+            originalCropLeft = Canvas.GetLeft(CroppingRectangle);
+            originalCropTop = Canvas.GetTop(CroppingRectangle);
+            originalCropWidth = CroppingRectangle.ActualWidth;
+            originalCropHeight = CroppingRectangle.ActualHeight;
+        }
 
         MagickImage? image = await CorrectDistortion(imagePath);
 
@@ -547,6 +565,41 @@ public partial class MainWindow : FluentWindow
         imagePath = tempFileName;
 
         MainImage.Source = image.ToBitmapSource();
+
+        // Adjust cropping rectangle position if it was visible before distortion correction
+        if (cropRectangleVisible)
+        {
+            // Force layout update to ensure MainImage has updated its ActualWidth/Height
+            UpdateLayout();
+            
+            Size newDisplaySize = new(MainImage.ActualWidth, MainImage.ActualHeight);
+            
+            if (newDisplaySize.Width > 0 && newDisplaySize.Height > 0 && 
+                originalDisplaySize.Width > 0 && originalDisplaySize.Height > 0)
+            {
+                // Calculate scale factors for the display size change
+                double widthScale = newDisplaySize.Width / originalDisplaySize.Width;
+                double heightScale = newDisplaySize.Height / originalDisplaySize.Height;
+                
+                // Transform the crop rectangle position and size
+                double newCropLeft = originalCropLeft * widthScale;
+                double newCropTop = originalCropTop * heightScale;
+                double newCropWidth = originalCropWidth * widthScale;
+                double newCropHeight = originalCropHeight * heightScale;
+                
+                // Ensure the adjusted rectangle stays within bounds
+                newCropLeft = Math.Max(0, Math.Min(newCropLeft, newDisplaySize.Width - newCropWidth));
+                newCropTop = Math.Max(0, Math.Min(newCropTop, newDisplaySize.Height - newCropHeight));
+                newCropWidth = Math.Min(newCropWidth, newDisplaySize.Width - newCropLeft);
+                newCropHeight = Math.Min(newCropHeight, newDisplaySize.Height - newCropTop);
+                
+                // Apply the adjusted position and size
+                Canvas.SetLeft(CroppingRectangle, newCropLeft);
+                Canvas.SetTop(CroppingRectangle, newCropTop);
+                CroppingRectangle.Width = newCropWidth;
+                CroppingRectangle.Height = newCropHeight;
+            }
+        }
 
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Collapsed;
