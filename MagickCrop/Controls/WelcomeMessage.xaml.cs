@@ -42,7 +42,7 @@ public partial class WelcomeMessage : UserControl
     public WelcomeMessage()
     {
         InitializeComponent();
-        _recentProjectsManager = new RecentProjectsManager();
+        _recentProjectsManager = Singleton<RecentProjectsManager>.Instance;
 
         // Create command for project click
         RelayCommand<RecentProjectInfo> projectClickCommand = new(OpenProject);
@@ -169,5 +169,13 @@ public partial class WelcomeMessage : UserControl
     private void PasteButton_Click(object sender, RoutedEventArgs e)
     {
         PasteButtonEvent?.Invoke(sender, e);
+    }
+
+    internal void UpdateRecentProjects()
+    {
+        RelayCommand<RecentProjectInfo> projectClickCommand = new(OpenProject);
+        RelayCommand<RecentProjectInfo> projectDeleteCommand = new(RemoveProject);
+
+        UpdateRecentProjectsList(projectClickCommand, projectDeleteCommand);
     }
 }

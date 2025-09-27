@@ -2,6 +2,7 @@
 using MagickCrop.Controls;
 using MagickCrop.Models;
 using MagickCrop.Models.MeasurementControls;
+using MagickCrop.Services;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -2787,7 +2788,7 @@ public partial class MainWindow : FluentWindow
 
     private void InitializeProjectManager()
     {
-        recentProjectsManager = new Services.RecentProjectsManager();
+        recentProjectsManager = Singleton<RecentProjectsManager>.Instance;
 
         // Setup autosave timer
         autoSaveTimer = new System.Timers.Timer(AutoSaveIntervalMs);
@@ -2907,7 +2908,9 @@ public partial class MainWindow : FluentWindow
 
     private void CloseFileIcon_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        e.Handled = true; // Prevent the click from bubbling to the button
+        e.Handled = true;
+        AutosaveCurrentState();
+        WelcomeMessageModal.UpdateRecentProjects();
         ResetApplicationState();
     }
 
