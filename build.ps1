@@ -5,7 +5,7 @@ $Project = "MagickCrop"
 $BuildPathX64 = "$PSScriptRoot\bld\x64"
 $BuildPathX64SC = "$PSScriptRoot\bld\x64\MagickCrop-Self-Contained"
 $BuildPathARM64 = "$PSScriptRoot\bld\arm64"
-$BuildPathARM64SC = "$PSScriptRoot\bld\arm64\MagickCrop-Self-Contained"
+$BuildPathARM64SC = "$PSScriptRoot\bld\arm64\MagickCrop-arm64-Self-Contained"
 
 # Define archive paths
 $ArchiveX64SC = "$BuildPathX64\$Project-x64-Self-Contained-$Version.zip"
