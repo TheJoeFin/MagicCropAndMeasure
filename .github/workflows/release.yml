@@ -20,9 +20,12 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  PROJECT: 'MagickCrop'
   PROJECT_PATH: 'MagickCrop/MagickCrop.csproj'
-  PUBLISH_DIR: 'publish'
-  ARTIFACT_ZIP: 'MagickCrop-win-x64.zip'
+  BUILD_X64: 'bld/x64'
+  BUILD_X64_SC: 'bld/x64/MagickCrop-Self-Contained'
+  BUILD_ARM64: 'bld/arm64'
+  BUILD_ARM64_SC: 'bld/arm64/MagickCrop-arm64-Self-Contained'
 
 jobs:
   build:
@@ -38,29 +41,111 @@ jobs:
       - name: Install dependencies
         run: dotnet restore ${{ env.PROJECT_PATH }}
 
-      - name: Build
-        run: dotnet build ${{ env.PROJECT_PATH }}
-
-      - name: Build for release and Publish (win-x64)
-        run: >-
-          dotnet publish ${{ env.PROJECT_PATH }}
-          -c Release
-          --self-contained
-          -r win-x64
-          -p:PublishSingleFile=true
-          -o ${{ env.PUBLISH_DIR }}
-
-      - name: Create ZIP archive of publish output
+      - name: Compute build version and archive paths
         shell: pwsh
         run: |
-          if (Test-Path "${{ env.ARTIFACT_ZIP }}") { Remove-Item -Force "${{ env.ARTIFACT_ZIP }}" }
-          Compress-Archive -Path "${{ env.PUBLISH_DIR }}/*" -DestinationPath "${{ env.ARTIFACT_ZIP }}"
+          $version = Get-Date -Format 'yyyy-MM-dd'
+          echo "VERSION=$version" >> $env:GITHUB_ENV
+          echo "ARCHIVE_X64_SC=${{ env.BUILD_X64 }}/${{ env.PROJECT }}-x64-Self-Contained-$version.zip" >> $env:GITHUB_ENV
+          echo "ARCHIVE_ARM64_SC=${{ env.BUILD_ARM64 }}/${{ env.PROJECT }}-arm64-Self-Contained-$version.zip" >> $env:GITHUB_ENV
 
-      - name: Upload build artifact (ZIP)
+      - name: Clean build directories
+        shell: pwsh
+        run: |
+          if (Test-Path '${{ env.BUILD_X64 }}') { Remove-Item '${{ env.BUILD_X64 }}' -Recurse -Force }
+          if (Test-Path '${{ env.BUILD_ARM64 }}') { Remove-Item '${{ env.BUILD_ARM64 }}' -Recurse -Force }
+          New-Item -ItemType Directory -Path '${{ env.BUILD_X64 }}' -Force | Out-Null
+          New-Item -ItemType Directory -Path '${{ env.BUILD_ARM64 }}' -Force | Out-Null
+
+      - name: Build x64 framework-dependent
+        run: >-
+          dotnet publish ${{ env.PROJECT_PATH }}
+          --runtime win-x64
+          --self-contained false
+          -c Release
+          -v minimal
+          -o ${{ env.BUILD_X64 }}
+          -p:EnableMsixTooling=true
+          -p:PublishReadyToRun=false
+          -p:PublishSingleFile=true
+          -p:CopyOutputSymbolsToPublishDirectory=false
+          --nologo
+
+      - name: Build x64 self-contained
+        run: >-
+          dotnet publish ${{ env.PROJECT_PATH }}
+          --runtime win-x64
+          --self-contained true
+          -c Release
+          -v minimal
+          -o ${{ env.BUILD_X64_SC }}
+          -p:EnableMsixTooling=true
+          -p:PublishReadyToRun=true
+          -p:PublishSingleFile=true
+          -p:CopyOutputSymbolsToPublishDirectory=false
+          --nologo
+
+      - name: Build ARM64 framework-dependent
+        run: >-
+          dotnet publish ${{ env.PROJECT_PATH }}
+          --runtime win-arm64
+          --self-contained false
+          -c Release
+          -v minimal
+          -o ${{ env.BUILD_ARM64 }}
+          -p:PublishSingleFile=true
+          -p:EnableMsixTooling=true
+          -p:CopyOutputSymbolsToPublishDirectory=false
+          --nologo
+
+      - name: Build ARM64 self-contained
+        run: >-
+          dotnet publish ${{ env.PROJECT_PATH }}
+          --runtime win-arm64
+          --self-contained true
+          -c Release
+          -v minimal
+          -o ${{ env.BUILD_ARM64_SC }}
+          -p:PublishSingleFile=true
+          -p:EnableMsixTooling=true
+          -p:CopyOutputSymbolsToPublishDirectory=false
+          --nologo
+
+      - name: Rename ARM64 executables
+        shell: pwsh
+        run: |
+          if (Test-Path "${{ env.BUILD_ARM64 }}/${{ env.PROJECT }}.exe") {
+            Rename-Item "${{ env.BUILD_ARM64 }}/${{ env.PROJECT }}.exe" 'MagickCrop-arm64.exe'
+          }
+          if (Test-Path "${{ env.BUILD_ARM64_SC }}/${{ env.PROJECT }}.exe") {
+            Rename-Item "${{ env.BUILD_ARM64_SC }}/${{ env.PROJECT }}.exe" 'MagickCrop-arm64.exe'
+          }
+
+      - name: Create self-contained archives
+        shell: pwsh
+        run: |
+          if (Test-Path "${{ env.ARCHIVE_X64_SC }}") { Remove-Item -Force "${{ env.ARCHIVE_X64_SC }}" }
+          if (Test-Path "${{ env.ARCHIVE_ARM64_SC }}") { Remove-Item -Force "${{ env.ARCHIVE_ARM64_SC }}" }
+          Compress-Archive -Path "${{ env.BUILD_X64_SC }}" -DestinationPath "${{ env.ARCHIVE_X64_SC }}" -Force
+          Compress-Archive -Path "${{ env.BUILD_ARM64_SC }}" -DestinationPath "${{ env.ARCHIVE_ARM64_SC }}" -Force
+
+      - name: Version information
+        shell: pwsh
+        run: |
+          $exe = Join-Path '${{ env.BUILD_X64 }}' '${{ env.PROJECT }}.exe'
+          if (Test-Path $exe) {
+            $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
+            Write-Host "Product Version: $($vi.ProductVersion)"
+            Write-Host "File Version: $($vi.FileVersion)"
+          }
+
+      - name: Upload build artifacts (ZIPs)
         uses: actions/upload-artifact@v4
         with:
-          name: MagickCrop-win-x64
-          path: ${{ env.ARTIFACT_ZIP }}
+          name: MagickCrop-zips
+          path: |
+            ${{ env.ARCHIVE_X64_SC }}
+            ${{ env.ARCHIVE_ARM64_SC }}
 
       - name: Compute release tag and name
         shell: pwsh
@@ -86,4 +171,5 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
-            ${{ env.ARTIFACT_ZIP }}
+            ${{ env.ARCHIVE_X64_SC }}
+            ${{ env.ARCHIVE_ARM64_SC }}
