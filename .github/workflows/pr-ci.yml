@@ -16,24 +16,28 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  PROJECT_PATH: "MagickCrop/MagickCrop.csproj"
+
 jobs:
   build:
-    name: Build (.NET 9 WPF)
     runs-on: windows-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
         with:
-          fetch-depth: 0
-
-      - name: Setup .NET 9 SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 9.0.x
-          cache: true
-
-      - name: Restore
-        run: dotnet restore MagickCrop/MagickCrop.csproj
-
+          dotnet-version: "9.0.x"
+      - name: Install dependencies
+        run: dotnet restore ${{ env.PROJECT_PATH }}
       - name: Build
-        run: dotnet build MagickCrop/MagickCrop.csproj --configuration Release --no-restore
+        run: dotnet build ${{ env.PROJECT_PATH }}
+
+      - name: Build for release and Publish
+        run: dotnet publish ${{ env.PROJECT_PATH }} -c Release --self-contained -r win-x64 -p:PublishSingleFile=true -o publish
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Text-Grab
+          path: .\publish
