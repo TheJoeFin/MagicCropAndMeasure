@@ -1,13 +1,12 @@
 name: PR CI
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-      push:
+  push:
     branches:
-      - main
-      - dev
-  workflow_dispatch:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
 
 permissions:
   contents: read
