@@ -39,5 +39,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Text-Grab
+          name: MagickCrop-winx64
           path: .\publish
