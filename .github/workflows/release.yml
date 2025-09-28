@@ -22,6 +22,7 @@ concurrency:
 env:
   PROJECT_PATH: 'MagickCrop/MagickCrop.csproj'
   PUBLISH_DIR: 'publish'
+  ARTIFACT_ZIP: 'MagickCrop-win-x64.zip'
 
 jobs:
   build:
@@ -49,11 +50,17 @@ jobs:
           -p:PublishSingleFile=true
           -o ${{ env.PUBLISH_DIR }}
 
-      - name: Upload build artifact
+      - name: Create ZIP archive of publish output
+        shell: pwsh
+        run: |
+          if (Test-Path "${{ env.ARTIFACT_ZIP }}") { Remove-Item -Force "${{ env.ARTIFACT_ZIP }}" }
+          Compress-Archive -Path "${{ env.PUBLISH_DIR }}/*" -DestinationPath "${{ env.ARTIFACT_ZIP }}"
+
+      - name: Upload build artifact (ZIP)
         uses: actions/upload-artifact@v4
         with:
           name: MagickCrop-win-x64
-          path: ${{ env.PUBLISH_DIR }}
+          path: ${{ env.ARTIFACT_ZIP }}
 
       - name: Compute release tag and name
         shell: pwsh
@@ -79,4 +86,4 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
-            ${{ env.PUBLISH_DIR }}/**
+            ${{ env.ARTIFACT_ZIP }}
