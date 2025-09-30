@@ -139,32 +139,38 @@ jobs:
             Write-Host "File Version: $($vi.FileVersion)"
           }
 
-      - name: Upload build artifacts (ZIPs)
+      - name: Upload build artifact (x64 ZIP)
         uses: actions/upload-artifact@v4
         with:
-          name: MagickCrop-zips
-          path: |
-            ${{ env.ARCHIVE_X64_SC }}
-            ${{ env.ARCHIVE_ARM64_SC }}
+          name: MagickCrop-win-x64
+          path: ${{ env.ARCHIVE_X64_SC }}
 
-      - name: Compute release tag and name
+      - name: Upload build artifact (arm64 ZIP)
+        uses: actions/upload-artifact@v4
+        with:
+          name: MagickCrop-win-arm64
+          path: ${{ env.ARCHIVE_ARM64_SC }}
+
+      - name: Compute release tags and names (separate per-arch)
         shell: pwsh
         run: |
-          $tag = "${{ github.event.inputs.tag }}"
-          if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "v${{ github.run_number }}" }
-          echo "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
+          $baseTag = "${{ github.event.inputs.tag }}"
+          if ([string]::IsNullOrWhiteSpace($baseTag)) { $baseTag = "v${{ github.run_number }}" }
+          echo "RELEASE_TAG_X64=$baseTag-x64" >> $env:GITHUB_ENV
+          echo "RELEASE_TAG_ARM64=$baseTag-arm64" >> $env:GITHUB_ENV
 
-          $name = "${{ github.event.inputs.name }}"
-          if ([string]::IsNullOrWhiteSpace($name)) { $name = "MagickCrop $tag" }
-          echo "RELEASE_NAME=$name" >> $env:GITHUB_ENV
+          $baseName = "${{ github.event.inputs.name }}"
+          if ([string]::IsNullOrWhiteSpace($baseName)) { $baseName = "MagickCrop $baseTag" }
+          echo "RELEASE_NAME_X64=$baseName (x64)" >> $env:GITHUB_ENV
+          echo "RELEASE_NAME_ARM64=$baseName (arm64)" >> $env:GITHUB_ENV
 
-      - name: Create draft GitHub release and upload assets
+      - name: Create draft GitHub release (x64) and upload asset
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          name: ${{ env.RELEASE_NAME }}
+          tag_name: ${{ env.RELEASE_TAG_X64 }}
+          name: ${{ env.RELEASE_NAME_X64 }}
           target_commitish: ${{ github.sha }}
           draft: true
           prerelease: true
@@ -172,4 +178,18 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             ${{ env.ARCHIVE_X64_SC }}
+
+      - name: Create draft GitHub release (arm64) and upload asset
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.RELEASE_TAG_ARM64 }}
+          name: ${{ env.RELEASE_NAME_ARM64 }}
+          target_commitish: ${{ github.sha }}
+          draft: true
+          prerelease: true
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
             ${{ env.ARCHIVE_ARM64_SC }}
