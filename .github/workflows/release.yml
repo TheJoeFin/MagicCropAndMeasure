@@ -41,13 +41,31 @@ jobs:
       - name: Install dependencies
         run: dotnet restore ${{ env.PROJECT_PATH }}
 
-      - name: Compute build version and archive paths
+      - name: Compute build version, archive paths, and release metadata
+        id: compute
         shell: pwsh
         run: |
           $version = Get-Date -Format 'yyyy-MM-dd'
-          echo "VERSION=$version" >> $env:GITHUB_ENV
-          echo "ARCHIVE_X64_SC=${{ env.BUILD_X64 }}/${{ env.PROJECT }}-x64-Self-Contained-$version.zip" >> $env:GITHUB_ENV
-          echo "ARCHIVE_ARM64_SC=${{ env.BUILD_ARM64 }}/${{ env.PROJECT }}-arm64-Self-Contained-$version.zip" >> $env:GITHUB_ENV
+          $archiveX64 = "${{ env.BUILD_X64 }}/${{ env.PROJECT }}-x64-Self-Contained-$version.zip"
+          $archiveArm64 = "${{ env.BUILD_ARM64 }}/${{ env.PROJECT }}-arm64-Self-Contained-$version.zip"
+
+          $baseTag = "${{ github.event.inputs.tag }}"
+          if ([string]::IsNullOrWhiteSpace($baseTag)) { $baseTag = "v${{ github.run_number }}" }
+          $tagX64 = "$baseTag-x64"
+          $tagArm64 = "$baseTag-arm64"
+
+          $baseName = "${{ github.event.inputs.name }}"
+          if ([string]::IsNullOrWhiteSpace($baseName)) { $baseName = "MagickCrop $baseTag" }
+          $nameX64 = "$baseName (x64)"
+          $nameArm64 = "$baseName (arm64)"
+
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "archive_x64_sc=$archiveX64" >> $env:GITHUB_OUTPUT
+          echo "archive_arm64_sc=$archiveArm64" >> $env:GITHUB_OUTPUT
+          echo "release_tag_x64=$tagX64" >> $env:GITHUB_OUTPUT
+          echo "release_tag_arm64=$tagArm64" >> $env:GITHUB_OUTPUT
+          echo "release_name_x64=$nameX64" >> $env:GITHUB_OUTPUT
+          echo "release_name_arm64=$nameArm64" >> $env:GITHUB_OUTPUT
 
       - name: Clean build directories
         shell: pwsh
@@ -124,10 +142,12 @@ jobs:
       - name: Create self-contained archives
         shell: pwsh
         run: |
-          if (Test-Path "${{ env.ARCHIVE_X64_SC }}") { Remove-Item -Force "${{ env.ARCHIVE_X64_SC }}" }
-          if (Test-Path "${{ env.ARCHIVE_ARM64_SC }}") { Remove-Item -Force "${{ env.ARCHIVE_ARM64_SC }}" }
-          Compress-Archive -Path "${{ env.BUILD_X64_SC }}" -DestinationPath "${{ env.ARCHIVE_X64_SC }}" -Force
-          Compress-Archive -Path "${{ env.BUILD_ARM64_SC }}" -DestinationPath "${{ env.ARCHIVE_ARM64_SC }}" -Force
+          $x64Zip = "${{ steps.compute.outputs.archive_x64_sc }}"
+          $arm64Zip = "${{ steps.compute.outputs.archive_arm64_sc }}"
+          if (Test-Path $x64Zip) { Remove-Item -Force $x64Zip }
+          if (Test-Path $arm64Zip) { Remove-Item -Force $arm64Zip }
+          Compress-Archive -Path "${{ env.BUILD_X64_SC }}" -DestinationPath $x64Zip -Force
+          Compress-Archive -Path "${{ env.BUILD_ARM64_SC }}" -DestinationPath $arm64Zip -Force
 
       - name: Version information
         shell: pwsh
@@ -143,53 +163,40 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MagickCrop-win-x64
-          path: ${{ env.ARCHIVE_X64_SC }}
+          path: ${{ steps.compute.outputs.archive_x64_sc }}
 
       - name: Upload build artifact (arm64 ZIP)
         uses: actions/upload-artifact@v4
         with:
           name: MagickCrop-win-arm64
-          path: ${{ env.ARCHIVE_ARM64_SC }}
-
-      - name: Compute release tags and names (separate per-arch)
-        shell: pwsh
-        run: |
-          $baseTag = "${{ github.event.inputs.tag }}"
-          if ([string]::IsNullOrWhiteSpace($baseTag)) { $baseTag = "v${{ github.run_number }}" }
-          echo "RELEASE_TAG_X64=$baseTag-x64" >> $env:GITHUB_ENV
-          echo "RELEASE_TAG_ARM64=$baseTag-arm64" >> $env:GITHUB_ENV
-
-          $baseName = "${{ github.event.inputs.name }}"
-          if ([string]::IsNullOrWhiteSpace($baseName)) { $baseName = "MagickCrop $baseTag" }
-          echo "RELEASE_NAME_X64=$baseName (x64)" >> $env:GITHUB_ENV
-          echo "RELEASE_NAME_ARM64=$baseName (arm64)" >> $env:GITHUB_ENV
+          path: ${{ steps.compute.outputs.archive_arm64_sc }}
 
       - name: Create draft GitHub release (x64) and upload asset
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ env.RELEASE_TAG_X64 }}
-          name: ${{ env.RELEASE_NAME_X64 }}
+          tag_name: ${{ steps.compute.outputs.release_tag_x64 }}
+          name: ${{ steps.compute.outputs.release_name_x64 }}
           target_commitish: ${{ github.sha }}
           draft: true
           prerelease: true
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
-            ${{ env.ARCHIVE_X64_SC }}
+            ${{ steps.compute.outputs.archive_x64_sc }}
 
       - name: Create draft GitHub release (arm64) and upload asset
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ env.RELEASE_TAG_ARM64 }}
-          name: ${{ env.RELEASE_NAME_ARM64 }}
+          tag_name: ${{ steps.compute.outputs.release_tag_arm64 }}
+          name: ${{ steps.compute.outputs.release_name_arm64 }}
           target_commitish: ${{ github.sha }}
           draft: true
           prerelease: true
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
-            ${{ env.ARCHIVE_ARM64_SC }}
+            ${{ steps.compute.outputs.archive_arm64_sc }}
