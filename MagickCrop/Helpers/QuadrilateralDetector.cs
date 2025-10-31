@@ -21,6 +21,9 @@ public static class QuadrilateralDetector
     private const double SizeWeight = 0.6;
     private const double RectangularityWeight = 0.4;
     
+    // Duplicate detection threshold - quadrilaterals with corners closer than this are considered duplicates
+    private const double DuplicateDistanceThreshold = 5.0; // pixels
+    
     /// <summary>
     /// Represents a detected quadrilateral with its corner points
     /// </summary>
@@ -183,6 +186,9 @@ public static class QuadrilateralDetector
                 }
             }
 
+            // Remove duplicates before sorting
+            result.Quadrilaterals = FilterDuplicates(result.Quadrilaterals);
+
             // Sort by confidence (highest first) and take top results
             result.Quadrilaterals = result.Quadrilaterals.OrderByDescending(q => q.Confidence).Take(maxResults).ToList();
         }
@@ -294,6 +300,61 @@ public static class QuadrilateralDetector
             angleDiff = 360 - angleDiff;
 
         return angleDiff;
+    }
+
+    /// <summary>
+    /// Filter out duplicate quadrilaterals that have very similar corner positions
+    /// </summary>
+    private static List<DetectedQuadrilateral> FilterDuplicates(List<DetectedQuadrilateral> quadrilaterals)
+    {
+    var filtered = new List<DetectedQuadrilateral>();
+
+ foreach (var quad in quadrilaterals)
+        {
+            bool isDuplicate = false;
+  foreach (var existing in filtered)
+         {
+if (AreDuplicates(quad, existing))
+             {
+      isDuplicate = true;
+             break;
+            }
+        }
+
+        if (!isDuplicate)
+            {
+ filtered.Add(quad);
+            }
+     }
+
+ return filtered;
+    }
+
+    /// <summary>
+/// Check if two quadrilaterals are duplicates based on corner proximity
+/// </summary>
+    private static bool AreDuplicates(DetectedQuadrilateral quad1, DetectedQuadrilateral quad2)
+    {
+   // Calculate average distance between corresponding corners
+        double totalDistance =
+            Distance(quad1.TopLeft, quad2.TopLeft) +
+            Distance(quad1.TopRight, quad2.TopRight) +
+       Distance(quad1.BottomRight, quad2.BottomRight) +
+      Distance(quad1.BottomLeft, quad2.BottomLeft);
+
+        double averageDistance = totalDistance / 4.0;
+
+    return averageDistance < DuplicateDistanceThreshold;
+ }
+
+    /// <summary>
+    /// Calculate Euclidean distance between two points
+    /// </summary>
+    private static double Distance(System.Windows.Point p1, System.Windows.Point p2)
+ {
+        double dx = p1.X - p2.X;
+        double dy = p1.Y - p2.Y;
+        return Math.Sqrt(dx * dx + dy * dy);
     }
 
     /// <summary>

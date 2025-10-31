@@ -62,6 +62,8 @@ public partial class QuadrilateralSelector : UserControl
     public event EventHandler<QuadrilateralDetector.DetectedQuadrilateral>? QuadrilateralSelected;
     public event EventHandler? ManualSelection;
     public event EventHandler? Cancelled;
+    public event EventHandler<QuadrilateralDetector.DetectedQuadrilateral>? QuadrilateralHoverEnter;
+    public event EventHandler? QuadrilateralHoverExit;
 
     public QuadrilateralSelector()
     {
@@ -80,6 +82,19 @@ public partial class QuadrilateralSelector : UserControl
         {
             QuadrilateralSelected?.Invoke(this, vm.Quadrilateral);
         }
+    }
+
+    private void QuadrilateralItem_MouseEnter(object sender, MouseEventArgs e)
+    {
+        if (sender is Border border && border.DataContext is QuadrilateralViewModel vm)
+        {
+            QuadrilateralHoverEnter?.Invoke(this, vm.Quadrilateral);
+        }
+    }
+
+    private void QuadrilateralItem_MouseLeave(object sender, MouseEventArgs e)
+    {
+      QuadrilateralHoverExit?.Invoke(this, EventArgs.Empty);
     }
 
     private void ManualButton_Click(object sender, RoutedEventArgs e)

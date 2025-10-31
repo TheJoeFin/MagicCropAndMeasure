@@ -840,6 +840,16 @@
                             <wpfui:SymbolIcon Symbol="ShapeIntersect24" />
                         </wpfui:Button.Icon>
                     </wpfui:Button>
+
+                    <!--  Quadrilateral Selector in Sidebar  -->
+                    <c:QuadrilateralSelector
+                        x:Name="QuadrilateralSelectorControl"
+                        Margin="0,8,0,0"
+                        Visibility="Collapsed"
+                        Cancelled="QuadrilateralSelector_Cancelled"
+                        ManualSelection="QuadrilateralSelector_ManualSelection"
+                        QuadrilateralSelected="QuadrilateralSelector_Selected" />
+
                     <wpfui:Button
                         x:Name="ApplyTransformButton"
                         Width="180"
@@ -1066,44 +1076,9 @@
             ToolTip="Processing..."
             Visibility="Collapsed" />
 
-        <!--  Quadrilateral Selector Overlay  -->
-        <Border
-            x:Name="QuadrilateralSelectorOverlay"
-            Grid.Row="1"
-            Grid.ColumnSpan="2"
-            Background="#CC000000"
-            Visibility="Collapsed">
-            <Border
-                MaxWidth="450"
-                MaxHeight="400"
-                Margin="40"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Background="{DynamicResource ApplicationBackgroundBrush}"
-                BorderBrush="{DynamicResource ControlStrongStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                CornerRadius="8">
-                <c:QuadrilateralSelector
-                    x:Name="QuadrilateralSelectorControl"
-                    Cancelled="QuadrilateralSelector_Cancelled"
-                    ManualSelection="QuadrilateralSelector_ManualSelection"
-                    QuadrilateralSelected="QuadrilateralSelector_Selected" />
-            </Border>
-        </Border>
-
         <ContentPresenter
             x:Name="Presenter"
-            Grid.Row="1"
-            Grid.ColumnSpan="2" />
-
-        <Grid.ContextMenu>
-            <ContextMenu>
-                <MenuItem
-                    x:Name="ResetMenuItem"
-                    Click="ResetMenuItem_Click"
-                    Header="Reset"
-                    ToolTip="Reset the workspace" />
-            </ContextMenu>
-        </Grid.ContextMenu>
+   Grid.Row="1"
+  Grid.ColumnSpan="2" />
     </Grid>
 </wpfui:FluentWindow>

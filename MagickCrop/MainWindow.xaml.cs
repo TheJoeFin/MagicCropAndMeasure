@@ -131,6 +131,9 @@ public partial class MainWindow : FluentWindow
     private AdornerLayer? rotateAdornerLayer;
     private bool isAdornerRotatingDrag = false; // true while adorner has the mouse captured
 
+    // Hover highlight polygon for quadrilateral selector
+    private Polygon? hoverHighlightPolygon;
+
     public MainWindow()
     {
         ThemeService themeService = new();
@@ -1808,6 +1811,9 @@ public partial class MainWindow : FluentWindow
 
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Collapsed;
+
+        if (lines is not null)
+            lines.Visibility = Visibility.Collapsed;
     }
 
     private async void DetectShapeButton_Click(object sender, RoutedEventArgs e)
@@ -1848,10 +1854,12 @@ public partial class MainWindow : FluentWindow
 
                 // Show selector
                 QuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
-                QuadrilateralSelectorOverlay.Visibility = Visibility.Visible;
-            }
+    QuadrilateralSelectorControl.QuadrilateralHoverEnter += QuadrilateralSelector_HoverEnter;
+                QuadrilateralSelectorControl.QuadrilateralHoverExit += QuadrilateralSelector_HoverExit;
+                ShowQuadrilateralSelector();
+ }
         }
-        catch (Exception ex)
+     catch (Exception ex)
         {
             _ = System.Windows.MessageBox.Show(
                 $"Error detecting quadrilaterals: {ex.Message}",
@@ -1868,7 +1876,7 @@ public partial class MainWindow : FluentWindow
     private void QuadrilateralSelector_Selected(object? sender, Helpers.QuadrilateralDetector.DetectedQuadrilateral quad)
     {
         // Hide selector overlay
-        QuadrilateralSelectorOverlay.Visibility = Visibility.Collapsed;
+        HideQuadrilateralSelector();
 
         // Position the corner markers
         PositionCornerMarkers(quad);
@@ -1877,13 +1885,13 @@ public partial class MainWindow : FluentWindow
     private void QuadrilateralSelector_ManualSelection(object? sender, EventArgs e)
     {
         // Hide selector overlay and let user position markers manually
-        QuadrilateralSelectorOverlay.Visibility = Visibility.Collapsed;
+        HideQuadrilateralSelector();
     }
 
     private void QuadrilateralSelector_Cancelled(object? sender, EventArgs e)
     {
         // Hide selector overlay
-        QuadrilateralSelectorOverlay.Visibility = Visibility.Collapsed;
+        HideQuadrilateralSelector();
     }
 
     private void PositionCornerMarkers(Helpers.QuadrilateralDetector.DetectedQuadrilateral quad)
@@ -2395,7 +2403,7 @@ public partial class MainWindow : FluentWindow
     {
         if (isAdornerRotatingDrag)
         {
-            if (e is not null) e.Handled = true;
+            e.Handled = true;
             return;
         }
         if (sender is Ellipse senderEllipse
@@ -2614,7 +2622,6 @@ public partial class MainWindow : FluentWindow
         {
             package.Measurements.PolygonMeasurements.Add(control.ToDto());
         }
-        Debug.WriteLine($"Saved {polygonMeasurementTools.Count} polygon measurements");
 
         foreach (VerticalLineControl control in verticalLineControls)
             package.Measurements.VerticalLines.Add(control.ToDto());
@@ -3547,6 +3554,7 @@ public partial class MainWindow : FluentWindow
     {
         if (previewRotateTransform == null)
             return;
+
         previewRotateTransform.Angle = currentPreviewRotation;
     }
 
@@ -3567,6 +3575,7 @@ public partial class MainWindow : FluentWindow
     {
         if (suppressRotateEvents || !isRotateMode)
             return;
+
         currentPreviewRotation = e.NewValue;
         UpdateRotationUiValues(currentPreviewRotation); // keep number box in sync
         ApplyPreviewRotation();

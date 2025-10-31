@@ -35,6 +35,8 @@
                             CornerRadius="4"
                             Cursor="Hand"
                             MouseDown="QuadrilateralItem_MouseDown"
+                            MouseEnter="QuadrilateralItem_MouseEnter"
+                            MouseLeave="QuadrilateralItem_MouseLeave"
                             ToolTip="Click to use this quadrilateral">
                             <Border.Style>
                                 <Style TargetType="Border">
