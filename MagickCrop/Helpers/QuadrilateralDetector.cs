@@ -12,6 +12,14 @@ namespace MagickCrop.Helpers;
 /// </summary>
 public static class QuadrilateralDetector
 {
+    // Detection parameters
+    private const double DefaultMinArea = 0.05;
+    private const int DefaultMaxResults = 5;
+    
+    // Confidence calculation weights
+    private const double SizeWeight = 0.6;
+    private const double RectangularityWeight = 0.4;
+    
     /// <summary>
     /// Represents a detected quadrilateral with its corner points
     /// </summary>
@@ -65,7 +73,23 @@ public static class QuadrilateralDetector
     /// <returns>List of detected quadrilaterals, sorted by area (largest first)</returns>
     public static List<DetectedQuadrilateral> DetectQuadrilaterals(string imagePath, double minArea = 0.05, int maxResults = 5)
     {
+        return DetectQuadrilaterals(imagePath, out _, out _, minArea, maxResults);
+    }
+
+    /// <summary>
+    /// Detects quadrilaterals in the given image and returns image dimensions
+    /// </summary>
+    /// <param name="imagePath">Path to the image file</param>
+    /// <param name="imageWidth">Output: width of the image</param>
+    /// <param name="imageHeight">Output: height of the image</param>
+    /// <param name="minArea">Minimum area of quadrilaterals to detect (relative to image size, 0-1)</param>
+    /// <param name="maxResults">Maximum number of results to return</param>
+    /// <returns>List of detected quadrilaterals, sorted by area (largest first)</returns>
+    public static List<DetectedQuadrilateral> DetectQuadrilaterals(string imagePath, out double imageWidth, out double imageHeight, double minArea = 0.05, int maxResults = 5)
+    {
         var results = new List<DetectedQuadrilateral>();
+        imageWidth = 0;
+        imageHeight = 0;
 
         try
         {
@@ -73,7 +97,9 @@ public static class QuadrilateralDetector
             if (image.IsEmpty)
                 return results;
 
-            double imageArea = image.Width * image.Height;
+            imageWidth = image.Width;
+            imageHeight = image.Height;
+            double imageArea = imageWidth * imageHeight;
             double minAreaPixels = imageArea * minArea;
 
             // Convert to grayscale
@@ -136,9 +162,14 @@ public static class QuadrilateralDetector
             // Sort by area (largest first) and take top results
             results = results.OrderByDescending(q => q.Area).Take(maxResults).ToList();
         }
+        catch (FileNotFoundException)
+        {
+            // Image file not found - return empty list
+        }
         catch (Exception)
         {
-            // Return empty list on error
+            // OpenCV error or other exception - return empty list
+            // Caller will handle empty result appropriately
         }
 
         return results;
@@ -187,7 +218,7 @@ public static class QuadrilateralDetector
         double angleScore = CalculateRectangularityScore(points);
 
         // Weighted combination
-        return (0.6 * sizeScore) + (0.4 * angleScore);
+        return (SizeWeight * sizeScore) + (RectangularityWeight * angleScore);
     }
 
     /// <summary>

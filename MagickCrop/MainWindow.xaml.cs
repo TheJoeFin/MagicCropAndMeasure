@@ -44,6 +44,10 @@ public partial class MainWindow : FluentWindow
     private string? savedPath;
     private readonly int ImageWidthConst = 700;
 
+    // Quadrilateral detection parameters
+    private const double QuadDetectionMinArea = 0.02;
+    private const int QuadDetectionMaxResults = 5;
+
     private DraggingMode draggingMode = DraggingMode.None;
 
     private string openedFileName = string.Empty;
@@ -1819,8 +1823,10 @@ public partial class MainWindow : FluentWindow
         try
         {
             // Detect quadrilaterals in background thread
+            double originalWidth = 0;
+            double originalHeight = 0;
             var detectedQuads = await Task.Run(() => 
-                Helpers.QuadrilateralDetector.DetectQuadrilaterals(imagePath, minArea: 0.02, maxResults: 5));
+                Helpers.QuadrilateralDetector.DetectQuadrilaterals(imagePath, out originalWidth, out originalHeight, minArea: QuadDetectionMinArea, maxResults: QuadDetectionMaxResults));
 
             if (detectedQuads.Count == 0)
             {
@@ -1832,11 +1838,6 @@ public partial class MainWindow : FluentWindow
             }
             else
             {
-                // Get original image dimensions
-                using var image = new MagickImage(imagePath);
-                double originalWidth = image.Width;
-                double originalHeight = image.Height;
-
                 // Scale quadrilaterals to display coordinates
                 var scaledQuads = detectedQuads.Select(q =>
                     Helpers.QuadrilateralDetector.ScaleToDisplay(

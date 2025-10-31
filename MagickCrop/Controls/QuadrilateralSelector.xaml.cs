@@ -20,7 +20,7 @@ public partial class QuadrilateralSelector : UserControl
 
         public QuadrilateralViewModel(QuadrilateralDetector.DetectedQuadrilateral quad, int index)
         {
-            Quadrilateral = quad;
+            Quadrilateral = quad ?? throw new ArgumentNullException(nameof(quad));
             Name = $"Quadrilateral {index + 1}";
             Description = $"Confidence: {quad.Confidence:P0}";
 
