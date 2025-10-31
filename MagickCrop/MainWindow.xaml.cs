@@ -22,6 +22,8 @@ using Wpf.Ui;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 using WpfTextBlock = System.Windows.Controls.TextBlock;
+using MenuItem = System.Windows.Controls.MenuItem; // disambiguate
+using MessageBoxButton = System.Windows.MessageBoxButton; // disambiguate
 
 namespace MagickCrop;
 
@@ -126,6 +128,9 @@ public partial class MainWindow : FluentWindow
     private AdornerLayer? rotateAdornerLayer;
     private bool isAdornerRotatingDrag = false; // true while adorner has the mouse captured
 
+    // AI background removal service
+    private readonly IBackgroundRemovalService _bgRemoval = new BackgroundRemovalService();
+
     public MainWindow()
     {
         ThemeService themeService = new();
@@ -165,6 +170,19 @@ public partial class MainWindow : FluentWindow
         ShapeCanvas.MouseUp += ShapeCanvas_MouseUp;
         ShapeCanvas.LostMouseCapture += ShapeCanvas_LostMouseCapture; // safety to ensure capture released
         rotationOverlayLabel = FindName("RotationOverlayLabel") as WpfTextBlock; // cache
+
+        // AI remove background availability
+        try
+        {
+            var menu = FindName("RemoveBackgroundMenuItem") as MenuItem;
+            if (menu != null)
+            {
+                menu.IsEnabled = _bgRemoval.IsAvailable;
+                if (!_bgRemoval.IsAvailable)
+                    menu.ToolTip = "AI model not found or device not supported. Place u2net.onnx in Assets/Models.";
+            }
+        }
+        catch { }
     }
 
     private void ShapeCanvas_LostMouseCapture(object sender, MouseEventArgs e)
@@ -2292,7 +2310,7 @@ public partial class MainWindow : FluentWindow
     {
         if (isAdornerRotatingDrag)
         {
-            if (e is not null) e.Handled = true;
+            e.Handled = true;
             return;
         }
         if (sender is Ellipse senderEllipse
@@ -3322,6 +3340,64 @@ public partial class MainWindow : FluentWindow
             draggingMode = DraggingMode.None;
             ShapeCanvas.ReleaseMouseCapture();
         }
+        // Shortcut: Ctrl+Shift+B to remove background
+        else if (e.Key == Key.B && Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+        {
+            e.Handled = true;
+            _ = RemoveBackgroundAsync();
+        }
+    }
+
+    // --- AI background removal ---
+    private async void RemoveBackgroundMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        await RemoveBackgroundAsync();
+    }
+
+    private async Task RemoveBackgroundAsync()
+    {
+        if (!_bgRemoval.IsAvailable || MainImage.Source is not BitmapSource src || string.IsNullOrWhiteSpace(imagePath))
+            return;
+
+        SetUiForLongTask();
+        try
+        {
+            BitmapSource? result = await _bgRemoval.RemoveBackgroundAsync(src);
+            if (result == null)
+            {
+                await new Wpf.Ui.Controls.MessageBox { Title = "AI Remove Background", Content = "Failed to compute background mask." }.ShowDialogAsync();
+                return;
+            }
+
+            string previousPath = imagePath!;
+            string tempPath = System.IO.Path.ChangeExtension(System.IO.Path.GetTempFileName(), ".png");
+            await SaveBitmapSourceAsPngAsync(result, tempPath);
+
+            // Add undo item and update state
+            MagickImageUndoRedoItem undoItem = new(MainImage, previousPath, tempPath);
+            undoRedo.AddUndo(undoItem);
+            imagePath = tempPath;
+            MainImage.Source = result; // show the computed image directly
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(ex.Message, "AI Remove Background", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            SetUiForCompletedTask();
+        }
+    }
+
+    private static Task SaveBitmapSourceAsPngAsync(BitmapSource bitmap, string filePath)
+    {
+        return Task.Run(() =>
+        {
+            PngBitmapEncoder encoder = new();
+            encoder.Frames.Add(BitmapFrame.Create(bitmap));
+            using FileStream fs = new(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
+            encoder.Save(fs);
+        });
     }
 
     // Precise rotation implementation
@@ -3444,6 +3520,7 @@ public partial class MainWindow : FluentWindow
     {
         if (previewRotateTransform == null)
             return;
+
         previewRotateTransform.Angle = currentPreviewRotation;
     }
 
@@ -3623,6 +3700,13 @@ public partial class MainWindow : FluentWindow
         }
     }
 
+    private void CancelRotationButton_Click(object sender, RoutedEventArgs e)
+    {
+        isFreeRotatingDrag = false;
+        HideRotationOverlay();
+        ToggleRotateMode(false);
+    }
+
     private void HandleFreeRotateDrag(MouseEventArgs e)
     {
         if (!isRotateMode || FreeRotateToggle == null || FreeRotateToggle.IsChecked != true)
@@ -3650,13 +3734,6 @@ public partial class MainWindow : FluentWindow
         UpdateRotationOverlay();
     }
 
-    private void CancelRotationButton_Click(object sender, RoutedEventArgs e)
-    {
-        isFreeRotatingDrag = false;
-        HideRotationOverlay();
-        ToggleRotateMode(false);
-    }
-
     private void PreciseRotateMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(imagePath))
@@ -3664,6 +3741,8 @@ public partial class MainWindow : FluentWindow
         ToggleRotateMode(true);
     }
 }
+
+// Keep only AnglePlacementStep here; DraggingMode is defined in Models/DraggingMode.cs
 internal enum AnglePlacementStep
 {
     None,

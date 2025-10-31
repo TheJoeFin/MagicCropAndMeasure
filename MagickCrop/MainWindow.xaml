@@ -292,6 +292,11 @@
                                             <wpfui:SymbolIcon Symbol="ArrowRotateClockwise24" />
                                         </MenuItem.Icon>
                                     </MenuItem>
+                                    <MenuItem
+                                        x:Name="RemoveBackgroundMenuItem"
+                                        Click="RemoveBackgroundMenuItem_Click"
+                                        Header="Remove Background (AI)"
+                                        ToolTip="Ctrl+Shift+B" />
                                     <StackPanel
                                         x:Name="RotateControlsPanel"
                                         Margin="0,4,0,8"
