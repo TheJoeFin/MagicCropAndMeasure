@@ -829,6 +829,18 @@
                     </ComboBox>
                     <local:AspectRatioTransform x:Name="AspectRatioTransformPreview" />
                     <wpfui:Button
+                        x:Name="DetectShapeButton"
+                        Width="180"
+                        Margin="0,6"
+                        Appearance="Secondary"
+                        Click="DetectShapeButton_Click"
+                        Content="Detect Shape"
+                        ToolTip="Automatically detect quadrilaterals in the image">
+                        <wpfui:Button.Icon>
+                            <wpfui:SymbolIcon Symbol="ShapeIntersect24" />
+                        </wpfui:Button.Icon>
+                    </wpfui:Button>
+                    <wpfui:Button
                         x:Name="ApplyTransformButton"
                         Width="180"
                         Margin="0,6"
@@ -1053,6 +1065,31 @@
             IsIndeterminate="True"
             ToolTip="Processing..."
             Visibility="Collapsed" />
+
+        <!--  Quadrilateral Selector Overlay  -->
+        <Border
+            x:Name="QuadrilateralSelectorOverlay"
+            Grid.Row="1"
+            Grid.ColumnSpan="2"
+            Background="#CC000000"
+            Visibility="Collapsed">
+            <Border
+                MaxWidth="450"
+                MaxHeight="400"
+                Margin="40"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Background="{DynamicResource ApplicationBackgroundBrush}"
+                BorderBrush="{DynamicResource ControlStrongStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+                <c:QuadrilateralSelector
+                    x:Name="QuadrilateralSelectorControl"
+                    Cancelled="QuadrilateralSelector_Cancelled"
+                    ManualSelection="QuadrilateralSelector_ManualSelection"
+                    QuadrilateralSelected="QuadrilateralSelector_Selected" />
+            </Border>
+        </Border>
 
         <ContentPresenter
             x:Name="Presenter"

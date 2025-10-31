@@ -1805,6 +1805,109 @@ public partial class MainWindow : FluentWindow
             element.Visibility = Visibility.Collapsed;
     }
 
+    private async void DetectShapeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+        {
+            _ = System.Windows.MessageBox.Show("Please open an image first.", "No Image", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        // Show progress indicator
+        IsWorkingBar.Visibility = Visibility.Visible;
+
+        try
+        {
+            // Detect quadrilaterals in background thread
+            var detectedQuads = await Task.Run(() => 
+                Helpers.QuadrilateralDetector.DetectQuadrilaterals(imagePath, minArea: 0.02, maxResults: 5));
+
+            if (detectedQuads.Count == 0)
+            {
+                _ = System.Windows.MessageBox.Show(
+                    "No quadrilaterals detected in the image.\n\nPlease position the corner markers manually.", 
+                    "No Shapes Detected", 
+                    MessageBoxButton.OK, 
+                    MessageBoxImage.Information);
+            }
+            else
+            {
+                // Get original image dimensions
+                using var image = new MagickImage(imagePath);
+                double originalWidth = image.Width;
+                double originalHeight = image.Height;
+
+                // Scale quadrilaterals to display coordinates
+                var scaledQuads = detectedQuads.Select(q =>
+                    Helpers.QuadrilateralDetector.ScaleToDisplay(
+                        q,
+                        originalWidth,
+                        originalHeight,
+                        MainImage.ActualWidth,
+                        MainImage.ActualHeight)).ToList();
+
+                // Show selector
+                QuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
+                QuadrilateralSelectorOverlay.Visibility = Visibility.Visible;
+            }
+        }
+        catch (Exception ex)
+        {
+            _ = System.Windows.MessageBox.Show(
+                $"Error detecting quadrilaterals: {ex.Message}", 
+                "Detection Error", 
+                MessageBoxButton.OK, 
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            IsWorkingBar.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void QuadrilateralSelector_Selected(object? sender, Helpers.QuadrilateralDetector.DetectedQuadrilateral quad)
+    {
+        // Hide selector overlay
+        QuadrilateralSelectorOverlay.Visibility = Visibility.Collapsed;
+
+        // Position the corner markers
+        PositionCornerMarkers(quad);
+    }
+
+    private void QuadrilateralSelector_ManualSelection(object? sender, EventArgs e)
+    {
+        // Hide selector overlay and let user position markers manually
+        QuadrilateralSelectorOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    private void QuadrilateralSelector_Cancelled(object? sender, EventArgs e)
+    {
+        // Hide selector overlay
+        QuadrilateralSelectorOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    private void PositionCornerMarkers(Helpers.QuadrilateralDetector.DetectedQuadrilateral quad)
+    {
+        // Position TopLeft marker
+        Canvas.SetLeft(TopLeft, quad.TopLeft.X - (TopLeft.Width / 2));
+        Canvas.SetTop(TopLeft, quad.TopLeft.Y - (TopLeft.Height / 2));
+
+        // Position TopRight marker
+        Canvas.SetLeft(TopRight, quad.TopRight.X - (TopRight.Width / 2));
+        Canvas.SetTop(TopRight, quad.TopRight.Y - (TopRight.Height / 2));
+
+        // Position BottomRight marker
+        Canvas.SetLeft(BottomRight, quad.BottomRight.X - (BottomRight.Width / 2));
+        Canvas.SetTop(BottomRight, quad.BottomRight.Y - (BottomRight.Height / 2));
+
+        // Position BottomLeft marker
+        Canvas.SetLeft(BottomLeft, quad.BottomLeft.X - (BottomLeft.Width / 2));
+        Canvas.SetTop(BottomLeft, quad.BottomLeft.Y - (BottomLeft.Height / 2));
+
+        // Update the polyline
+        DrawPolyLine();
+    }
+
     private void ImageResizeGrip_MouseDown(object sender, MouseButtonEventArgs e)
     {
         if (isAdornerRotatingDrag)
