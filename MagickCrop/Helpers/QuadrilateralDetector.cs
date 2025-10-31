@@ -65,12 +65,22 @@ public static class QuadrilateralDetector
     }
 
     /// <summary>
+    /// Result of quadrilateral detection including image dimensions
+    /// </summary>
+    public class DetectionResult
+    {
+        public List<DetectedQuadrilateral> Quadrilaterals { get; set; } = [];
+        public double ImageWidth { get; set; }
+        public double ImageHeight { get; set; }
+    }
+
+    /// <summary>
     /// Detects quadrilaterals in the given image
     /// </summary>
     /// <param name="imagePath">Path to the image file</param>
     /// <param name="minArea">Minimum area of quadrilaterals to detect (relative to image size, 0-1)</param>
     /// <param name="maxResults">Maximum number of results to return</param>
-    /// <returns>List of detected quadrilaterals, sorted by area (largest first)</returns>
+    /// <returns>List of detected quadrilaterals, sorted by confidence (highest first)</returns>
     public static List<DetectedQuadrilateral> DetectQuadrilaterals(string imagePath, double minArea = 0.05, int maxResults = 5)
     {
         return DetectQuadrilaterals(imagePath, out _, out _, minArea, maxResults);
@@ -84,22 +94,35 @@ public static class QuadrilateralDetector
     /// <param name="imageHeight">Output: height of the image</param>
     /// <param name="minArea">Minimum area of quadrilaterals to detect (relative to image size, 0-1)</param>
     /// <param name="maxResults">Maximum number of results to return</param>
-    /// <returns>List of detected quadrilaterals, sorted by area (largest first)</returns>
+    /// <returns>List of detected quadrilaterals, sorted by confidence (highest first)</returns>
     public static List<DetectedQuadrilateral> DetectQuadrilaterals(string imagePath, out double imageWidth, out double imageHeight, double minArea = 0.05, int maxResults = 5)
     {
-        var results = new List<DetectedQuadrilateral>();
-        imageWidth = 0;
-        imageHeight = 0;
+        var result = DetectQuadrilateralsWithDimensions(imagePath, minArea, maxResults);
+        imageWidth = result.ImageWidth;
+        imageHeight = result.ImageHeight;
+        return result.Quadrilaterals;
+    }
+
+    /// <summary>
+    /// Detects quadrilaterals in the given image and returns result with image dimensions
+    /// </summary>
+    /// <param name="imagePath">Path to the image file</param>
+    /// <param name="minArea">Minimum area of quadrilaterals to detect (relative to image size, 0-1)</param>
+    /// <param name="maxResults">Maximum number of results to return</param>
+    /// <returns>Detection result including quadrilaterals and image dimensions</returns>
+    public static DetectionResult DetectQuadrilateralsWithDimensions(string imagePath, double minArea = 0.05, int maxResults = 5)
+    {
+        var result = new DetectionResult();
 
         try
         {
             using var image = CvInvoke.Imread(imagePath, ImreadModes.Color);
             if (image.IsEmpty)
-                return results;
+                return result;
 
-            imageWidth = image.Width;
-            imageHeight = image.Height;
-            double imageArea = imageWidth * imageHeight;
+            result.ImageWidth = image.Width;
+            result.ImageHeight = image.Height;
+            double imageArea = result.ImageWidth * result.ImageHeight;
             double minAreaPixels = imageArea * minArea;
 
             // Convert to grayscale
@@ -154,25 +177,25 @@ public static class QuadrilateralDetector
                     {
                         // Calculate confidence based on area ratio and shape regularity
                         double confidence = CalculateConfidence(points, area, imageArea);
-                        results.Add(new DetectedQuadrilateral(points, area, confidence));
+                        result.Quadrilaterals.Add(new DetectedQuadrilateral(points, area, confidence));
                     }
                 }
             }
 
-            // Sort by area (largest first) and take top results
-            results = results.OrderByDescending(q => q.Area).Take(maxResults).ToList();
+            // Sort by confidence (highest first) and take top results
+            result.Quadrilaterals = result.Quadrilaterals.OrderByDescending(q => q.Confidence).Take(maxResults).ToList();
         }
         catch (FileNotFoundException)
         {
-            // Image file not found - return empty list
+            // Image file not found - return empty result
         }
         catch (Exception)
         {
-            // OpenCV error or other exception - return empty list
+            // OpenCV error or other exception - return empty result
             // Caller will handle empty result appropriately
         }
 
-        return results;
+        return result;
     }
 
     /// <summary>

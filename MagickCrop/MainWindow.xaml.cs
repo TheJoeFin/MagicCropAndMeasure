@@ -1823,12 +1823,10 @@ public partial class MainWindow : FluentWindow
         try
         {
             // Detect quadrilaterals in background thread
-            double originalWidth = 0;
-            double originalHeight = 0;
-            var detectedQuads = await Task.Run(() => 
-                Helpers.QuadrilateralDetector.DetectQuadrilaterals(imagePath, out originalWidth, out originalHeight, minArea: QuadDetectionMinArea, maxResults: QuadDetectionMaxResults));
+            var detectionResult = await Task.Run(() => 
+                Helpers.QuadrilateralDetector.DetectQuadrilateralsWithDimensions(imagePath, minArea: QuadDetectionMinArea, maxResults: QuadDetectionMaxResults));
 
-            if (detectedQuads.Count == 0)
+            if (detectionResult.Quadrilaterals.Count == 0)
             {
                 _ = System.Windows.MessageBox.Show(
                     "No quadrilaterals detected in the image.\n\nPlease position the corner markers manually.", 
@@ -1839,11 +1837,11 @@ public partial class MainWindow : FluentWindow
             else
             {
                 // Scale quadrilaterals to display coordinates
-                var scaledQuads = detectedQuads.Select(q =>
+                var scaledQuads = detectionResult.Quadrilaterals.Select(q =>
                     Helpers.QuadrilateralDetector.ScaleToDisplay(
                         q,
-                        originalWidth,
-                        originalHeight,
+                        detectionResult.ImageWidth,
+                        detectionResult.ImageHeight,
                         MainImage.ActualWidth,
                         MainImage.ActualHeight)).ToList();
 

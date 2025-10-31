@@ -134,13 +134,13 @@ private const int QuadDetectionMaxResults = 5;     // Top 5 candidates
 ```
 
 ### Canny Edge Detection Thresholds
-In `QuadrilateralDetector.cs`, line ~89:
+In `QuadrilateralDetector.cs`, line 138:
 ```csharp
 CvInvoke.Canny(blurred, edges, 50, 150);  // Lower/upper thresholds
 ```
 
 ### Approximation Accuracy
-In `QuadrilateralDetector.cs`, line ~109:
+In `QuadrilateralDetector.cs`, line 163:
 ```csharp
 CvInvoke.ApproxPolyDP(contour, approx, 0.02 * perimeter, true);  // 2% accuracy
 ```
