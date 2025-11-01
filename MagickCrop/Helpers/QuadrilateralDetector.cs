@@ -196,10 +196,10 @@ public static class QuadrilateralDetector
         {
             // Image file not found - return empty result
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // OpenCV error or other exception - return empty result
-            // Caller will handle empty result appropriately
+            // OpenCV error or other exception - log and return empty result
+            System.Diagnostics.Trace.TraceError($"Exception in DetectQuadrilateralsWithDimensions: {ex}");
         }
 
         return result;
@@ -309,49 +309,49 @@ public static class QuadrilateralDetector
     {
     var filtered = new List<DetectedQuadrilateral>();
 
- foreach (var quad in quadrilaterals)
+         foreach (var quad in quadrilaterals)
         {
             bool isDuplicate = false;
-  foreach (var existing in filtered)
-         {
-if (AreDuplicates(quad, existing))
-             {
-      isDuplicate = true;
-             break;
+            foreach (var existing in filtered)
+            {
+                if (AreDuplicates(quad, existing))
+                {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+
+            if (!isDuplicate)
+            {
+                filtered.Add(quad);
             }
         }
 
-        if (!isDuplicate)
-            {
- filtered.Add(quad);
-            }
-     }
-
- return filtered;
+        return filtered;
     }
 
-    /// <summary>
-/// Check if two quadrilaterals are duplicates based on corner proximity
-/// </summary>
+        /// <summary>
+    /// Check if two quadrilaterals are duplicates based on corner proximity
+    /// </summary>
     private static bool AreDuplicates(DetectedQuadrilateral quad1, DetectedQuadrilateral quad2)
     {
-   // Calculate average distance between corresponding corners
+        // Calculate average distance between corresponding corners
         double totalDistance =
             Distance(quad1.TopLeft, quad2.TopLeft) +
             Distance(quad1.TopRight, quad2.TopRight) +
-       Distance(quad1.BottomRight, quad2.BottomRight) +
-      Distance(quad1.BottomLeft, quad2.BottomLeft);
+            Distance(quad1.BottomRight, quad2.BottomRight) +
+            Distance(quad1.BottomLeft, quad2.BottomLeft);
 
         double averageDistance = totalDistance / 4.0;
 
-    return averageDistance < DuplicateDistanceThreshold;
- }
+        return averageDistance < DuplicateDistanceThreshold;
+    }
 
     /// <summary>
     /// Calculate Euclidean distance between two points
     /// </summary>
     private static double Distance(System.Windows.Point p1, System.Windows.Point p2)
- {
+    {
         double dx = p1.X - p2.X;
         double dy = p1.Y - p2.Y;
         return Math.Sqrt(dx * dx + dy * dy);

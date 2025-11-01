@@ -94,7 +94,7 @@ public partial class QuadrilateralSelector : UserControl
 
     private void QuadrilateralItem_MouseLeave(object sender, MouseEventArgs e)
     {
-      QuadrilateralHoverExit?.Invoke(this, EventArgs.Empty);
+        QuadrilateralHoverExit?.Invoke(this, EventArgs.Empty);
     }
 
     private void ManualButton_Click(object sender, RoutedEventArgs e)

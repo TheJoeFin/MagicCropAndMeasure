@@ -1854,12 +1854,28 @@ public partial class MainWindow : FluentWindow
 
                 // Show selector
                 QuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
-    QuadrilateralSelectorControl.QuadrilateralHoverEnter += QuadrilateralSelector_HoverEnter;
+                QuadrilateralSelectorControl.QuadrilateralHoverEnter += QuadrilateralSelector_HoverEnter;
                 QuadrilateralSelectorControl.QuadrilateralHoverExit += QuadrilateralSelector_HoverExit;
                 ShowQuadrilateralSelector();
- }
+            }
         }
-     catch (Exception ex)
+        catch (IOException ioEx)
+        {
+            _ = System.Windows.MessageBox.Show(
+                $"File error while detecting quadrilaterals: {ioEx.Message}",
+                "File Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        catch (UnauthorizedAccessException uaEx)
+        {
+            _ = System.Windows.MessageBox.Show(
+                $"Access denied while detecting quadrilaterals: {uaEx.Message}",
+                "Access Denied",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        catch (Exception ex)
         {
             _ = System.Windows.MessageBox.Show(
                 $"Error detecting quadrilaterals: {ex.Message}",
@@ -2403,7 +2419,8 @@ public partial class MainWindow : FluentWindow
     {
         if (isAdornerRotatingDrag)
         {
-            e.Handled = true;
+            if (e is not null)
+                e.Handled = true;
             return;
         }
         if (sender is Ellipse senderEllipse
