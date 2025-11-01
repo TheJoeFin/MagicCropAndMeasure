@@ -1,0 +1,78 @@
+<UserControl
+    x:Class="MagickCrop.Controls.PixelPrecisionZoom"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Width="150"
+    Height="150"
+    IsHitTestVisible="False"
+    mc:Ignorable="d">
+    <Grid>
+        <Border
+            Background="#CC000000"
+            BorderBrush="#0066FF"
+            BorderThickness="3"
+            CornerRadius="75">
+            <Grid>
+                <Viewbox Stretch="Fill">
+                    <Canvas
+                        x:Name="ZoomCanvas"
+                        Width="150"
+                        Height="150"
+                        ClipToBounds="True">
+                        <Image
+                            x:Name="ZoomImage"
+                            Stretch="None" />
+                    </Canvas>
+                </Viewbox>
+                
+                <!-- Crosshair overlay -->
+                <Canvas>
+                    <!-- Vertical line -->
+                    <Line
+                        Stroke="Red"
+                        StrokeThickness="1"
+                        X1="75"
+                        X2="75"
+                        Y1="0"
+                        Y2="150"
+                        Opacity="0.8" />
+                    <!-- Horizontal line -->
+                    <Line
+                        Stroke="Red"
+                        StrokeThickness="1"
+                        X1="0"
+                        X2="150"
+                        Y1="75"
+                        Y2="75"
+                        Opacity="0.8" />
+                    <!-- Center dot -->
+                    <Ellipse
+                        Width="4"
+                        Height="4"
+                        Canvas.Left="73"
+                        Canvas.Top="73"
+                        Fill="Red"
+                        Opacity="0.9" />
+                </Canvas>
+
+                <!-- Pixel coordinate display -->
+                <Border
+                    Padding="4,2"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Bottom"
+                    Background="#CC000000"
+                    CornerRadius="3"
+                    Margin="0,0,0,5">
+                    <TextBlock
+                        x:Name="CoordinateText"
+                        FontSize="10"
+                        FontWeight="Bold"
+                        Foreground="White"
+                        Text="X: 0, Y: 0" />
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

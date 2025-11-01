@@ -158,6 +158,12 @@
                     ToolTip="Drag to move bottom-left marker" />
 
                 <local:ResizableRectangle x:Name="CroppingRectangle" Visibility="Collapsed" />
+                
+                <!--  Pixel Precision Zoom Control  -->
+                <c:PixelPrecisionZoom
+                    x:Name="PixelZoomControl"
+                    Panel.ZIndex="1000"
+                    Visibility="Collapsed" />
             </Canvas>
             <!--  Rotation angle overlay label  -->
             <TextBlock
