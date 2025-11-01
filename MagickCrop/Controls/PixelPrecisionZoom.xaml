@@ -9,6 +9,9 @@
     IsHitTestVisible="False"
     mc:Ignorable="d">
     <Grid>
+        <Grid.Clip>
+            <EllipseGeometry Center="75,75" RadiusX="75" RadiusY="75" />
+        </Grid.Clip>
         <Border
             Background="#CC000000"
             BorderBrush="#0066FF"
