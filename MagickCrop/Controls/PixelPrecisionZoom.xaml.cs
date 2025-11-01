@@ -129,7 +129,7 @@ public partial class PixelPrecisionZoom : UserControl
         if (top < 0)
             top = cursorPosition.Y + offsetY;
 
-        Canvas.SetLeft(this, left);
-        Canvas.SetTop(this, top);
+        // Use Margin for positioning since control is in a Grid, not a Canvas
+        Margin = new Thickness(left, top, 0, 0);
     }
 }

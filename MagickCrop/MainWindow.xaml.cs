@@ -3863,9 +3863,12 @@ public partial class MainWindow : FluentWindow
             Point imagePosition = ConvertCanvasToImageCoordinates(mousePosition);
             PixelZoomControl.CurrentPosition = imagePosition;
 
-            // Position the zoom control near the cursor
-            Point canvasPosition = mousePosition;
-            PixelZoomControl.PositionNearCursor(canvasPosition, ShapeCanvas.ActualWidth, ShapeCanvas.ActualHeight);
+            // Convert ShapeCanvas coordinates to MainGrid coordinates
+            // ShapeCanvas has transforms applied, so we need to transform the point
+            Point mainGridPosition = ShapeCanvas.TransformToAncestor(MainGrid).Transform(mousePosition);
+
+            // Position the zoom control near the cursor in MainGrid coordinates
+            PixelZoomControl.PositionNearCursor(mainGridPosition, MainGrid.ActualWidth, MainGrid.ActualHeight);
 
             // Show the control
             PixelZoomControl.Visibility = Visibility.Visible;
@@ -3892,9 +3895,12 @@ public partial class MainWindow : FluentWindow
             Point imagePosition = ConvertCanvasToImageCoordinates(mousePosition);
             PixelZoomControl.CurrentPosition = imagePosition;
 
-            // Update the zoom control position
-            Point canvasPosition = mousePosition;
-            PixelZoomControl.PositionNearCursor(canvasPosition, ShapeCanvas.ActualWidth, ShapeCanvas.ActualHeight);
+            // Convert ShapeCanvas coordinates to MainGrid coordinates
+            // ShapeCanvas has transforms applied, so we need to transform the point
+            Point mainGridPosition = ShapeCanvas.TransformToAncestor(MainGrid).Transform(mousePosition);
+
+            // Update the zoom control position in MainGrid coordinates
+            PixelZoomControl.PositionNearCursor(mainGridPosition, MainGrid.ActualWidth, MainGrid.ActualHeight);
         }
         catch (Exception)
         {
