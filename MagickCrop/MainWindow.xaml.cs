@@ -254,9 +254,22 @@ public partial class MainWindow : FluentWindow
 
         // Update pixel zoom if it should be shown
         Point mousePos = e.GetPosition(ShapeCanvas);
-        if (ShouldShowPixelZoom() && Mouse.LeftButton == MouseButtonState.Pressed)
+        if (ShouldShowPixelZoom())
         {
-            UpdatePixelZoom(mousePos);
+            // Show zoom if not already visible
+            if (PixelZoomControl.Visibility != Visibility.Visible && MainImage.Source != null)
+            {
+                ShowPixelZoom(mousePos);
+            }
+            else
+            {
+                UpdatePixelZoom(mousePos);
+            }
+        }
+        else
+        {
+            // Hide zoom when conditions are no longer met
+            HidePixelZoom();
         }
 
         // --- ANGLE MEASUREMENT PLACEMENT LOGIC ---
@@ -1263,8 +1276,11 @@ public partial class MainWindow : FluentWindow
 
     private void ShapeCanvas_MouseUp(object sender, MouseButtonEventArgs e)
     {
-        // Hide pixel zoom when mouse is released
-        HidePixelZoom();
+        // Hide pixel zoom only if we're not in a precision mode anymore
+        if (!ShouldShowPixelZoom())
+        {
+            HidePixelZoom();
+        }
 
         // If we were panning, release immediately so wheel events work even without a post-release move
         if (draggingMode == DraggingMode.Panning)
@@ -3967,6 +3983,30 @@ public partial class MainWindow : FluentWindow
 
         // Show during angle placement
         if (isPlacingAngleMeasurement)
+            return true;
+
+        // Show during polygon placement
+        if (isPlacingPolygonMeasurement)
+            return true;
+
+        // Show during rectangle placement
+        if (isPlacingRectangleMeasurement)
+            return true;
+
+        // Show during circle placement
+        if (isPlacingCircleMeasurement)
+            return true;
+
+        // Show when any measurement tool is selected (even before clicking)
+        if (MeasureDistanceToggle?.IsChecked == true ||
+            MeasureAngleToggle?.IsChecked == true ||
+            RectangleMeasureToggle?.IsChecked == true ||
+            CircleMeasureToggle?.IsChecked == true ||
+            PolygonMeasureToggle?.IsChecked == true)
+            return true;
+
+        // Show when transform mode is active
+        if (TransformButtonPanel?.Visibility == Visibility.Visible)
             return true;
 
         return false;
