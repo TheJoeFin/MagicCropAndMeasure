@@ -899,6 +899,7 @@ public partial class MainWindow : FluentWindow
                 Title = "Error",
                 Content = $"Error pasting image: {ex.Message}",
             };
+            await uiMessageBox.ShowDialogAsync();
         }
         finally
         {
@@ -1925,15 +1926,6 @@ public partial class MainWindow : FluentWindow
         {
             IsWorkingBar.Visibility = Visibility.Collapsed;
         }
-    }
-
-    private void QuadrilateralSelector_Selected(object? sender, Helpers.QuadrilateralDetector.DetectedQuadrilateral quad)
-    {
-        // Hide selector overlay
-        HideQuadrilateralSelector();
-
-        // Position the corner markers
-        PositionCornerMarkers(quad);
     }
 
     private void QuadrilateralSelector_ManualSelection(object? sender, EventArgs e)
@@ -3976,11 +3968,11 @@ public partial class MainWindow : FluentWindow
             return true;
 
         // Show pixel zoom when placing/dragging measurement points
-        if (draggingMode == DraggingMode.MeasureDistance ||
-            draggingMode == DraggingMode.MeasureAngle ||
-            draggingMode == DraggingMode.MeasureRectangle ||
-            draggingMode == DraggingMode.MeasurePolygon ||
-            draggingMode == DraggingMode.MeasureCircle)
+        if (draggingMode is DraggingMode.MeasureDistance or
+            DraggingMode.MeasureAngle or
+            DraggingMode.MeasureRectangle or
+            DraggingMode.MeasurePolygon or
+            DraggingMode.MeasureCircle)
             return true;
 
         // Show during measurement creation

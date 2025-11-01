@@ -71,7 +71,7 @@ public partial class PixelPrecisionZoom : UserControl
                 double captureHeight = DefaultPreviewSize / ZoomFactor;
 
                 // Create a cropped version of the source
-                Int32Rect sourceRect = new Int32Rect(
+                Int32Rect sourceRect = new(
                     (int)Math.Max(0, currentPosition.X - captureWidth / 2),
                     (int)Math.Max(0, currentPosition.Y - captureHeight / 2),
                     (int)Math.Min(captureWidth, bitmapSource.PixelWidth - (currentPosition.X - captureWidth / 2)),
@@ -84,10 +84,10 @@ public partial class PixelPrecisionZoom : UserControl
                     sourceRect.X + sourceRect.Width <= bitmapSource.PixelWidth &&
                     sourceRect.Y + sourceRect.Height <= bitmapSource.PixelHeight)
                 {
-                    CroppedBitmap croppedBitmap = new CroppedBitmap(bitmapSource, sourceRect);
+                    CroppedBitmap croppedBitmap = new(bitmapSource, sourceRect);
 
                     // Apply scaling transform
-                    TransformedBitmap transformedBitmap = new TransformedBitmap(croppedBitmap, new ScaleTransform(ZoomFactor, ZoomFactor));
+                    TransformedBitmap transformedBitmap = new(croppedBitmap, new ScaleTransform(ZoomFactor, ZoomFactor));
 
                     ZoomImage.Source = transformedBitmap;
                 }
