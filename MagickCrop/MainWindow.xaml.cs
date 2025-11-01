@@ -1,5 +1,6 @@
 ﻿using ImageMagick;
 using MagickCrop.Controls;
+using MagickCrop.Helpers;
 using MagickCrop.Models;
 using MagickCrop.Models.MeasurementControls;
 using MagickCrop.Services;
@@ -43,6 +44,10 @@ public partial class MainWindow : FluentWindow
     private string? imagePath;
     private string? savedPath;
     private readonly int ImageWidthConst = 700;
+
+    // Quadrilateral detection parameters
+    private const double QuadDetectionMinArea = 0.02;
+    private const int QuadDetectionMaxResults = 5;
 
     private DraggingMode draggingMode = DraggingMode.None;
 
@@ -125,6 +130,9 @@ public partial class MainWindow : FluentWindow
     private RotateAdorner? rotateAdorner;
     private AdornerLayer? rotateAdornerLayer;
     private bool isAdornerRotatingDrag = false; // true while adorner has the mouse captured
+
+    // Hover highlight polygon for quadrilateral selector
+    private Polygon? hoverHighlightPolygon;
 
     public MainWindow()
     {
@@ -544,7 +552,7 @@ public partial class MainWindow : FluentWindow
         Size originalDisplaySize = new(MainImage.ActualWidth, MainImage.ActualHeight);
         bool cropRectangleVisible = CroppingRectangle.Visibility == Visibility.Visible;
         double originalCropLeft = 0, originalCropTop = 0, originalCropWidth = 0, originalCropHeight = 0;
-        
+
         if (cropRectangleVisible)
         {
             originalCropLeft = Canvas.GetLeft(CroppingRectangle);
@@ -572,28 +580,28 @@ public partial class MainWindow : FluentWindow
         {
             // Force layout update to ensure MainImage has updated its ActualWidth/Height
             UpdateLayout();
-            
+
             Size newDisplaySize = new(MainImage.ActualWidth, MainImage.ActualHeight);
-            
-            if (newDisplaySize.Width > 0 && newDisplaySize.Height > 0 && 
+
+            if (newDisplaySize.Width > 0 && newDisplaySize.Height > 0 &&
                 originalDisplaySize.Width > 0 && originalDisplaySize.Height > 0)
             {
                 // Calculate scale factors for the display size change
                 double widthScale = newDisplaySize.Width / originalDisplaySize.Width;
                 double heightScale = newDisplaySize.Height / originalDisplaySize.Height;
-                
+
                 // Transform the crop rectangle position and size
                 double newCropLeft = originalCropLeft * widthScale;
                 double newCropTop = originalCropTop * heightScale;
                 double newCropWidth = originalCropWidth * widthScale;
                 double newCropHeight = originalCropHeight * heightScale;
-                
+
                 // Ensure the adjusted rectangle stays within bounds
                 newCropLeft = Math.Max(0, Math.Min(newCropLeft, newDisplaySize.Width - newCropWidth));
                 newCropTop = Math.Max(0, Math.Min(newCropTop, newDisplaySize.Height - newCropHeight));
                 newCropWidth = Math.Min(newCropWidth, newDisplaySize.Width - newCropLeft);
                 newCropHeight = Math.Min(newCropHeight, newDisplaySize.Height - newCropTop);
-                
+
                 // Apply the adjusted position and size
                 Canvas.SetLeft(CroppingRectangle, newCropLeft);
                 Canvas.SetTop(CroppingRectangle, newCropTop);
@@ -1803,6 +1811,125 @@ public partial class MainWindow : FluentWindow
 
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Collapsed;
+
+        if (lines is not null)
+            lines.Visibility = Visibility.Collapsed;
+    }
+
+    private async void DetectShapeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+        {
+            _ = System.Windows.MessageBox.Show("Please open an image first.", "No Image", System.Windows.MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        // Show progress indicator
+        IsWorkingBar.Visibility = Visibility.Visible;
+
+        try
+        {
+            // Detect quadrilaterals in background thread
+            QuadrilateralDetector.DetectionResult detectionResult = await Task.Run(() =>
+                QuadrilateralDetector.DetectQuadrilateralsWithDimensions(imagePath, minArea: QuadDetectionMinArea, maxResults: QuadDetectionMaxResults));
+
+            if (detectionResult.Quadrilaterals.Count == 0)
+            {
+                _ = System.Windows.MessageBox.Show(
+                    "No quadrilaterals detected in the image.\n\nPlease position the corner markers manually.",
+                    "No Shapes Detected",
+                    System.Windows.MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            else
+            {
+                // Scale quadrilaterals to display coordinates
+                List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads = [.. detectionResult.Quadrilaterals.Select(q =>
+                    QuadrilateralDetector.ScaleToDisplay(
+                        q,
+                        detectionResult.ImageWidth,
+                        detectionResult.ImageHeight,
+                        MainImage.ActualWidth,
+                        MainImage.ActualHeight))];
+
+                // Show selector
+                QuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
+                QuadrilateralSelectorControl.QuadrilateralHoverEnter += QuadrilateralSelector_HoverEnter;
+                QuadrilateralSelectorControl.QuadrilateralHoverExit += QuadrilateralSelector_HoverExit;
+                ShowQuadrilateralSelector();
+            }
+        }
+        catch (IOException ioEx)
+        {
+            _ = System.Windows.MessageBox.Show(
+                $"File error while detecting quadrilaterals: {ioEx.Message}",
+                "File Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        catch (UnauthorizedAccessException uaEx)
+        {
+            _ = System.Windows.MessageBox.Show(
+                $"Access denied while detecting quadrilaterals: {uaEx.Message}",
+                "Access Denied",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        catch (Exception ex)
+        {
+            _ = System.Windows.MessageBox.Show(
+                $"Error detecting quadrilaterals: {ex.Message}",
+                "Detection Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            IsWorkingBar.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void QuadrilateralSelector_Selected(object? sender, Helpers.QuadrilateralDetector.DetectedQuadrilateral quad)
+    {
+        // Hide selector overlay
+        HideQuadrilateralSelector();
+
+        // Position the corner markers
+        PositionCornerMarkers(quad);
+    }
+
+    private void QuadrilateralSelector_ManualSelection(object? sender, EventArgs e)
+    {
+        // Hide selector overlay and let user position markers manually
+        HideQuadrilateralSelector();
+    }
+
+    private void QuadrilateralSelector_Cancelled(object? sender, EventArgs e)
+    {
+        // Hide selector overlay
+        HideQuadrilateralSelector();
+    }
+
+    private void PositionCornerMarkers(Helpers.QuadrilateralDetector.DetectedQuadrilateral quad)
+    {
+        // Position TopLeft marker
+        Canvas.SetLeft(TopLeft, quad.TopLeft.X - (TopLeft.Width / 2));
+        Canvas.SetTop(TopLeft, quad.TopLeft.Y - (TopLeft.Height / 2));
+
+        // Position TopRight marker
+        Canvas.SetLeft(TopRight, quad.TopRight.X - (TopRight.Width / 2));
+        Canvas.SetTop(TopRight, quad.TopRight.Y - (TopRight.Height / 2));
+
+        // Position BottomRight marker
+        Canvas.SetLeft(BottomRight, quad.BottomRight.X - (BottomRight.Width / 2));
+        Canvas.SetTop(BottomRight, quad.BottomRight.Y - (BottomRight.Height / 2));
+
+        // Position BottomLeft marker
+        Canvas.SetLeft(BottomLeft, quad.BottomLeft.X - (BottomLeft.Width / 2));
+        Canvas.SetTop(BottomLeft, quad.BottomLeft.Y - (BottomLeft.Height / 2));
+
+        // Update the polyline
+        DrawPolyLine();
     }
 
     private void ImageResizeGrip_MouseDown(object sender, MouseButtonEventArgs e)
@@ -2292,7 +2419,8 @@ public partial class MainWindow : FluentWindow
     {
         if (isAdornerRotatingDrag)
         {
-            if (e is not null) e.Handled = true;
+            if (e is not null)
+                e.Handled = true;
             return;
         }
         if (sender is Ellipse senderEllipse
@@ -2511,7 +2639,6 @@ public partial class MainWindow : FluentWindow
         {
             package.Measurements.PolygonMeasurements.Add(control.ToDto());
         }
-        Debug.WriteLine($"Saved {polygonMeasurementTools.Count} polygon measurements");
 
         foreach (VerticalLineControl control in verticalLineControls)
             package.Measurements.VerticalLines.Add(control.ToDto());
@@ -3363,7 +3490,7 @@ public partial class MainWindow : FluentWindow
             {
                 return;
             }
-            
+
             try
             {
                 rotateAdornerLayer ??= AdornerLayer.GetAdornerLayer(ImageGrid);
@@ -3444,6 +3571,7 @@ public partial class MainWindow : FluentWindow
     {
         if (previewRotateTransform == null)
             return;
+
         previewRotateTransform.Angle = currentPreviewRotation;
     }
 
@@ -3464,6 +3592,7 @@ public partial class MainWindow : FluentWindow
     {
         if (suppressRotateEvents || !isRotateMode)
             return;
+
         currentPreviewRotation = e.NewValue;
         UpdateRotationUiValues(currentPreviewRotation); // keep number box in sync
         ApplyPreviewRotation();
@@ -3558,7 +3687,7 @@ public partial class MainWindow : FluentWindow
         if (rotateAdornerLayer != null && rotateAdorner != null)
         {
             rotateAdorner.AngleChanging -= RotateAdorner_AngleChanging;
-            rotateAdorner.AngleChangedFinal -= RotateAdorner_AngleChangedFinal;            
+            rotateAdorner.AngleChangedFinal -= RotateAdorner_AngleChangedFinal;
             rotateAdornerLayer.Remove(rotateAdorner);
             rotateAdorner = null;
         }
