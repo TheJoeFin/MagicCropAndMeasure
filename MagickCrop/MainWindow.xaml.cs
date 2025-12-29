@@ -1928,6 +1928,14 @@ public partial class MainWindow : FluentWindow
         }
     }
 
+    private void QuadrilateralSelector_Selected(object? sender, QuadrilateralDetector.DetectedQuadrilateral quad)
+    {
+        // Position corner markers at the selected quadrilateral's corners
+        PositionCornerMarkers(quad);
+        // Hide the selector overlay
+        HideQuadrilateralSelector();
+    }
+
     private void QuadrilateralSelector_ManualSelection(object? sender, EventArgs e)
     {
         // Hide selector overlay and let user position markers manually
