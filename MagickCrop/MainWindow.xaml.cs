@@ -985,6 +985,9 @@ public partial class MainWindow : FluentWindow
 
         // Update the ReOpenFileButton to show the current file name
         UpdateOpenedFileNameText();
+
+        // Center and zoom to fit the image in the viewport
+        CenterAndZoomToFit();
     }
 
     private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
@@ -1438,6 +1441,72 @@ public partial class MainWindow : FluentWindow
         canvasTranslate.X = 0;
         canvasTranslate.Y = 0;
     }
+
+    /// <summary>
+    /// Centers and zooms the canvas to fit the image in the viewport with padding.
+    /// </summary>
+    private void CenterAndZoomToFit()
+    {
+        if (MainImage.Source == null || MainGrid.ActualWidth == 0 || MainGrid.ActualHeight == 0)
+            return;
+
+        // Force layout update to ensure ImageGrid has rendered
+        UpdateLayout();
+
+        // Get the viewport size (the visible area in MainGrid)
+        double viewportWidth = MainGrid.ActualWidth;
+        double viewportHeight = MainGrid.ActualHeight;
+
+        // Get the image size (ImageGrid size which contains the image)
+        double imageWidth = ImageGrid.ActualWidth;
+        double imageHeight = ImageGrid.ActualHeight;
+
+        if (imageWidth == 0 || imageHeight == 0)
+            return;
+
+        // Add padding (10% on each side)
+        double paddingFactor = 0.9; // Use 90% of viewport to leave 10% padding
+        double availableWidth = viewportWidth * paddingFactor;
+        double availableHeight = viewportHeight * paddingFactor;
+
+        // Calculate scale factors to fit the image in the viewport
+        double scaleX = availableWidth / imageWidth;
+        double scaleY = availableHeight / imageHeight;
+
+        // Use the smaller scale to ensure the entire image fits
+        double scale = Math.Min(scaleX, scaleY);
+
+        // Clamp scale to min/max zoom limits
+        scale = Math.Clamp(scale, MinZoom, MaxZoom);
+
+        // Apply the scale
+        canvasScale.ScaleX = scale;
+        canvasScale.ScaleY = scale;
+
+        // Calculate the scaled image dimensions
+        double scaledImageWidth = imageWidth * scale;
+        double scaledImageHeight = imageHeight * scale;
+
+        // Calculate translation to center the image
+        // The canvas has a 50,50 margin, so we need to account for that
+        double canvasMarginX = 50;
+        double canvasMarginY = 50;
+
+        // Center the scaled image in the viewport
+        double translateX = (viewportWidth - scaledImageWidth) / 2 - (canvasMarginX * scale);
+        double translateY = (viewportHeight - scaledImageHeight) / 2 - (canvasMarginY * scale);
+
+            canvasTranslate.X = translateX;
+            canvasTranslate.Y = translateY;
+        }
+
+        /// <summary>
+        /// Menu item handler to center and zoom to fit the image on demand.
+        /// </summary>
+        private void CenterAndZoomToFitMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            CenterAndZoomToFit();
+        }
 
     private async void AutoContrastMenuItem_Click(object sender, RoutedEventArgs e)
     {
@@ -2948,6 +3017,9 @@ public partial class MainWindow : FluentWindow
 
         MeasureTabItem.IsSelected = true;
         UpdateOpenedFileNameText();
+
+        // Center and zoom to fit the image in the viewport
+        CenterAndZoomToFit();
     }
 
     public async void LoadMeasurementsPackageFromFile(string filePath)
