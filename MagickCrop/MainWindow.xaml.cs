@@ -42,6 +42,7 @@ public partial class MainWindow : FluentWindow
     private int pointDraggingIndex = -1;
     private Polygon? lines;
     private string? imagePath;
+    private string? originalFilePath;
     private string? savedPath;
     private readonly int ImageWidthConst = 700;
 
@@ -646,6 +647,7 @@ public partial class MainWindow : FluentWindow
             Filter = "Image Files|*.jpg;",
             RestoreDirectory = true,
             FileName = $"{openedFileName}_corrected.jpg",
+            InitialDirectory = !string.IsNullOrEmpty(originalFilePath) ? System.IO.Path.GetDirectoryName(originalFilePath) : null,
         };
 
         if (saveFileDialog.ShowDialog() is not true || lines is null)
@@ -971,6 +973,7 @@ public partial class MainWindow : FluentWindow
         MagickImage bitmapImage = new(tempFileName);
 
         imagePath = tempFileName;
+        originalFilePath = imageFilePath;
         openedFileName = System.IO.Path.GetFileNameWithoutExtension(imageFilePath);
         MainImage.Source = bitmapImage.ToBitmapSource();
 
