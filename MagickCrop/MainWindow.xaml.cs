@@ -257,15 +257,7 @@ public partial class MainWindow : FluentWindow
         Point mousePos = e.GetPosition(ShapeCanvas);
         if (ShouldShowPixelZoom())
         {
-            // Show zoom if not already visible
-            if (PixelZoomControl.Visibility != Visibility.Visible && MainImage.Source != null)
-            {
-                ShowPixelZoom(mousePos);
-            }
-            else
-            {
-                UpdatePixelZoom(mousePos);
-            }
+            UpdatePixelZoom(mousePos);
         }
         else
         {
@@ -4042,6 +4034,7 @@ public partial class MainWindow : FluentWindow
 
     /// <summary>
     /// Checks if pixel zoom should be shown for the current operation.
+    /// Only shows during active dragging operations, not on hover.
     /// </summary>
     /// <returns>True if pixel zoom should be active</returns>
     private bool ShouldShowPixelZoom()
@@ -4058,36 +4051,24 @@ public partial class MainWindow : FluentWindow
             DraggingMode.MeasureCircle)
             return true;
 
-        // Show during measurement creation
-        if (isCreatingMeasurement)
+        // Show during measurement creation (active drag)
+        if (isCreatingMeasurement && draggingMode == DraggingMode.CreatingMeasurement)
             return true;
 
-        // Show during angle placement
-        if (isPlacingAngleMeasurement)
+        // Show during angle placement (active placement)
+        if (isPlacingAngleMeasurement && anglePlacementStep != AnglePlacementStep.None)
             return true;
 
-        // Show during polygon placement
-        if (isPlacingPolygonMeasurement)
+        // Show during polygon placement (active placement)
+        if (isPlacingPolygonMeasurement && activePolygonPlacementControl != null)
             return true;
 
-        // Show during rectangle placement
-        if (isPlacingRectangleMeasurement)
+        // Show during rectangle placement (active drag)
+        if (isPlacingRectangleMeasurement && draggingMode == DraggingMode.CreatingMeasurement)
             return true;
 
-        // Show during circle placement
-        if (isPlacingCircleMeasurement)
-            return true;
-
-        // Show when any measurement tool is selected (even before clicking)
-        if (MeasureDistanceToggle?.IsChecked == true ||
-            MeasureAngleToggle?.IsChecked == true ||
-            RectangleMeasureToggle?.IsChecked == true ||
-            CircleMeasureToggle?.IsChecked == true ||
-            PolygonMeasureToggle?.IsChecked == true)
-            return true;
-
-        // Show when transform mode is active
-        if (TransformButtonPanel?.Visibility == Visibility.Visible)
+        // Show during circle placement (active drag)
+        if (isPlacingCircleMeasurement && draggingMode == DraggingMode.CreatingMeasurement)
             return true;
 
         return false;
