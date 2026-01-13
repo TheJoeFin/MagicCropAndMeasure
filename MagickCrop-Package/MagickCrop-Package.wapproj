@@ -162,7 +162,7 @@
     <None Include="Package.StoreAssociation.xml" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7175" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7463" PrivateAssets="all" />
     <PackageReference Include="System.Private.Uri" Version="4.3.2" />
   </ItemGroup>
   <ItemGroup>
