@@ -2,12 +2,13 @@
 
 public enum AspectRatio
 {
-    Square = 0,
-    LetterPortrait = 1,
-    LetterLandscape = 2,
-    A4Portrait = 3,
-    A4Landscape = 4,
-    UsDollarBillPortrait = 5,
-    UsDollarBillLandscape = 6,
-    Custom = 7,
+    Original = 0,
+    Square = 1,
+    LetterPortrait = 2,
+    LetterLandscape = 3,
+    A4Portrait = 4,
+    A4Landscape = 5,
+    UsDollarBillPortrait = 6,
+    UsDollarBillLandscape = 7,
+    Custom = 8,
 }
