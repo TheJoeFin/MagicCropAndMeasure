@@ -2,13 +2,13 @@
     x:Class="MagickCrop.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:behaviors="clr-namespace:MagickCrop.Behaviors"
     xmlns:c="clr-namespace:MagickCrop.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:MagickCrop"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="clr-namespace:MagickCrop.Models"
     xmlns:wpfui="http://schemas.lepo.co/wpfui/2022/xaml"
-    xmlns:behaviors="clr-namespace:MagickCrop.Behaviors"
     Title="Magick Crop &amp; Measure"
     Width="1000"
     Height="800"
@@ -79,13 +79,13 @@
             x:Name="MainGrid"
             Grid.Row="1"
             Grid.Column="0"
+            behaviors:PinchZoomBehavior.IsEnabled="True"
+            behaviors:PinchZoomBehavior.MaxScale="8"
+            behaviors:PinchZoomBehavior.MinScale="0.1"
+            behaviors:PinchZoomBehavior.ZoomElement="{Binding ElementName=ShapeCanvas}"
             Background="Gray"
             ClipToBounds="True"
             IsManipulationEnabled="True"
-            behaviors:PinchZoomBehavior.IsEnabled="True"
-            behaviors:PinchZoomBehavior.ZoomElement="{Binding ElementName=ShapeCanvas}"
-            behaviors:PinchZoomBehavior.MinScale="0.1"
-            behaviors:PinchZoomBehavior.MaxScale="8"
             PreviewMouseWheel="ShapeCanvas_PreviewMouseWheel">
             <Canvas x:Name="ShapeCanvas" Margin="50,50,0,0">
                 <Canvas.RenderTransform>
@@ -159,6 +159,15 @@
 
                 <local:ResizableRectangle x:Name="CroppingRectangle" Visibility="Collapsed" />
             </Canvas>
+
+            <!--  Pixel Precision Zoom Control - Outside ShapeCanvas to avoid being affected by canvas zoom  -->
+            <c:PixelPrecisionZoom
+                x:Name="PixelZoomControl"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Panel.ZIndex="1000"
+                Visibility="Collapsed" />
+
             <!--  Rotation angle overlay label  -->
             <TextBlock
                 x:Name="RotationOverlayLabel"
@@ -235,10 +244,7 @@
                                 x:Name="UndoMenuItem"
                                 Click="UndoMenuItem_Click"
                                 Header="Undo"
-                                IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor,
-                                                                                   AncestorType={x:Type wpfui:FluentWindow}},
-                                                    Path=undoRedo.CanUndo,
-                                                    Mode=OneWay}"
+                                IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type wpfui:FluentWindow}}, Path=undoRedo.CanUndo, Mode=OneWay}"
                                 ToolTip="Undo last action">
                                 <MenuItem.Icon>
                                     <wpfui:SymbolIcon Symbol="ArrowUndo24" />
@@ -248,10 +254,7 @@
                                 x:Name="RedoMenuItem"
                                 Click="RedoMenuItem_Click"
                                 Header=""
-                                IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor,
-                                                                                   AncestorType={x:Type wpfui:FluentWindow}},
-                                                    Path=undoRedo.CanRedo,
-                                                    Mode=OneWay}"
+                                IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type wpfui:FluentWindow}}, Path=undoRedo.CanRedo, Mode=OneWay}"
                                 ToolTip="Redo last undone action">
                                 <MenuItem.Icon>
                                     <wpfui:SymbolIcon Symbol="ArrowRedo24" />
@@ -753,9 +756,7 @@
                         Visibility="Collapsed">
                         <wpfui:Flyout
                             Margin="0,0,0,20"
-                            IsOpen="{Binding ElementName=EditToggleButton,
-                                             Path=IsChecked,
-                                             Mode=TwoWay}"
+                            IsOpen="{Binding ElementName=EditToggleButton, Path=IsChecked, Mode=TwoWay}"
                             Placement="Top">
                             <Grid x:Name="CustomSizeStackPanel">
                                 <Grid.ColumnDefinitions>
@@ -845,10 +846,10 @@
                     <c:QuadrilateralSelector
                         x:Name="QuadrilateralSelectorControl"
                         Margin="0,8,0,0"
-                        Visibility="Collapsed"
                         Cancelled="QuadrilateralSelector_Cancelled"
                         ManualSelection="QuadrilateralSelector_ManualSelection"
-                        QuadrilateralSelected="QuadrilateralSelector_Selected" />
+                        QuadrilateralSelected="QuadrilateralSelector_Selected"
+                        Visibility="Collapsed" />
 
                     <wpfui:Button
                         x:Name="ApplyTransformButton"

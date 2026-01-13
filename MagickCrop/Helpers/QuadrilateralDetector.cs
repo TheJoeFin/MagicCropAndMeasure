@@ -2,7 +2,6 @@ using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 using Emgu.CV.Util;
-using System.Drawing;
 using System.IO;
 using System.Windows;
 
@@ -16,14 +15,14 @@ public static class QuadrilateralDetector
     // Detection parameters
     private const double DefaultMinArea = 0.05;
     private const int DefaultMaxResults = 5;
-    
+
     // Confidence calculation weights
     private const double SizeWeight = 0.6;
     private const double RectangularityWeight = 0.4;
-    
+
     // Duplicate detection threshold - quadrilaterals with corners closer than this are considered duplicates
     private const double DuplicateDistanceThreshold = 5.0; // pixels
-    
+
     /// <summary>
     /// Represents a detected quadrilateral with its corner points
     /// </summary>
@@ -42,7 +41,7 @@ public static class QuadrilateralDetector
                 throw new ArgumentException("Quadrilateral must have exactly 4 points");
 
             // Order points: top-left, top-right, bottom-right, bottom-left
-            var orderedPoints = OrderPoints(points);
+            System.Windows.Point[] orderedPoints = OrderPoints(points);
             TopLeft = orderedPoints[0];
             TopRight = orderedPoints[1];
             BottomRight = orderedPoints[2];
@@ -54,17 +53,17 @@ public static class QuadrilateralDetector
         private static System.Windows.Point[] OrderPoints(System.Windows.Point[] points)
         {
             // Sort by sum (x + y) to find top-left (smallest) and bottom-right (largest)
-            var ordered = points.OrderBy(p => p.X + p.Y).ToArray();
+            System.Windows.Point[] ordered = [.. points.OrderBy(p => p.X + p.Y)];
             System.Windows.Point topLeft = ordered[0];
             System.Windows.Point bottomRight = ordered[3];
 
             // Sort remaining two by difference (x - y) to find top-right and bottom-left
-            var remaining = new[] { ordered[1], ordered[2] };
-            var orderedRemaining = remaining.OrderBy(p => p.X - p.Y).ToArray();
+            System.Windows.Point[] remaining = [ordered[1], ordered[2]];
+            System.Windows.Point[] orderedRemaining = [.. remaining.OrderBy(p => p.X - p.Y)];
             System.Windows.Point bottomLeft = orderedRemaining[0];
             System.Windows.Point topRight = orderedRemaining[1];
 
-            return new[] { topLeft, topRight, bottomRight, bottomLeft };
+            return [topLeft, topRight, bottomRight, bottomLeft];
         }
     }
 
@@ -101,7 +100,7 @@ public static class QuadrilateralDetector
     /// <returns>List of detected quadrilaterals, sorted by confidence (highest first)</returns>
     public static List<DetectedQuadrilateral> DetectQuadrilaterals(string imagePath, out double imageWidth, out double imageHeight, double minArea = 0.05, int maxResults = 5)
     {
-        var result = DetectQuadrilateralsWithDimensions(imagePath, minArea, maxResults);
+        DetectionResult result = DetectQuadrilateralsWithDimensions(imagePath, minArea, maxResults);
         imageWidth = result.ImageWidth;
         imageHeight = result.ImageHeight;
         return result.Quadrilaterals;
@@ -116,11 +115,11 @@ public static class QuadrilateralDetector
     /// <returns>Detection result including quadrilaterals and image dimensions</returns>
     public static DetectionResult DetectQuadrilateralsWithDimensions(string imagePath, double minArea = 0.05, int maxResults = 5)
     {
-        var result = new DetectionResult();
+        DetectionResult result = new();
 
         try
         {
-            using var image = CvInvoke.Imread(imagePath, ImreadModes.Color);
+            using Mat image = CvInvoke.Imread(imagePath, ImreadModes.AnyColor);
             if (image.IsEmpty)
                 return result;
 
@@ -130,31 +129,31 @@ public static class QuadrilateralDetector
             double minAreaPixels = imageArea * minArea;
 
             // Convert to grayscale
-            using var gray = new Mat();
+            using Mat gray = new();
             CvInvoke.CvtColor(image, gray, ColorConversion.Bgr2Gray);
 
             // Apply Gaussian blur to reduce noise
-            using var blurred = new Mat();
+            using Mat blurred = new();
             CvInvoke.GaussianBlur(gray, blurred, new System.Drawing.Size(5, 5), 0);
 
             // Apply Canny edge detection
-            using var edges = new Mat();
+            using Mat edges = new();
             CvInvoke.Canny(blurred, edges, 50, 150);
 
             // Dilate to connect broken edges
-            using var kernel = CvInvoke.GetStructuringElement(ElementShape.Rectangle, new System.Drawing.Size(3, 3), new System.Drawing.Point(-1, -1));
-            using var dilated = new Mat();
+            using Mat kernel = CvInvoke.GetStructuringElement(MorphShapes.Rectangle, new System.Drawing.Size(3, 3), new System.Drawing.Point(-1, -1));
+            using Mat dilated = new();
             CvInvoke.Dilate(edges, dilated, kernel, new System.Drawing.Point(-1, -1), 1, BorderType.Constant, new MCvScalar());
 
             // Find contours
-            using var contours = new VectorOfVectorOfPoint();
-            using var hierarchy = new Mat();
+            using VectorOfVectorOfPoint contours = new();
+            using Mat hierarchy = new();
             CvInvoke.FindContours(dilated, contours, hierarchy, RetrType.List, ChainApproxMethod.ChainApproxSimple);
 
             // Process contours to find quadrilaterals
             for (int i = 0; i < contours.Size; i++)
             {
-                using var contour = contours[i];
+                using VectorOfPoint contour = contours[i];
                 double area = CvInvoke.ContourArea(contour);
 
                 // Skip small contours
@@ -163,16 +162,16 @@ public static class QuadrilateralDetector
 
                 // Approximate contour to polygon
                 double perimeter = CvInvoke.ArcLength(contour, true);
-                using var approx = new VectorOfPoint();
+                using VectorOfPoint approx = new();
                 CvInvoke.ApproxPolyDP(contour, approx, 0.02 * perimeter, true);
 
                 // Check if it's a quadrilateral (4 points)
                 if (approx.Size == 4)
                 {
-                    var points = new System.Windows.Point[4];
+                    Point[] points = new System.Windows.Point[4];
                     for (int j = 0; j < 4; j++)
                     {
-                        var pt = approx[j];
+                        System.Drawing.Point pt = approx[j];
                         points[j] = new System.Windows.Point(pt.X, pt.Y);
                     }
 
@@ -190,7 +189,7 @@ public static class QuadrilateralDetector
             result.Quadrilaterals = FilterDuplicates(result.Quadrilaterals);
 
             // Sort by confidence (highest first) and take top results
-            result.Quadrilaterals = result.Quadrilaterals.OrderByDescending(q => q.Confidence).Take(maxResults).ToList();
+            result.Quadrilaterals = [.. result.Quadrilaterals.OrderByDescending(q => q.Confidence).Take(maxResults)];
         }
         catch (FileNotFoundException)
         {
@@ -217,9 +216,9 @@ public static class QuadrilateralDetector
         bool? firstSign = null;
         for (int i = 0; i < 4; i++)
         {
-            var p1 = points[i];
-            var p2 = points[(i + 1) % 4];
-            var p3 = points[(i + 2) % 4];
+            System.Windows.Point p1 = points[i];
+            System.Windows.Point p2 = points[(i + 1) % 4];
+            System.Windows.Point p3 = points[(i + 2) % 4];
 
             double cross = (p2.X - p1.X) * (p3.Y - p1.Y) - (p2.Y - p1.Y) * (p3.X - p1.X);
             bool currentSign = cross > 0;
@@ -262,9 +261,9 @@ public static class QuadrilateralDetector
         double totalDeviation = 0;
         for (int i = 0; i < 4; i++)
         {
-            var p1 = points[i];
-            var p2 = points[(i + 1) % 4];
-            var p3 = points[(i + 2) % 4];
+            System.Windows.Point p1 = points[i];
+            System.Windows.Point p2 = points[(i + 1) % 4];
+            System.Windows.Point p3 = points[(i + 2) % 4];
 
             // Calculate angle at p2
             double angle = CalculateAngle(p1, p2, p3);
@@ -307,12 +306,12 @@ public static class QuadrilateralDetector
     /// </summary>
     private static List<DetectedQuadrilateral> FilterDuplicates(List<DetectedQuadrilateral> quadrilaterals)
     {
-    var filtered = new List<DetectedQuadrilateral>();
+        List<DetectedQuadrilateral> filtered = new();
 
-         foreach (var quad in quadrilaterals)
+        foreach (DetectedQuadrilateral quad in quadrilaterals)
         {
             bool isDuplicate = false;
-            foreach (var existing in filtered)
+            foreach (DetectedQuadrilateral existing in filtered)
             {
                 if (AreDuplicates(quad, existing))
                 {
@@ -330,7 +329,7 @@ public static class QuadrilateralDetector
         return filtered;
     }
 
-        /// <summary>
+    /// <summary>
     /// Check if two quadrilaterals are duplicates based on corner proximity
     /// </summary>
     private static bool AreDuplicates(DetectedQuadrilateral quad1, DetectedQuadrilateral quad2)
@@ -371,13 +370,13 @@ public static class QuadrilateralDetector
         double scaleX = displayWidth / originalWidth;
         double scaleY = displayHeight / originalHeight;
 
-        var scaledPoints = new System.Windows.Point[]
-        {
-            new System.Windows.Point(quad.TopLeft.X * scaleX, quad.TopLeft.Y * scaleY),
-            new System.Windows.Point(quad.TopRight.X * scaleX, quad.TopRight.Y * scaleY),
-            new System.Windows.Point(quad.BottomRight.X * scaleX, quad.BottomRight.Y * scaleY),
-            new System.Windows.Point(quad.BottomLeft.X * scaleX, quad.BottomLeft.Y * scaleY)
-        };
+        Point[] scaledPoints =
+        [
+            new(quad.TopLeft.X * scaleX, quad.TopLeft.Y * scaleY),
+            new(quad.TopRight.X * scaleX, quad.TopRight.Y * scaleY),
+            new(quad.BottomRight.X * scaleX, quad.BottomRight.Y * scaleY),
+            new(quad.BottomLeft.X * scaleX, quad.BottomLeft.Y * scaleY)
+        ];
 
         return new DetectedQuadrilateral(scaledPoints, quad.Area * scaleX * scaleY, quad.Confidence);
     }

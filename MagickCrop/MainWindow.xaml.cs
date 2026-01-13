@@ -42,6 +42,7 @@ public partial class MainWindow : FluentWindow
     private int pointDraggingIndex = -1;
     private Polygon? lines;
     private string? imagePath;
+    private string? originalFilePath;
     private string? savedPath;
     private readonly int ImageWidthConst = 700;
 
@@ -224,6 +225,9 @@ public partial class MainWindow : FluentWindow
         draggingMode = DraggingMode.MoveElement;
         clickedPoint = e.GetPosition(ShapeCanvas);
         CaptureMouse();
+
+        // Show pixel zoom for precise corner placement
+        ShowPixelZoom(clickedPoint);
     }
 
     private void TopLeft_MouseMove(object sender, MouseEventArgs e)
@@ -249,10 +253,21 @@ public partial class MainWindow : FluentWindow
             }
         }
 
+        // Update pixel zoom if it should be shown
+        Point mousePos = e.GetPosition(ShapeCanvas);
+        if (ShouldShowPixelZoom())
+        {
+            UpdatePixelZoom(mousePos);
+        }
+        else
+        {
+            // Hide zoom when conditions are no longer met
+            HidePixelZoom();
+        }
+
         // --- ANGLE MEASUREMENT PLACEMENT LOGIC ---
         if (isPlacingAngleMeasurement && activeAnglePlacementControl != null)
         {
-            Point mousePos = e.GetPosition(ShapeCanvas);
             if (anglePlacementStep == AnglePlacementStep.DraggingFirstLeg)
             {
                 activeAnglePlacementControl.MovePoint(1, mousePos); // Move point1 to follow mouse
@@ -270,7 +285,6 @@ public partial class MainWindow : FluentWindow
         // --- RECTANGLE MEASUREMENT PLACEMENT LOGIC ---
         if (isPlacingRectangleMeasurement && activeRectanglePlacementControl != null && draggingMode == DraggingMode.CreatingMeasurement)
         {
-            Point mousePos = e.GetPosition(ShapeCanvas);
             activeRectanglePlacementControl.MovePoint(1, mousePos); // Update bottom-right point as mouse moves
             e.Handled = true;
             return;
@@ -279,14 +293,12 @@ public partial class MainWindow : FluentWindow
         // --- POLYGON MEASUREMENT PLACEMENT LOGIC ---
         if (isPlacingPolygonMeasurement && activePolygonPlacementControl != null && !activePolygonPlacementControl.IsClosed)
         {
-            Point mousePos = e.GetPosition(ShapeCanvas);
             activePolygonPlacementControl.UpdatePreviewLine(mousePos);
             e.Handled = true;
             return;
         }        // --- CIRCLE MEASUREMENT PLACEMENT LOGIC ---
         if (isPlacingCircleMeasurement && activeCirclePlacementControl != null && draggingMode == DraggingMode.CreatingMeasurement)
         {
-            Point mousePos = e.GetPosition(ShapeCanvas);
             activeCirclePlacementControl.MovePoint(1, mousePos); // Update edge point as mouse moves
             e.Handled = true;
             return;
@@ -627,6 +639,7 @@ public partial class MainWindow : FluentWindow
             Filter = "Image Files|*.jpg;",
             RestoreDirectory = true,
             FileName = $"{openedFileName}_corrected.jpg",
+            InitialDirectory = !string.IsNullOrEmpty(originalFilePath) ? System.IO.Path.GetDirectoryName(originalFilePath) : null,
         };
 
         if (saveFileDialog.ShowDialog() is not true || lines is null)
@@ -880,6 +893,7 @@ public partial class MainWindow : FluentWindow
                 Title = "Error",
                 Content = $"Error pasting image: {ex.Message}",
             };
+            await uiMessageBox.ShowDialogAsync();
         }
         finally
         {
@@ -951,6 +965,7 @@ public partial class MainWindow : FluentWindow
         MagickImage bitmapImage = new(tempFileName);
 
         imagePath = tempFileName;
+        originalFilePath = imageFilePath;
         openedFileName = System.IO.Path.GetFileNameWithoutExtension(imageFilePath);
         MainImage.Source = bitmapImage.ToBitmapSource();
 
@@ -965,6 +980,9 @@ public partial class MainWindow : FluentWindow
 
         // Update the ReOpenFileButton to show the current file name
         UpdateOpenedFileNameText();
+
+        // Center and zoom to fit the image in the viewport
+        CenterAndZoomToFit();
     }
 
     private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
@@ -1105,6 +1123,9 @@ public partial class MainWindow : FluentWindow
             measurementControl.MovePoint(0, clickedPoint);
             measurementControl.StartDraggingPoint(1);
             isCreatingMeasurement = true;
+
+            // Show pixel zoom for precise measurement placement
+            ShowPixelZoom(clickedPoint);
         }
         else if (MeasureAngleToggle.IsChecked is true)
         {
@@ -1127,6 +1148,10 @@ public partial class MainWindow : FluentWindow
 
             ShapeCanvas.Children.Add(activeAnglePlacementControl);
             ShapeCanvas.CaptureMouse();
+
+            // Show pixel zoom for precise angle placement
+            ShowPixelZoom(clickedPoint);
+
             e.Handled = true;
             return;
         }
@@ -1142,6 +1167,9 @@ public partial class MainWindow : FluentWindow
                 ScaleFactor = ScaleInput.Value ?? 1.0,
                 Units = MeasurementUnits.Text
             };
+
+            // Show pixel zoom for precise rectangle placement
+            ShowPixelZoom(clickedPoint);
 
             activeRectanglePlacementControl.MovePoint(0, clickedPoint); // Set top-left to initial click
             activeRectanglePlacementControl.MovePoint(1, clickedPoint); // Set bottom-right to initial click, will be updated on mouse move/up
@@ -1202,6 +1230,9 @@ public partial class MainWindow : FluentWindow
                 Units = MeasurementUnits.Text
             };
 
+            // Show pixel zoom for precise circle placement
+            ShowPixelZoom(clickedPoint);
+
             activeCirclePlacementControl.MovePoint(0, clickedPoint); // Set center to initial click
             activeCirclePlacementControl.MovePoint(1, clickedPoint); // Set edge to initial click, will be updated on mouse move/up
             ShapeCanvas.Children.Add(activeCirclePlacementControl);
@@ -1244,6 +1275,12 @@ public partial class MainWindow : FluentWindow
 
     private void ShapeCanvas_MouseUp(object sender, MouseButtonEventArgs e)
     {
+        // Hide pixel zoom only if we're not in a precision mode anymore
+        if (!ShouldShowPixelZoom())
+        {
+            HidePixelZoom();
+        }
+
         // If we were panning, release immediately so wheel events work even without a post-release move
         if (draggingMode == DraggingMode.Panning)
         {
@@ -1399,6 +1436,72 @@ public partial class MainWindow : FluentWindow
         canvasTranslate.X = 0;
         canvasTranslate.Y = 0;
     }
+
+    /// <summary>
+    /// Centers and zooms the canvas to fit the image in the viewport with padding.
+    /// </summary>
+    private void CenterAndZoomToFit()
+    {
+        if (MainImage.Source == null || MainGrid.ActualWidth == 0 || MainGrid.ActualHeight == 0)
+            return;
+
+        // Force layout update to ensure ImageGrid has rendered
+        UpdateLayout();
+
+        // Get the viewport size (the visible area in MainGrid)
+        double viewportWidth = MainGrid.ActualWidth;
+        double viewportHeight = MainGrid.ActualHeight;
+
+        // Get the image size (ImageGrid size which contains the image)
+        double imageWidth = ImageGrid.ActualWidth;
+        double imageHeight = ImageGrid.ActualHeight;
+
+        if (imageWidth == 0 || imageHeight == 0)
+            return;
+
+        // Add padding (10% on each side)
+        double paddingFactor = 0.9; // Use 90% of viewport to leave 10% padding
+        double availableWidth = viewportWidth * paddingFactor;
+        double availableHeight = viewportHeight * paddingFactor;
+
+        // Calculate scale factors to fit the image in the viewport
+        double scaleX = availableWidth / imageWidth;
+        double scaleY = availableHeight / imageHeight;
+
+        // Use the smaller scale to ensure the entire image fits
+        double scale = Math.Min(scaleX, scaleY);
+
+        // Clamp scale to min/max zoom limits
+        scale = Math.Clamp(scale, MinZoom, MaxZoom);
+
+        // Apply the scale
+        canvasScale.ScaleX = scale;
+        canvasScale.ScaleY = scale;
+
+        // Calculate the scaled image dimensions
+        double scaledImageWidth = imageWidth * scale;
+        double scaledImageHeight = imageHeight * scale;
+
+        // Calculate translation to center the image
+        // The canvas has a 50,50 margin, so we need to account for that
+        double canvasMarginX = 50;
+        double canvasMarginY = 50;
+
+        // Center the scaled image in the viewport
+        double translateX = (viewportWidth - scaledImageWidth) / 2 - (canvasMarginX * scale);
+        double translateY = (viewportHeight - scaledImageHeight) / 2 - (canvasMarginY * scale);
+
+            canvasTranslate.X = translateX;
+            canvasTranslate.Y = translateY;
+        }
+
+        /// <summary>
+        /// Menu item handler to center and zoom to fit the image on demand.
+        /// </summary>
+        private void CenterAndZoomToFitMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            CenterAndZoomToFit();
+        }
 
     private async void AutoContrastMenuItem_Click(object sender, RoutedEventArgs e)
     {
@@ -1889,13 +1992,12 @@ public partial class MainWindow : FluentWindow
         }
     }
 
-    private void QuadrilateralSelector_Selected(object? sender, Helpers.QuadrilateralDetector.DetectedQuadrilateral quad)
+    private void QuadrilateralSelector_Selected(object? sender, QuadrilateralDetector.DetectedQuadrilateral quad)
     {
-        // Hide selector overlay
-        HideQuadrilateralSelector();
-
-        // Position the corner markers
+        // Position corner markers at the selected quadrilateral's corners
         PositionCornerMarkers(quad);
+        // Hide the selector overlay
+        HideQuadrilateralSelector();
     }
 
     private void QuadrilateralSelector_ManualSelection(object? sender, EventArgs e)
@@ -2432,7 +2534,11 @@ public partial class MainWindow : FluentWindow
 
             draggingMode = DraggingMode.MeasureDistance;
             if (e is not null)
+            {
                 clickedPoint = e.GetPosition(ShapeCanvas);
+                // Show pixel zoom for precise point adjustment
+                ShowPixelZoom(clickedPoint);
+            }
             CaptureMouse();
         }
     }
@@ -2453,6 +2559,8 @@ public partial class MainWindow : FluentWindow
 
             draggingMode = DraggingMode.MeasureAngle;
             clickedPoint = e.GetPosition(ShapeCanvas);
+            // Show pixel zoom for precise point adjustment
+            ShowPixelZoom(clickedPoint);
             CaptureMouse();
         }
     }
@@ -2471,6 +2579,8 @@ public partial class MainWindow : FluentWindow
             activeRectangleMeasureControl = measureControl;
             draggingMode = DraggingMode.MeasureRectangle;
             clickedPoint = e.GetPosition(ShapeCanvas);
+            // Show pixel zoom for precise point adjustment
+            ShowPixelZoom(clickedPoint);
             CaptureMouse();
         }
     }
@@ -2489,6 +2599,8 @@ public partial class MainWindow : FluentWindow
             activePolygonMeasureControl = measureControl;
             draggingMode = DraggingMode.MeasurePolygon;
             clickedPoint = e.GetPosition(ShapeCanvas);
+            // Show pixel zoom for precise point adjustment
+            ShowPixelZoom(clickedPoint);
             CaptureMouse();
         }
     }
@@ -2507,6 +2619,8 @@ public partial class MainWindow : FluentWindow
             activeCircleMeasureControl = measureControl;
             draggingMode = DraggingMode.MeasureCircle;
             clickedPoint = e.GetPosition(ShapeCanvas);
+            // Show pixel zoom for precise point adjustment
+            ShowPixelZoom(clickedPoint);
             CaptureMouse();
         }
     }
@@ -2898,6 +3012,9 @@ public partial class MainWindow : FluentWindow
 
         MeasureTabItem.IsSelected = true;
         UpdateOpenedFileNameText();
+
+        // Center and zoom to fit the image in the viewport
+        CenterAndZoomToFit();
     }
 
     public async void LoadMeasurementsPackageFromFile(string filePath)
@@ -3792,6 +3909,172 @@ public partial class MainWindow : FluentWindow
             return;
         ToggleRotateMode(true);
     }
+
+    #region Pixel Precision Zoom
+
+    /// <summary>
+    /// Shows the pixel precision zoom control at the current mouse position.
+    /// </summary>
+    /// <param name="mousePosition">Mouse position in ShapeCanvas coordinates</param>
+    private void ShowPixelZoom(Point mousePosition)
+    {
+        if (MainImage.Source == null)
+            return;
+
+        try
+        {
+            // Set the source image for the zoom control
+            PixelZoomControl.SourceImage = MainImage.Source;
+
+            // Convert mouse position to image coordinates
+            Point imagePosition = ConvertCanvasToImageCoordinates(mousePosition);
+            PixelZoomControl.CurrentPosition = imagePosition;
+
+            // Convert ShapeCanvas coordinates to MainGrid coordinates
+            // ShapeCanvas has transforms applied, so we need to transform the point
+            Point mainGridPosition = ShapeCanvas.TransformToAncestor(MainGrid).Transform(mousePosition);
+
+            // Position the zoom control near the cursor in MainGrid coordinates
+            PixelZoomControl.PositionNearCursor(mainGridPosition, MainGrid.ActualWidth, MainGrid.ActualHeight);
+
+            // Show the control
+            PixelZoomControl.Visibility = Visibility.Visible;
+        }
+        catch (Exception)
+        {
+            // Silently handle any errors
+            HidePixelZoom();
+        }
+    }
+
+    /// <summary>
+    /// Updates the pixel precision zoom control position and preview.
+    /// </summary>
+    /// <param name="mousePosition">Mouse position in ShapeCanvas coordinates</param>
+    private void UpdatePixelZoom(Point mousePosition)
+    {
+        if (PixelZoomControl.Visibility != Visibility.Visible)
+            return;
+
+        try
+        {
+            // Convert mouse position to image coordinates
+            Point imagePosition = ConvertCanvasToImageCoordinates(mousePosition);
+            PixelZoomControl.CurrentPosition = imagePosition;
+
+            // Convert ShapeCanvas coordinates to MainGrid coordinates
+            // ShapeCanvas has transforms applied, so we need to transform the point
+            Point mainGridPosition = ShapeCanvas.TransformToAncestor(MainGrid).Transform(mousePosition);
+
+            // Update the zoom control position in MainGrid coordinates
+            PixelZoomControl.PositionNearCursor(mainGridPosition, MainGrid.ActualWidth, MainGrid.ActualHeight);
+        }
+        catch (Exception)
+        {
+            // Silently handle any errors
+        }
+    }
+
+    /// <summary>
+    /// Hides the pixel precision zoom control.
+    /// </summary>
+    private void HidePixelZoom()
+    {
+        PixelZoomControl.Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// Converts a point from ShapeCanvas coordinates to MainImage pixel coordinates.
+    /// </summary>
+    /// <param name="canvasPoint">Point in ShapeCanvas coordinates</param>
+    /// <returns>Point in image pixel coordinates</returns>
+    private Point ConvertCanvasToImageCoordinates(Point canvasPoint)
+    {
+        if (MainImage.Source == null)
+            return new Point(0, 0);
+
+        try
+        {
+            // Get the transform from canvas to image
+            GeneralTransform transform = ShapeCanvas.TransformToVisual(MainImage);
+            Point imagePoint = transform.Transform(canvasPoint);
+
+            // MainImage might have its own transform/scale, so we need to map to actual pixels
+            double imageWidth = MainImage.Source.Width;
+            double imageHeight = MainImage.Source.Height;
+            double actualWidth = MainImage.ActualWidth;
+            double actualHeight = MainImage.ActualHeight;
+
+            // Calculate scale based on Stretch mode
+            double scaleX = imageWidth / actualWidth;
+            double scaleY = imageHeight / actualHeight;
+
+            // For Uniform stretch, use the same scale for both dimensions
+            if (MainImage.Stretch == Stretch.Uniform)
+            {
+                double scale = Math.Max(scaleX, scaleY);
+                scaleX = scaleY = scale;
+            }
+
+            // Convert to pixel coordinates
+            double pixelX = imagePoint.X * scaleX;
+            double pixelY = imagePoint.Y * scaleY;
+
+            // Clamp to image bounds
+            pixelX = Math.Max(0, Math.Min(imageWidth - 1, pixelX));
+            pixelY = Math.Max(0, Math.Min(imageHeight - 1, pixelY));
+
+            return new Point(pixelX, pixelY);
+        }
+        catch (Exception)
+        {
+            return new Point(0, 0);
+        }
+    }
+
+    /// <summary>
+    /// Checks if pixel zoom should be shown for the current operation.
+    /// Only shows during active dragging operations, not on hover.
+    /// </summary>
+    /// <returns>True if pixel zoom should be active</returns>
+    private bool ShouldShowPixelZoom()
+    {
+        // Show pixel zoom when dragging corner markers for transform
+        if (draggingMode == DraggingMode.MoveElement && clickedElement != null)
+            return true;
+
+        // Show pixel zoom when placing/dragging measurement points
+        if (draggingMode is DraggingMode.MeasureDistance or
+            DraggingMode.MeasureAngle or
+            DraggingMode.MeasureRectangle or
+            DraggingMode.MeasurePolygon or
+            DraggingMode.MeasureCircle)
+            return true;
+
+        // Show during measurement creation (active drag)
+        if (isCreatingMeasurement && draggingMode == DraggingMode.CreatingMeasurement)
+            return true;
+
+        // Show during angle placement (active placement)
+        if (isPlacingAngleMeasurement && anglePlacementStep != AnglePlacementStep.None)
+            return true;
+
+        // Show during polygon placement (active placement)
+        if (isPlacingPolygonMeasurement && activePolygonPlacementControl != null)
+            return true;
+
+        // Show during rectangle placement (active drag)
+        if (isPlacingRectangleMeasurement && draggingMode == DraggingMode.CreatingMeasurement)
+            return true;
+
+        // Show during circle placement (active drag)
+        if (isPlacingCircleMeasurement && draggingMode == DraggingMode.CreatingMeasurement)
+            return true;
+
+        return false;
+    }
+
+    #endregion Pixel Precision Zoom
 }
 internal enum AnglePlacementStep
 {
