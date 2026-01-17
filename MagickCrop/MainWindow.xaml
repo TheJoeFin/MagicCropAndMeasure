@@ -168,21 +168,55 @@
                 Panel.ZIndex="1000"
                 Visibility="Collapsed" />
 
-            <!--  Rotation angle overlay label  -->
-            <TextBlock
-                x:Name="RotationOverlayLabel"
-                Margin="60,10,0,0"
-                Padding="4,2"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Top"
-                Background="#66000000"
-                FontSize="14"
-                FontWeight="SemiBold"
-                Foreground="White"
-                IsHitTestVisible="False"
-                Text="0°"
-                Visibility="Collapsed" />
-        </Grid>
+                <!--  Rotation angle overlay label  -->
+                <TextBlock
+                    x:Name="RotationOverlayLabel"
+                    Margin="60,10,0,0"
+                    Padding="4,2"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Background="#66000000"
+                    FontSize="14"
+                    FontWeight="SemiBold"
+                    Foreground="White"
+                    IsHitTestVisible="False"
+                    Text="0°"
+                    Visibility="Collapsed" />
+
+                <!--  White point color preview  -->
+                <Border
+                    x:Name="WhitePointColorPreview"
+                    Width="80"
+                    Height="80"
+                    Margin="60,10,0,0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    BorderBrush="White"
+                    BorderThickness="2"
+                    CornerRadius="4"
+                    IsHitTestVisible="False"
+                    Visibility="Collapsed">
+                    <Border.Effect>
+                        <DropShadowEffect
+                            BlurRadius="10"
+                            Opacity="0.5"
+                            ShadowDepth="2" />
+                    </Border.Effect>
+                    <Grid>
+                        <Rectangle x:Name="WhitePointColorRectangle" Fill="White" />
+                        <TextBlock
+                            Margin="4"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Bottom"
+                            Background="#AA000000"
+                            FontSize="10"
+                            FontWeight="SemiBold"
+                            Foreground="White"
+                            Padding="4,2"
+                            Text="Picked Color" />
+                    </Grid>
+                </Border>
+            </Grid>
 
         <c:WelcomeMessage
             x:Name="WelcomeMessageModal"
@@ -488,6 +522,36 @@
                                             <wpfui:SymbolIcon Symbol="Whiteboard24" />
                                         </MenuItem.Icon>
                                     </MenuItem>
+                                    <ToggleButton
+                                        x:Name="WhitePointPickerToggle"
+                                        Width="150"
+                                        Margin="8,4"
+                                        HorizontalAlignment="Center"
+                                        Checked="WhitePointPickerToggle_Checked"
+                                        ToolTip="Toggle white point picker tool"
+                                        Unchecked="WhitePointPickerToggle_Unchecked">
+                                        <ToggleButton.Content>
+                                            <StackPanel Orientation="Horizontal">
+                                                <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Eyedropper24" />
+                                                <TextBlock VerticalAlignment="Center" Text="Pick White Point" />
+                                            </StackPanel>
+                                        </ToggleButton.Content>
+                                    </ToggleButton>
+                                    <ToggleButton
+                                        x:Name="BlackPointPickerToggle"
+                                        Width="150"
+                                        Margin="8,4"
+                                        HorizontalAlignment="Center"
+                                        Checked="BlackPointPickerToggle_Checked"
+                                        ToolTip="Toggle black point picker tool"
+                                        Unchecked="BlackPointPickerToggle_Unchecked">
+                                        <ToggleButton.Content>
+                                            <StackPanel Orientation="Horizontal">
+                                                <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Eyedropper24" />
+                                                <TextBlock VerticalAlignment="Center" Text="Pick Black Point" />
+                                            </StackPanel>
+                                        </ToggleButton.Content>
+                                    </ToggleButton>
                                     <MenuItem
                                         Name="AutoLevelsMenuItem"
                                         Click="AutoLevelsMenuItem_Click"

@@ -96,6 +96,12 @@ public partial class MainWindow : FluentWindow
 
     private bool isCreatingMeasurement = false;
 
+    // --- White point picker state ---
+    private bool isWhitePointPickerMode = false;
+
+    // --- Black point picker state ---
+    private bool isBlackPointPickerMode = false;
+
     // --- Angle measurement placement state ---
     private bool isPlacingAngleMeasurement = false;
     private AnglePlacementStep anglePlacementStep = AnglePlacementStep.None;
@@ -1127,6 +1133,32 @@ public partial class MainWindow : FluentWindow
             }
         }
 
+        // White point picker mode - pick color from image
+        if (isWhitePointPickerMode && e.LeftButton == MouseButtonState.Pressed)
+        {
+            Point imagePoint = e.GetPosition(MainImage);
+            // Ensure click is within image bounds
+            if (imagePoint.X >= 0 && imagePoint.Y >= 0 && imagePoint.X < MainImage.ActualWidth && imagePoint.Y < MainImage.ActualHeight)
+            {
+                _ = PickWhitePointColorAsync(imagePoint);
+                e.Handled = true;
+                return;
+            }
+        }
+
+        // Black point picker mode - pick color from image
+        if (isBlackPointPickerMode && e.LeftButton == MouseButtonState.Pressed)
+        {
+            Point imagePoint = e.GetPosition(MainImage);
+            // Ensure click is within image bounds
+            if (imagePoint.X >= 0 && imagePoint.Y >= 0 && imagePoint.X < MainImage.ActualWidth && imagePoint.Y < MainImage.ActualHeight)
+            {
+                _ = PickBlackPointColorAsync(imagePoint);
+                e.Handled = true;
+                return;
+            }
+        }
+
         // Middle mouse always initiates panning regardless of tool (quick navigation)
         if (e.ChangedButton == MouseButton.Middle)
         {
@@ -1616,7 +1648,237 @@ public partial class MainWindow : FluentWindow
         SetUiForCompletedTask();
     }
 
-    private async void BlackPointMenuItem_Click(object sender, RoutedEventArgs e)
+    private void WhitePointPickerToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            WhitePointPickerToggle.IsChecked = false;
+            return;
+        }
+
+        // Enable white point picker mode
+        isWhitePointPickerMode = true;
+        draggingMode = DraggingMode.WhitePointPicker;
+
+        // Change cursor to indicate picking mode
+        Cursor = Cursors.Cross;
+    }
+
+    private void WhitePointPickerToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        // Disable white point picker mode
+        isWhitePointPickerMode = false;
+        draggingMode = DraggingMode.None;
+        Cursor = null;
+    }
+
+    private void BlackPointPickerToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            BlackPointPickerToggle.IsChecked = false;
+            return;
+        }
+
+        // Enable black point picker mode
+        isBlackPointPickerMode = true;
+        draggingMode = DraggingMode.BlackPointPicker;
+
+        // Change cursor to indicate picking mode
+        Cursor = Cursors.Cross;
+    }
+
+    private void BlackPointPickerToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        // Disable black point picker mode
+        isBlackPointPickerMode = false;
+        draggingMode = DraggingMode.None;
+        Cursor = null;
+    }
+
+    private async Task PickWhitePointColorAsync(Point imagePoint)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return;
+
+        try
+        {
+            // Reset picker mode and cursor
+            isWhitePointPickerMode = false;
+            draggingMode = DraggingMode.None;
+            Cursor = null;
+            WhitePointPickerToggle.IsChecked = false;
+
+            using MagickImage magickImage = new(imagePath);
+
+            // Convert display coordinates to actual image pixel coordinates
+            double scaleX = magickImage.Width / MainImage.ActualWidth;
+            double scaleY = magickImage.Height / MainImage.ActualHeight;
+            int pixelX = (int)(imagePoint.X * scaleX);
+            int pixelY = (int)(imagePoint.Y * scaleY);
+
+            // Clamp to image bounds
+            pixelX = Math.Clamp(pixelX, 0, (int)magickImage.Width - 1);
+            pixelY = Math.Clamp(pixelY, 0, (int)magickImage.Height - 1);
+
+            // Get the color at the clicked pixel
+            IMagickColor<ushort> pixelColor = magickImage.GetPixels().GetPixel(pixelX, pixelY).ToColor() ?? throw new InvalidOperationException("Could not get pixel color");
+
+            // Convert ushort (0-65535) to byte range (0-255)
+            byte r = (byte)(pixelColor.R / 257);
+            byte g = (byte)(pixelColor.G / 257);
+            byte b = (byte)(pixelColor.B / 257);
+
+            // Show the picked color in the preview
+            WhitePointColorRectangle.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb(r, g, b));
+            WhitePointColorPreview.Visibility = Visibility.Visible;
+
+            // Wait a moment for user to see the picked color
+            await Task.Delay(800);
+
+            SetUiForLongTask();
+
+            // Apply white balance using the picked color as the white reference
+            await Task.Run(() =>
+            {
+                // Avoid division by zero
+                if (r == 0) r = 1;
+                if (g == 0) g = 1;
+                if (b == 0) b = 1;
+
+                // Use Level per channel to map the picked color to white (255)
+                // Level adjusts the range from [black, white] to [0, 255]
+                // By setting the white point to the picked color, that color becomes maximum brightness
+                magickImage.Level(new Percentage(0), new Percentage((r / 255.0) * 100), 1.0, Channels.Red);
+                magickImage.Level(new Percentage(0), new Percentage((g / 255.0) * 100), 1.0, Channels.Green);
+                magickImage.Level(new Percentage(0), new Percentage((b / 255.0) * 100), 1.0, Channels.Blue);
+            });
+
+            string tempFileName = System.IO.Path.GetTempFileName();
+            await magickImage.WriteAsync(tempFileName);
+
+            MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
+            undoRedo.AddUndo(undoRedoItem);
+
+            imagePath = tempFileName;
+
+            MainImage.Source = magickImage.ToBitmapSource();
+
+            // Update actualImageSize to reflect current dimensions
+            actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
+            // Hide the color preview after a delay
+            await Task.Delay(1500);
+            WhitePointColorPreview.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception ex)
+        {
+            WhitePointColorPreview.Visibility = Visibility.Collapsed;
+            Wpf.Ui.Controls.MessageBox errorBox = new()
+            {
+                Title = "Error",
+                Content = $"Failed to apply white point: {ex.Message}",
+            };
+            await errorBox.ShowDialogAsync();
+        }
+            finally
+            {
+                SetUiForCompletedTask();
+            }
+        }
+
+        private async Task PickBlackPointColorAsync(Point imagePoint)
+        {
+            if (string.IsNullOrWhiteSpace(imagePath))
+                return;
+
+            try
+            {
+                // Reset picker mode and cursor
+                isBlackPointPickerMode = false;
+                draggingMode = DraggingMode.None;
+                Cursor = null;
+                BlackPointPickerToggle.IsChecked = false;
+
+                using MagickImage magickImage = new(imagePath);
+
+                // Convert display coordinates to actual image pixel coordinates
+                double scaleX = magickImage.Width / MainImage.ActualWidth;
+                double scaleY = magickImage.Height / MainImage.ActualHeight;
+                int pixelX = (int)(imagePoint.X * scaleX);
+                int pixelY = (int)(imagePoint.Y * scaleY);
+
+                // Clamp to image bounds
+                pixelX = Math.Clamp(pixelX, 0, (int)magickImage.Width - 1);
+                pixelY = Math.Clamp(pixelY, 0, (int)magickImage.Height - 1);
+
+                // Get the color at the clicked pixel
+                IMagickColor<ushort> pixelColor = magickImage.GetPixels().GetPixel(pixelX, pixelY).ToColor() ?? throw new InvalidOperationException("Could not get pixel color");
+
+                // Convert ushort (0-65535) to byte range (0-255)
+                byte r = (byte)(pixelColor.R / 257);
+                byte g = (byte)(pixelColor.G / 257);
+                byte b = (byte)(pixelColor.B / 257);
+
+                // Show the picked color in the preview
+                WhitePointColorRectangle.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb(r, g, b));
+                WhitePointColorPreview.Visibility = Visibility.Visible;
+
+                // Wait a moment for user to see the picked color
+                await Task.Delay(800);
+
+                SetUiForLongTask();
+
+                // Apply black point adjustment using the picked color as the black reference
+                await Task.Run(() =>
+                {
+                    // Avoid overflow to 255
+                    if (r == 255) r = 254;
+                    if (g == 255) g = 254;
+                    if (b == 255) b = 254;
+
+                    // Use Level per channel to map the picked color to black (0)
+                    // Level adjusts the range from [black, white] to [0, 255]
+                    // By setting the black point to the picked color, that color becomes minimum brightness
+                    magickImage.Level(new Percentage((r / 255.0) * 100), new Percentage(100), 1.0, Channels.Red);
+                    magickImage.Level(new Percentage((g / 255.0) * 100), new Percentage(100), 1.0, Channels.Green);
+                    magickImage.Level(new Percentage((b / 255.0) * 100), new Percentage(100), 1.0, Channels.Blue);
+                });
+
+                string tempFileName = System.IO.Path.GetTempFileName();
+                await magickImage.WriteAsync(tempFileName);
+
+                MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
+                undoRedo.AddUndo(undoRedoItem);
+
+                imagePath = tempFileName;
+
+                MainImage.Source = magickImage.ToBitmapSource();
+
+                // Update actualImageSize to reflect current dimensions
+                actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
+                // Hide the color preview after a delay
+                await Task.Delay(1500);
+                WhitePointColorPreview.Visibility = Visibility.Collapsed;
+            }
+            catch (Exception ex)
+            {
+                WhitePointColorPreview.Visibility = Visibility.Collapsed;
+                Wpf.Ui.Controls.MessageBox errorBox = new()
+                {
+                    Title = "Error",
+                    Content = $"Failed to apply black point: {ex.Message}",
+                };
+                await errorBox.ShowDialogAsync();
+            }
+            finally
+            {
+                SetUiForCompletedTask();
+            }
+        }
+
+        private async void BlackPointMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(imagePath))
             return;
@@ -3674,6 +3936,24 @@ public partial class MainWindow : FluentWindow
         if (e.Key == Key.Escape)
         {
             UncheckAllBut();
+
+            // Cancel white point picker mode
+            if (isWhitePointPickerMode)
+            {
+                isWhitePointPickerMode = false;
+                draggingMode = DraggingMode.None;
+                Cursor = null;
+                WhitePointPickerToggle.IsChecked = false;
+            }
+
+            // Cancel black point picker mode
+            if (isBlackPointPickerMode)
+            {
+                isBlackPointPickerMode = false;
+                draggingMode = DraggingMode.None;
+                Cursor = null;
+                BlackPointPickerToggle.IsChecked = false;
+            }
 
             isPlacingAngleMeasurement = false;
             anglePlacementStep = AnglePlacementStep.None;
