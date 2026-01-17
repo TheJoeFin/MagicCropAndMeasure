@@ -58,7 +58,6 @@ public partial class App : Application
         services.AddSingleton<IFileDialogService, FileDialogService>();
         services.AddSingleton<IClipboardService, ClipboardService>();
         services.AddSingleton<INavigationService, NavigationService>();
-        services.AddSingleton<IWindowFactory, WindowFactory>();
         // services.AddSingleton<IImageProcessingService, ImageProcessingService>(); // To be implemented in Step 14
         // services.AddSingleton<IThemeService, ThemeService>(); // To be implemented in future step
 
@@ -66,16 +65,18 @@ public partial class App : Application
         services.AddSingleton<RecentProjectsManager>(sp => 
             (RecentProjectsManager)sp.GetRequiredService<IRecentProjectsService>());
         
-        // Register ViewModels (to be added in future steps)
+        // Register ViewModels
         services.AddTransient<AboutWindowViewModel>();
+        services.AddTransient<SaveWindowViewModel>();
         // services.AddTransient<MainWindowViewModel>();
-        // services.AddTransient<SaveWindowViewModel>();
 
         // Register Windows/Views
         services.AddTransient<MainWindow>();
+        services.AddTransient<Windows.AboutWindow>();
         services.AddTransient<SaveWindow>();
-        services.AddTransient<Windows.AboutWindow>(sp => 
-            new Windows.AboutWindow(sp.GetRequiredService<AboutWindowViewModel>()));
+
+        // Register Factory
+        services.AddSingleton<IWindowFactory, WindowFactory>();
     }
 
     protected override void OnExit(ExitEventArgs e)
