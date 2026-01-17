@@ -2987,6 +2987,14 @@ public partial class MainWindow : FluentWindow
 
             // Load the image
             await OpenImagePath(package.ImagePath);
+
+            // Restore the original filename from the package metadata
+            // This is important because OpenImagePath sets openedFileName from the temp file path
+            if (!string.IsNullOrEmpty(package.Metadata.OriginalFilename))
+            {
+                openedFileName = package.Metadata.OriginalFilename;
+                UpdateOpenedFileNameText();
+            }
         }
         finally
         {
