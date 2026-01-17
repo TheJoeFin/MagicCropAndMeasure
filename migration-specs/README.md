@@ -15,28 +15,28 @@ Look for the "Sub-Steps" table at the top of each spec file to see the breakdown
 
 ## Migration Steps Index
 
-| Step | File | Description | Estimated Effort | Sub-Steps |
-|------|------|-------------|-----------------|-----------|
-| 00 | [00-architecture-overview.md](00-architecture-overview.md) | Current state analysis and target architecture | 1-2 hours | - |
-| 01 | [01-mvvm-infrastructure-setup.md](01-mvvm-infrastructure-setup.md) | Add NuGet packages, create ViewModelBase | 1 hour | - |
-| 02 | [02-dependency-injection-setup.md](02-dependency-injection-setup.md) | Configure DI container in App.xaml.cs | 2 hours | - |
-| 03 | [03-service-interface-extraction.md](03-service-interface-extraction.md) | Create service interfaces and implementations | 3-4 hours | **7 sub-steps (03a-03g)** |
-| 04 | [04-messaging-service-setup.md](04-messaging-service-setup.md) | Set up event aggregator/messenger | 2 hours | - |
-| 05 | [05-navigation-service.md](05-navigation-service.md) | Create navigation service for windows | 2 hours | - |
-| 06 | [06-observable-models.md](06-observable-models.md) | Add INotifyPropertyChanged to models | 2-3 hours | **6 sub-steps (06a-06f)** |
-| 07 | [07-aboutwindow-migration.md](07-aboutwindow-migration.md) | Migrate AboutWindow to MVVM | 1-2 hours | - |
-| 08 | [08-savewindow-migration.md](08-savewindow-migration.md) | Migrate SaveWindow to MVVM | 2-3 hours | - |
-| 09 | [09-welcomemessage-migration.md](09-welcomemessage-migration.md) | Migrate WelcomeMessage control | 3-4 hours | **9 sub-steps (09a-09i)** |
-| 10 | [10-recentprojectitem-migration.md](10-recentprojectitem-migration.md) | Migrate RecentProjectItem control | 1-2 hours | - |
-| 11 | [11-measurement-controls-base.md](11-measurement-controls-base.md) | Create measurement base classes | 3-4 hours | **10 sub-steps (11a-11j)** |
-| 12 | [12-measurement-controls-migration.md](12-measurement-controls-migration.md) | Migrate individual measurement controls | 4-6 hours | **9 sub-steps (12a-12i)** |
-| 13 | [13-mainwindow-state-management.md](13-mainwindow-state-management.md) | Extract state management to ViewModel | 4-5 hours | **11 sub-steps (13a-13k)** |
-| 14 | [14-mainwindow-image-operations.md](14-mainwindow-image-operations.md) | Extract image operations | 4-5 hours | **13 sub-steps (14a-14m)** |
-| 15 | [15-mainwindow-measurement-management.md](15-mainwindow-measurement-management.md) | Extract measurement collection management | 4-5 hours | **13 sub-steps (15a-15m)** |
-| 16 | [16-mainwindow-file-operations.md](16-mainwindow-file-operations.md) | Extract file save/load operations | 4-5 hours | **13 sub-steps (16a-16m)** |
-| 17 | [17-value-converters.md](17-value-converters.md) | Create comprehensive converter set | 2-3 hours | **10 sub-steps (17a-17j)** |
-| 18 | [18-commands-cleanup.md](18-commands-cleanup.md) | Standardize command implementations | 3-4 hours | **10 sub-steps (18a-18j)** |
-| 19 | [19-final-integration-testing.md](19-final-integration-testing.md) | Complete integration and testing | 4-6 hours | **14 sub-steps (19a-19n)** |
+| Step | File | Description | Estimated Effort | Sub-Steps | Status |
+|------|------|-------------|-----------------|-----------|--------|
+| 00 | [00-architecture-overview.md](00-architecture-overview.md) | Current state analysis and target architecture | 1-2 hours | - | - |
+| ✅ 01 | [01-mvvm-infrastructure-setup.md](01-mvvm-infrastructure-setup.md) | Add NuGet packages, create ViewModelBase | 1 hour | - | **DONE** |
+| 02 | [02-dependency-injection-setup.md](02-dependency-injection-setup.md) | Configure DI container in App.xaml.cs | 2 hours | - | - |
+| 03 | [03-service-interface-extraction.md](03-service-interface-extraction.md) | Create service interfaces and implementations | 3-4 hours | **7 sub-steps (03a-03g)** | - |
+| 04 | [04-messaging-service-setup.md](04-messaging-service-setup.md) | Set up event aggregator/messenger | 2 hours | - | - |
+| 05 | [05-navigation-service.md](05-navigation-service.md) | Create navigation service for windows | 2 hours | - | - |
+| 06 | [06-observable-models.md](06-observable-models.md) | Add INotifyPropertyChanged to models | 2-3 hours | **6 sub-steps (06a-06f)** | - |
+| 07 | [07-aboutwindow-migration.md](07-aboutwindow-migration.md) | Migrate AboutWindow to MVVM | 1-2 hours | - | - |
+| 08 | [08-savewindow-migration.md](08-savewindow-migration.md) | Migrate SaveWindow to MVVM | 2-3 hours | - | - |
+| 09 | [09-welcomemessage-migration.md](09-welcomemessage-migration.md) | Migrate WelcomeMessage control | 3-4 hours | **9 sub-steps (09a-09i)** | - |
+| 10 | [10-recentprojectitem-migration.md](10-recentprojectitem-migration.md) | Migrate RecentProjectItem control | 1-2 hours | - | - |
+| 11 | [11-measurement-controls-base.md](11-measurement-controls-base.md) | Create measurement base classes | 3-4 hours | **10 sub-steps (11a-11j)** | - |
+| 12 | [12-measurement-controls-migration.md](12-measurement-controls-migration.md) | Migrate individual measurement controls | 4-6 hours | **9 sub-steps (12a-12i)** | - |
+| 13 | [13-mainwindow-state-management.md](13-mainwindow-state-management.md) | Extract state management to ViewModel | 4-5 hours | **11 sub-steps (13a-13k)** | - |
+| 14 | [14-mainwindow-image-operations.md](14-mainwindow-image-operations.md) | Extract image operations | 4-5 hours | **13 sub-steps (14a-14m)** | - |
+| 15 | [15-mainwindow-measurement-management.md](15-mainwindow-measurement-management.md) | Extract measurement collection management | 4-5 hours | **13 sub-steps (15a-15m)** | - |
+| 16 | [16-mainwindow-file-operations.md](16-mainwindow-file-operations.md) | Extract file save/load operations | 4-5 hours | **13 sub-steps (16a-16m)** | - |
+| 17 | [17-value-converters.md](17-value-converters.md) | Create comprehensive converter set | 2-3 hours | **10 sub-steps (17a-17j)** | - |
+| 18 | [18-commands-cleanup.md](18-commands-cleanup.md) | Standardize command implementations | 3-4 hours | **10 sub-steps (18a-18j)** | - |
+| 19 | [19-final-integration-testing.md](19-final-integration-testing.md) | Complete integration and testing | 4-6 hours | **14 sub-steps (19a-19n)** | - |
 
 **Total Estimated Effort: 50-70 hours**
 **Total Sub-Steps: ~115 independently committable changes**
