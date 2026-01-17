@@ -105,7 +105,35 @@ dotnet build MagickCrop.sln
   - Gradual migration approach - can still use old singleton pattern while transitioning
   - Application builds and runs without errors
 
-## Known Issues
+## Step 04 - Messaging Service Setup
+- **Created `Messages/AppMessages.cs`:**
+  - 20+ message classes for different application events
+  - Organized by category: Image, Measurement, Navigation, Project, Tool state
+  - Use immutable properties with readonly access
+  - Include specialized messages like `ShowDialogRequestMessage : RequestMessage<bool>` for request/response patterns
+  
+- **Updated ViewModelBase:**
+  - Added `IMessenger` property (WeakReferenceMessenger.Default)
+  - Constructor can inject messenger for testing
+  - Automatic registration of ViewModels that implement `IRecipient<T>`
+  - Added helper methods: `Send<TMessage>()`, `Register<TMessage>()`
+  - `Cleanup()` now calls `Messenger.UnregisterAll(this)` for proper teardown
+  
+- **Updated App.xaml.cs:**
+  - Added import: `using CommunityToolkit.Mvvm.Messaging;`
+  - Registered `IMessenger` singleton: `WeakReferenceMessenger.Default`
+  - Placed Messenger registration before other services (best practice)
+  
+- **Architecture Benefits:**
+  - Weak references prevent memory leaks
+  - Type-safe messaging (compiler-checked message types)
+  - Supports both fire-and-forget and request/response patterns
+  - Thread-safe operations
+  - ViewModels can be tested with mock messengers
+  
+- **Application Status:**
+  - Build succeeds with no new errors (12 pre-existing warnings remain)
+  - Ready for Step 05: Navigation Service
 - Pre-existing build warnings from WPF-UI obsolete DialogHost (not scope of migration)
 - MagickCrop-Package.wapproj has unrelated build issues (no DesktopBridge props)
 - Several pre-existing code warnings (CS0618, CS0067, CS0649) - not addressed in MVVM migration

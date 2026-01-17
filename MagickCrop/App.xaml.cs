@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Windows;
+using CommunityToolkit.Mvvm.Messaging;
 using MagickCrop.Services;
 using MagickCrop.Services.Interfaces;
 using MagickCrop.ViewModels;
@@ -49,6 +50,9 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
+        // Register Messenger as singleton (uses weak references, thread-safe)
+        services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
+        
         // Register Service Interfaces
         services.AddSingleton<IRecentProjectsService, RecentProjectsManager>();
         services.AddSingleton<IFileDialogService, FileDialogService>();
@@ -82,4 +86,5 @@ public partial class App : Application
         }
     }
 }
+
 
