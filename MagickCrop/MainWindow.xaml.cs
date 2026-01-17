@@ -38,6 +38,7 @@ public partial class MainWindow : FluentWindow
     private bool isUpdatingFromCode = false;
     private bool isPixelMode = true;
     private bool isAspectRatioLocked = true;
+    private bool isDraggingResizeGrip = false;
     private double aspectRatio = 1.0;
     private int pointDraggingIndex = -1;
     private Polygon? lines;
@@ -311,6 +312,11 @@ public partial class MainWindow : FluentWindow
                 // panning release handled in MouseUp, nothing else here
             }
 
+            if (draggingMode == DraggingMode.Resizing)
+            {
+                isDraggingResizeGrip = false;
+            }
+
             if (draggingMode == DraggingMode.MeasureDistance && activeMeasureControl is not null)
             {
                 activeMeasureControl.ResetActivePoint();
@@ -445,7 +451,62 @@ public partial class MainWindow : FluentWindow
         ImageGrid.Width = Math.Max(50, newWidth);
         ImageGrid.Height = Math.Max(50, newHeight);
 
+        // Update text boxes based on the current display size and full resolution
+        UpdateResizeTextBoxesFromDrag();
+
         e.Handled = true;
+    }
+
+    /// <summary>
+    /// Updates the width/height text boxes based on the current ImageGrid dimensions during resize grip drag.
+    /// Projects the current display aspect ratio back to full resolution to show the final image dimensions.
+    /// </summary>
+    private void UpdateResizeTextBoxesFromDrag()
+    {
+        if (actualImageSize.Width <= 0 || actualImageSize.Height <= 0)
+            return;
+
+        // Get current display dimensions
+        double displayWidth = ImageGrid.Width;
+        double displayHeight = ImageGrid.Height;
+
+        // Calculate the new aspect ratio from the current drag
+        double newAspectRatio = displayWidth / displayHeight;
+
+        // Determine final dimensions by projecting the new aspect ratio onto the full resolution
+        // Use the dimension that results in the largest image without exceeding original bounds
+        double finalWidth, finalHeight;
+
+        if (newAspectRatio > actualImageSize.Width / actualImageSize.Height)
+        {
+            // New aspect ratio is wider - use original width as base
+            finalWidth = actualImageSize.Width;
+            finalHeight = actualImageSize.Width / newAspectRatio;
+        }
+        else
+        {
+            // New aspect ratio is taller or same - use original height as base
+            finalHeight = actualImageSize.Height;
+            finalWidth = actualImageSize.Height * newAspectRatio;
+        }
+
+        isUpdatingFromCode = true;
+
+        if (isPixelMode)
+        {
+            WidthTextBox.Text = ((int)Math.Round(finalWidth)).ToString();
+            HeightTextBox.Text = ((int)Math.Round(finalHeight)).ToString();
+        }
+        else
+        {
+            // For percentage mode, calculate percentage relative to original actual size
+            double widthPercent = (finalWidth / actualImageSize.Width) * 100.0;
+            double heightPercent = (finalHeight / actualImageSize.Height) * 100.0;
+            WidthTextBox.Text = ((int)Math.Round(widthPercent)).ToString();
+            HeightTextBox.Text = ((int)Math.Round(heightPercent)).ToString();
+        }
+
+        isUpdatingFromCode = false;
     }
 
     private void PanCanvas(MouseEventArgs e)
@@ -1510,7 +1571,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.SigmoidalContrast(10));
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1523,6 +1584,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1533,7 +1597,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.WhiteBalance());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1546,6 +1610,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1556,7 +1623,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.BlackThreshold(new Percentage(10)));
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1569,6 +1636,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1579,7 +1649,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.WhiteThreshold(new Percentage(90)));
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1592,6 +1662,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1602,7 +1675,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.Grayscale());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1615,6 +1688,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1625,7 +1701,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.Negate());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1638,6 +1714,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1648,7 +1727,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.AutoLevel());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1661,6 +1740,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1671,7 +1753,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.AutoGamma());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1684,6 +1766,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1694,7 +1779,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.Blur(20, 10));
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1707,6 +1792,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1717,7 +1805,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.CannyEdge());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1730,6 +1818,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1740,7 +1831,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.Rotate(90));
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1753,6 +1844,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1763,7 +1857,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.Rotate(-90));
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1776,6 +1870,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1786,7 +1883,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.Flip());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1799,6 +1896,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1809,7 +1909,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.Flop());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1821,6 +1921,9 @@ public partial class MainWindow : FluentWindow
         imagePath = tempFileName;
 
         MainImage.Source = magickImage.ToBitmapSource();
+
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
 
         SetUiForCompletedTask();
     }
@@ -1851,10 +1954,21 @@ public partial class MainWindow : FluentWindow
             return;
 
         MagickGeometry cropGeometry = CroppingRectangle.CropShape;
-        MagickImage magickImage = new(imagePath);
-        MagickGeometry actualSize = new(magickImage.Width, magickImage.Height);
+        using MagickImage magickImage = new(imagePath);
 
-        double factor = actualSize.Height / MainImage.ActualHeight;
+        // Calculate scale factor based on actual image dimensions vs display dimensions
+        // Use the MainImage.Source dimensions, which reflect the actual loaded image
+        double displayWidth = MainImage.ActualWidth;
+        double displayHeight = MainImage.ActualHeight;
+
+        if (displayWidth == 0 || displayHeight == 0)
+        {
+            SetUiForCompletedTask();
+            return;
+        }
+
+        // Scale factor to convert from display coordinates to actual image coordinates
+        double factor = magickImage.Height / displayHeight;
         cropGeometry.ScaleAll(factor);
 
         SetUiForLongTask();
@@ -1870,6 +1984,9 @@ public partial class MainWindow : FluentWindow
         imagePath = tempFileName;
 
         MainImage.Source = magickImage.ToBitmapSource();
+
+        // Update actualImageSize to reflect the new cropped dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
 
         SetUiForCompletedTask();
 
@@ -1915,8 +2032,7 @@ public partial class MainWindow : FluentWindow
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Collapsed;
 
-        if (lines is not null)
-            lines.Visibility = Visibility.Collapsed;
+        lines?.Visibility = Visibility.Collapsed;
     }
 
     private async void DetectShapeButton_Click(object sender, RoutedEventArgs e)
@@ -2044,7 +2160,12 @@ public partial class MainWindow : FluentWindow
         if (Mouse.LeftButton == MouseButtonState.Pressed)
         {
             clickedPoint = e.GetPosition(ShapeCanvas);
+            oldGridSize = new Size(ImageGrid.ActualWidth, ImageGrid.ActualHeight);
             draggingMode = DraggingMode.Resizing;
+            isDraggingResizeGrip = true;
+
+            // Uncheck aspect ratio lock when dragging the resize grip
+            AspectRatioLockToggle.IsChecked = false;
         }
     }
 
@@ -2053,7 +2174,7 @@ public partial class MainWindow : FluentWindow
         if (string.IsNullOrEmpty(imagePath))
             return;
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
 
         // Get target dimensions from user input
         int targetWidth, targetHeight;
@@ -2091,6 +2212,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = null;
         MainImage.Source = magickImage.ToBitmapSource();
+
+        // Update actualImageSize to reflect the new dimensions
+        actualImageSize = new Size(targetWidth, targetHeight);
 
         SetUiForCompletedTask();
         HideResizeControls();
@@ -2177,6 +2301,9 @@ public partial class MainWindow : FluentWindow
     private void SizeTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (isUpdatingFromCode) return;
+
+        // Skip processing if user is actively dragging the resize grip
+        if (isDraggingResizeGrip) return;
 
         if (sender is not Wpf.Ui.Controls.TextBox textBox) return;
 
@@ -2274,16 +2401,14 @@ public partial class MainWindow : FluentWindow
     {
         isAspectRatioLocked = true;
         MainImage.Stretch = Stretch.Uniform;
-        if (AspectRatioIcon is not null)
-            AspectRatioIcon.Symbol = SymbolRegular.Link24;
+        AspectRatioIcon?.Symbol = SymbolRegular.Link24;
     }
 
     private void AspectRatioLockToggle_Unchecked(object sender, RoutedEventArgs e)
     {
         isAspectRatioLocked = false;
         MainImage.Stretch = Stretch.Fill; // Allow stretching without maintaining aspect ratio
-        if (AspectRatioIcon is not null)
-            AspectRatioIcon.Symbol = SymbolRegular.LinkDismiss24;
+        AspectRatioIcon?.Symbol = SymbolRegular.LinkDismiss24;
     }
 
     private void UndoMenuItem_Click(object sender, RoutedEventArgs e)
@@ -2521,8 +2646,7 @@ public partial class MainWindow : FluentWindow
     {
         if (isAdornerRotatingDrag)
         {
-            if (e is not null)
-                e.Handled = true;
+            e?.Handled = true;
             return;
         }
         if (sender is Ellipse senderEllipse
@@ -3574,18 +3698,15 @@ public partial class MainWindow : FluentWindow
 
     private void ShowRotationOverlay()
     {
-        if (rotationOverlayLabel is not null)
-            rotationOverlayLabel.Visibility = Visibility.Visible;
+        rotationOverlayLabel?.Visibility = Visibility.Visible;
     }
     private void HideRotationOverlay()
     {
-        if (rotationOverlayLabel is not null)
-            rotationOverlayLabel.Visibility = Visibility.Collapsed;
+        rotationOverlayLabel?.Visibility = Visibility.Collapsed;
     }
     private void UpdateRotationOverlay()
     {
-        if (rotationOverlayLabel is not null)
-            rotationOverlayLabel.Text = $"{currentPreviewRotation:0.0}°";
+        rotationOverlayLabel?.Text = $"{currentPreviewRotation:0.0}°";
     }
 
     private void ToggleRotateMode(bool enable)
@@ -3634,7 +3755,7 @@ public partial class MainWindow : FluentWindow
             HideRotationOverlay();
             // Ensure adorner is removed and toggle unchecked
             RemoveRotateAdorner();
-            try { if (FreeRotateToggle != null) FreeRotateToggle.IsChecked = false; } catch { }
+            try { FreeRotateToggle?.IsChecked = false; } catch { }
             isFreeRotatingDrag = false;
         }
     }
@@ -3768,7 +3889,7 @@ public partial class MainWindow : FluentWindow
             {
                 try { Mouse.Captured?.ReleaseMouseCapture(); } catch { }
             }
-            try { if (ShapeCanvas != null) ShapeCanvas.IsHitTestVisible = false; } catch { }
+            try { ShapeCanvas?.IsHitTestVisible = false; } catch { }
         }
         // Throttle to reduce jitter and UI thrash
         long now = Environment.TickCount64;
@@ -3796,7 +3917,7 @@ public partial class MainWindow : FluentWindow
         ShowRotationOverlay();
         UpdateRotationOverlay();
         isAdornerRotatingDrag = false;
-        try { if (ShapeCanvas != null) ShapeCanvas.IsHitTestVisible = true; } catch { }
+        try { ShapeCanvas?.IsHitTestVisible = true; } catch { }
     }
 
     private void RemoveRotateAdorner()
@@ -3809,7 +3930,7 @@ public partial class MainWindow : FluentWindow
             rotateAdorner = null;
         }
         isAdornerRotatingDrag = false;
-        try { if (ShapeCanvas != null) ShapeCanvas.IsHitTestVisible = true; } catch { }
+        try { ShapeCanvas?.IsHitTestVisible = true; } catch { }
     }
 
     private void ResetRotationButton_Click(object sender, RoutedEventArgs e)
@@ -3857,6 +3978,9 @@ public partial class MainWindow : FluentWindow
 
             using MagickImage newImage = new(imagePath);
             MainImage.Source = newImage.ToBitmapSource();
+
+            // Update actualImageSize to reflect current dimensions
+            actualImageSize = new Size(newImage.Width, newImage.Height);
         }
         catch (Exception ex)
         {
