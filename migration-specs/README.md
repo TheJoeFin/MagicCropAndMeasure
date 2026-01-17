@@ -26,7 +26,7 @@ Look for the "Sub-Steps" table at the top of each spec file to see the breakdown
 | ✅ 06 | [06-observable-models.md](06-observable-models.md) | Add INotifyPropertyChanged to models | 2-3 hours | **6 sub-steps (06a-06f)** | ✅ **DONE** |
 | 07 | [07-aboutwindow-migration.md](07-aboutwindow-migration.md) | Migrate AboutWindow to MVVM | 1-2 hours | - | ✅ **DONE** |
 | ✅ 08 | [08-savewindow-migration.md](08-savewindow-migration.md) | Migrate SaveWindow to MVVM | 2-3 hours | - | ✅ **DONE** |
-| 09 | [09-welcomemessage-migration.md](09-welcomemessage-migration.md) | Migrate WelcomeMessage control | 3-4 hours | **9 sub-steps (09a-09i)** | - |
+| ✅ 09 | [09-welcomemessage-migration.md](09-welcomemessage-migration.md) | Migrate WelcomeMessage control | 3-4 hours | **9 sub-steps (09a-09i)** | ✅ **DONE** |
 | 10 | [10-recentprojectitem-migration.md](10-recentprojectitem-migration.md) | Migrate RecentProjectItem control | 1-2 hours | - | - |
 | 11 | [11-measurement-controls-base.md](11-measurement-controls-base.md) | Create measurement base classes | 3-4 hours | **10 sub-steps (11a-11j)** | - |
 | 12 | [12-measurement-controls-migration.md](12-measurement-controls-migration.md) | Migrate individual measurement controls | 4-6 hours | **9 sub-steps (12a-12i)** | - |

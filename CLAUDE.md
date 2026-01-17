@@ -131,8 +131,56 @@ dotnet build MagickCrop.sln
   - Build succeeds with no new errors (same 24 pre-existing warnings)
   - Ready for Step 09: WelcomeMessage control migration
 
+## Step 09 - WelcomeMessage MVVM Migration
+- **Changes Made:**
+   - Created `ViewModels/WelcomeViewModel.cs`:
+     - Observable properties: WelcomeText, SubtitleText, HasRecentProjects, CanPasteFromClipboard, IsCheckingClipboard
+     - RecentProjects ObservableCollection with LoadRecentProjectsAsync()
+     - Clipboard detection with CheckClipboardAsync() and RefreshClipboard command
+     - RelayCommands: OpenRecentProject, DeleteRecentProject, BrowseForImage, PasteImage, ShowOverlay, ClearAllRecentProjects
+     - Bridging pattern for parent command integration (OpenFileCommand, PasteFromClipboardCommand, OpenOverlayCommand)
+     - Proper DI injection pattern with fallback to App.GetService()
+   
+   - Created `Converters/InverseBooleanToVisibilityConverter.cs`:
+     - Converts bool to Visibility (inverted: true → Collapsed, false → Visible)
+     - Supports ConvertBack for two-way binding
+   
+   - Updated `Controls/WelcomeMessage.xaml`:
+     - Replaced event bindings with command bindings to ViewModel
+     - Data bindings for welcome text, subtitle, recent projects
+     - ItemsControl for recent projects with proper command passing via RelativeSource
+     - Visibility converters for conditional display
+     - Design-time DataContext for XAML editor support
+   
+   - Updated `Controls/WelcomeMessage.xaml.cs`:
+     - Minimal code-behind with ViewModel property accessor
+     - DependencyProperties for backward compatibility (OpenFileCommand, PasteCommand, OverlayCommand)
+     - Constructor gets ViewModel from DI
+     - Lifecycle management: Loaded calls InitializeAsync(), Unloaded calls Cleanup()
+     - Window Activated handler to refresh clipboard when window gains focus
+   
+   - Updated `App.xaml`:
+     - Added InverseBooleanToVisibilityConverter to resources
+   
+   - Updated `App.xaml.cs`:
+     - Registered WelcomeViewModel as Transient in DI container
+   
+   - Updated `MainWindow.xaml`:
+     - Removed old event-based dependency property bindings (PrimaryButtonEvent, PasteButtonEvent, OverlayButtonEvent)
+
+- **Key Design Patterns:**
+   - **Bridging Commands:** ViewModel exposes ICommand properties that parent can set, allowing loose coupling
+   - **Clipboard Detection:** UI thread marshaling required for clipboard operations
+   - **Visibility Converters:** Used for conditional display of recent projects vs empty state
+   - **Message-Based Communication:** ProjectOpenedMessage sent when recent project clicked
+   - **Backward Compatibility:** DependencyProperties support old event-based calling patterns
+
+- **Application Status:**
+   - Build succeeds with no new errors (same 4 pre-existing NuGet warnings)
+   - Ready for Step 10: RecentProjectItem control migration
+
 ## Next Steps
-- Step 09: WelcomeMessage control migration (3-4 hours with 9 sub-steps)
+- Step 10: RecentProjectItem control migration (1-2 hours)
 
 ## Step 07 - AboutWindow MVVM Migration
 - **Changes Made:**
