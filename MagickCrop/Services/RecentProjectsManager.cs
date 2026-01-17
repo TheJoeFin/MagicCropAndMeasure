@@ -1,5 +1,6 @@
 using MagickCrop.Models;
 using MagickCrop.Models.MeasurementControls;
+using MagickCrop.Services.Interfaces;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text.Json;
@@ -12,7 +13,7 @@ namespace MagickCrop.Services;
 /// <summary>
 /// Manages saving, loading and tracking of recent projects
 /// </summary>
-public class RecentProjectsManager
+public class RecentProjectsManager : IRecentProjectsService
 {
     private const string ProjectIndexFileName = "project_index.json";
     private const string ThumbnailsFolder = "Thumbnails";
@@ -245,5 +246,73 @@ public class RecentProjectsManager
         {
             // Continue even if deletion fails
         }
+    }
+
+    // Interface implementations for IRecentProjectsService
+
+    /// <summary>
+    /// Loads the recent projects from storage asynchronously.
+    /// </summary>
+    public async Task LoadRecentProjectsAsync()
+    {
+        await Task.Run(() => LoadRecentProjects());
+    }
+
+    /// <summary>
+    /// Adds or updates a project in the recent projects list asynchronously.
+    /// </summary>
+    public async Task AddRecentProjectAsync(RecentProjectInfo project)
+    {
+        await Task.Run(() => UpdateRecentProjectsList(project));
+    }
+
+    /// <summary>
+    /// Removes a project from the recent projects list asynchronously.
+    /// </summary>
+    public async Task RemoveRecentProjectAsync(Guid projectId)
+    {
+        await Task.Run(() => RemoveProject(projectId.ToString(), deleteFiles: true));
+    }
+
+    /// <summary>
+    /// Gets the auto-save path for the current project.
+    /// </summary>
+    public string GetAutosavePath()
+    {
+        return _projectsFolder;
+    }
+
+    /// <summary>
+    /// Auto-saves the current project state asynchronously.
+    /// </summary>
+    public async Task AutosaveProjectAsync(MagickCropMeasurementPackage package, RecentProjectInfo projectInfo)
+    {
+        await Task.Run(() =>
+        {
+            // Sync the projectInfo with the package
+            if (package is not null && package.Metadata is not null)
+            {
+                package.Metadata.ProjectId = projectInfo.Id;
+                package.Metadata.LastModified = DateTime.Now;
+
+                // Save the package
+                package.SaveToFileAsync(projectInfo.PackagePath);
+
+                // Update the recent projects list
+                UpdateRecentProjectsList(projectInfo);
+            }
+        });
+    }
+
+    /// <summary>
+    /// Clears all recent projects asynchronously.
+    /// </summary>
+    public async Task ClearRecentProjectsAsync()
+    {
+        await Task.Run(() =>
+        {
+            RecentProjects.Clear();
+            SaveRecentProjectsList();
+        });
     }
 }

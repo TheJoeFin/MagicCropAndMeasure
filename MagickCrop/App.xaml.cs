@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Windows;
 using MagickCrop.Services;
+using MagickCrop.Services.Interfaces;
 using MagickCrop.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -48,8 +49,16 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        // Register Services
-        services.AddSingleton<RecentProjectsManager>();
+        // Register Service Interfaces
+        services.AddSingleton<IRecentProjectsService, RecentProjectsManager>();
+        services.AddSingleton<IFileDialogService, FileDialogService>();
+        services.AddSingleton<IClipboardService, ClipboardService>();
+        // services.AddSingleton<IImageProcessingService, ImageProcessingService>(); // To be implemented in Step 14
+        // services.AddSingleton<IThemeService, ThemeService>(); // To be implemented in future step
+
+        // Keep backward compatibility during migration
+        services.AddSingleton<RecentProjectsManager>(sp => 
+            (RecentProjectsManager)sp.GetRequiredService<IRecentProjectsService>());
         
         // Register ViewModels (to be added in future steps)
         // services.AddTransient<MainWindowViewModel>();

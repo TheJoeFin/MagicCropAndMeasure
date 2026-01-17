@@ -38,9 +38,46 @@ dotnet build MagickCrop.sln
   - Application builds successfully with no new errors
 
 ## Next Steps
-- Step 03: Service interface extraction (7 sub-steps)
-- Create service interfaces (7 sub-steps)
-- Set up messaging system using CommunityToolkit.Mvvm's IMessenger
+- Step 04: Messaging setup (needed for loose coupling)
+- Step 05: Navigation service (needed for Step 07-08)
+- Step 06: Observable models (needed for Step 09-16)
+
+## Step 03 - Service Interface Extraction
+- **Changes Made:**
+  - Created `Services/Interfaces/` folder structure
+  - Created 5 service interfaces:
+    - `IRecentProjectsService` - Manages recent project history
+    - `IFileDialogService` - File/folder dialog operations
+    - `IClipboardService` - Clipboard operations
+    - `IImageProcessingService` - Image manipulation (stub for Step 14)
+    - `IThemeService` - Application theme management (stub for future)
+  
+  - Created 2 service implementations:
+    - `FileDialogService` - Uses WPF OpenFileDialog, SaveFileDialog, OpenFolderDialog
+    - `ClipboardService` - Uses WPF Clipboard and ClipboardHelper for robust image handling
+  
+  - Updated `RecentProjectsManager`:
+    - Now implements `IRecentProjectsService`
+    - Added async wrapper methods: `LoadRecentProjectsAsync()`, `AddRecentProjectAsync()`, `RemoveRecentProjectAsync()`, `AutosaveProjectAsync()`, `ClearRecentProjectsAsync()`
+    - Added `GetAutosavePath()` method returning `_projectsFolder`
+  
+  - Updated `App.xaml.cs`:
+    - Added `using MagickCrop.Services.Interfaces;`
+    - Updated `ConfigureServices()` to register interfaces:
+      - `IRecentProjectsService` → `RecentProjectsManager` (Singleton)
+      - `IFileDialogService` → `FileDialogService` (Singleton)
+      - `IClipboardService` → `ClipboardService` (Singleton)
+    - Added backward compatibility registration for `RecentProjectsManager` itself
+  
+- **Benefits:**
+  - Services now mockable for unit testing
+  - Clear separation of concerns with focused interfaces
+  - Enables loose coupling between components
+  - Foundation for future service implementations
+  
+- **Application Status:**
+  - Build succeeds with no new errors
+  - Ready for Step 04: Messaging Service Setup
 
 ## Step 02 - Dependency Injection Setup
 - **Changes Made:**
