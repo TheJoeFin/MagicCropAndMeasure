@@ -522,28 +522,38 @@
                                             <wpfui:SymbolIcon Symbol="Whiteboard24" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-                                    <MenuItem
-                                        x:Name="WhitePointPickerToggle"
-                                        Checked="WhitePointPickerToggle_Checked"
-                                        Header="Pick White Point"
-                                        IsCheckable="True"
-                                        ToolTip="Toggle white point picker tool"
-                                        Unchecked="WhitePointPickerToggle_Unchecked">
-                                        <MenuItem.Icon>
-                                            <wpfui:SymbolIcon Symbol="Eyedropper24" />
-                                        </MenuItem.Icon>
-                                    </MenuItem>
-                                    <MenuItem
-                                        x:Name="BlackPointPickerToggle"
-                                        Checked="BlackPointPickerToggle_Checked"
-                                        Header="Pick Black Point"
-                                        IsCheckable="True"
-                                        ToolTip="Toggle black point picker tool"
-                                        Unchecked="BlackPointPickerToggle_Unchecked">
-                                        <MenuItem.Icon>
-                                            <wpfui:SymbolIcon Symbol="Eyedropper24" />
-                                        </MenuItem.Icon>
-                                    </MenuItem>
+                                    <GroupBox Padding="0,12" Header="Pickers">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <ToggleButton
+                                                x:Name="WhitePointPickerToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="WhitePointPickerToggle_Checked"
+                                                ToolTip="Toggle white point picker tool"
+                                                Unchecked="WhitePointPickerToggle_Unchecked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Eyedropper24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="White Point" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                            <ToggleButton
+                                                x:Name="BlackPointPickerToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="BlackPointPickerToggle_Checked"
+                                                ToolTip="Toggle black point picker tool"
+                                                Unchecked="BlackPointPickerToggle_Unchecked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Eyedropper24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Black Point" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                        </StackPanel>
+                                    </GroupBox>
                                     <MenuItem
                                         Name="AutoLevelsMenuItem"
                                         Click="AutoLevelsMenuItem_Click"

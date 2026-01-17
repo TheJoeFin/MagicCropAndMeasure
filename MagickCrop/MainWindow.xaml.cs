@@ -244,6 +244,7 @@ public partial class MainWindow : FluentWindow
             e.Handled = true;
             return;
         }
+
         if (isFreeRotatingDrag)
         {
             if (e.LeftButton == MouseButtonState.Pressed)
@@ -260,11 +261,19 @@ public partial class MainWindow : FluentWindow
             }
         }
 
-        // Update pixel zoom if it should be shown
+        // Update pixel zoom if it should be shown (including before first measurement placement)
         Point mousePos = e.GetPosition(ShapeCanvas);
         if (ShouldShowPixelZoom())
         {
-            UpdatePixelZoom(mousePos);
+            // Show the pixel zoom if not already visible
+            if (PixelZoomControl.Visibility != Visibility.Visible)
+            {
+                ShowPixelZoom(mousePos);
+            }
+            else
+            {
+                UpdatePixelZoom(mousePos);
+            }
         }
         else
         {
@@ -4456,7 +4465,7 @@ public partial class MainWindow : FluentWindow
 
     /// <summary>
     /// Checks if pixel zoom should be shown for the current operation.
-    /// Only shows during active dragging operations, not on hover.
+    /// Shows when a measurement tool is active, including hover before first placement.
     /// </summary>
     /// <returns>True if pixel zoom should be active</returns>
     private bool ShouldShowPixelZoom()
@@ -4491,6 +4500,16 @@ public partial class MainWindow : FluentWindow
 
         // Show during circle placement (active drag)
         if (isPlacingCircleMeasurement && draggingMode == DraggingMode.CreatingMeasurement)
+            return true;
+
+        // Show when any measurement tool is active, even before first placement
+        if (MeasureDistanceToggle?.IsChecked == true ||
+            MeasureAngleToggle?.IsChecked == true ||
+            RectangleMeasureToggle?.IsChecked == true ||
+            CircleMeasureToggle?.IsChecked == true ||
+            PolygonMeasureToggle?.IsChecked == true ||
+            HorizontalLineRadio?.IsChecked == true ||
+            VerticalLineToggle?.IsChecked == true)
             return true;
 
         return false;
