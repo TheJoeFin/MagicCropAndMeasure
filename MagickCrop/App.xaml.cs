@@ -1,25 +1,76 @@
 ﻿using System.IO;
 using System.Windows;
+using MagickCrop.Services;
+using MagickCrop.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MagickCrop;
 
 public partial class App : Application
 {
+    private static IServiceProvider? _serviceProvider;
+
+    /// <summary>
+    /// Gets the current service provider instance.
+    /// </summary>
+    public static IServiceProvider ServiceProvider => _serviceProvider 
+        ?? throw new InvalidOperationException("Service provider not initialized");
+
+    /// <summary>
+    /// Gets a service of type T from the DI container.
+    /// </summary>
+    public static T GetService<T>() where T : class
+        => ServiceProvider.GetRequiredService<T>();
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
+        // Configure DI container
+        var services = new ServiceCollection();
+        ConfigureServices(services);
+        _serviceProvider = services.BuildServiceProvider();
+
+        // Handle .mcm file association
         if (e.Args.Length > 0 && File.Exists(e.Args[0])
             && Path.GetExtension(e.Args[0]).Equals(".mcm", StringComparison.OrdinalIgnoreCase))
         {
-            MainWindow mainWindow = new();
+            var mainWindow = GetService<MainWindow>();
             mainWindow.LoadMeasurementsPackageFromFile(e.Args[0]);
             mainWindow.Show();
             return;
         }
 
-        MainWindow normalMainWindow = new();
+        // Normal startup
+        var normalMainWindow = GetService<MainWindow>();
         normalMainWindow.Show();
+    }
+
+    private static void ConfigureServices(IServiceCollection services)
+    {
+        // Register Services
+        services.AddSingleton<RecentProjectsManager>();
+        
+        // Register ViewModels (to be added in future steps)
+        // services.AddTransient<MainWindowViewModel>();
+        // services.AddTransient<SaveWindowViewModel>();
+        // services.AddTransient<AboutWindowViewModel>();
+
+        // Register Windows/Views
+        services.AddTransient<MainWindow>();
+        services.AddTransient<SaveWindow>();
+        services.AddTransient<Windows.AboutWindow>();
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        base.OnExit(e);
+        
+        // Dispose of the service provider if it implements IDisposable
+        if (_serviceProvider is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
     }
 }
 

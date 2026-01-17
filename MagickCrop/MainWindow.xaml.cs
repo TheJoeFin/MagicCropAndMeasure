@@ -58,6 +58,7 @@ public partial class MainWindow : FluentWindow
     private readonly List<UIElement> _polygonElements;
 
     private readonly UndoRedo undoRedo = new();
+    private readonly RecentProjectsManager _recentProjectsManager;
     private AspectRatioItem? selectedAspectRatio;
     private readonly ObservableCollection<DistanceMeasurementControl> measurementTools = [];
     private DistanceMeasurementControl? activeMeasureControl;
@@ -142,8 +143,14 @@ public partial class MainWindow : FluentWindow
     // Hover highlight polygon for quadrilateral selector
     private Polygon? hoverHighlightPolygon;
 
-    public MainWindow()
+    public MainWindow() : this(Singleton<RecentProjectsManager>.Instance)
     {
+    }
+
+    public MainWindow(RecentProjectsManager recentProjectsManager)
+    {
+        _recentProjectsManager = recentProjectsManager;
+        
         ThemeService themeService = new();
         themeService.SetTheme(ApplicationTheme.Dark);
 
@@ -3433,7 +3440,7 @@ public partial class MainWindow : FluentWindow
 
     private void InitializeProjectManager()
     {
-        recentProjectsManager = Singleton<RecentProjectsManager>.Instance;
+        recentProjectsManager = _recentProjectsManager;
 
         // Setup autosave timer
         autoSaveTimer = new System.Timers.Timer(AutoSaveIntervalMs);

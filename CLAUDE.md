@@ -38,9 +38,35 @@ dotnet build MagickCrop.sln
   - Application builds successfully with no new errors
 
 ## Next Steps
-- Step 02: Dependency injection setup (configure DI container in App.xaml.cs)
+- Step 03: Service interface extraction (7 sub-steps)
 - Create service interfaces (7 sub-steps)
 - Set up messaging system using CommunityToolkit.Mvvm's IMessenger
+
+## Step 02 - Dependency Injection Setup
+- **Changes Made:**
+  - Updated `App.xaml.cs` to configure Microsoft.Extensions.DependencyInjection
+  - Added `ServiceProvider` static property and `GetService<T>()` method
+  - Configured `OnStartup()` to build DI container before window creation
+  - Maintained .mcm file association support through DI container
+  - Added `OnExit()` to properly dispose of ServiceProvider
+
+- **MainWindow Constructor Updates:**
+  - Added `_recentProjectsManager` readonly field
+  - Created parametrized constructor accepting `RecentProjectsManager`
+  - Kept parameterless constructor that chains to parametrized version using `Singleton<RecentProjectsManager>.Instance`
+  - Updated `InitializeProjectManager()` to use injected instance instead of Singleton pattern
+  - DI container will use the most-parameters constructor it can satisfy
+
+- **Service Registrations:**
+  - `RecentProjectsManager` - Singleton (app lifetime)
+  - `MainWindow` - Transient (new per request)
+  - `SaveWindow` - Transient (new per request)
+  - `Windows.AboutWindow` - Transient (new per request)
+  
+- **Backward Compatibility:**
+  - Parameterless constructor fallback uses `Singleton<RecentProjectsManager>.Instance`
+  - Gradual migration approach - can still use old singleton pattern while transitioning
+  - Application builds and runs without errors
 
 ## Known Issues
 - Pre-existing build warnings from WPF-UI obsolete DialogHost (not scope of migration)

@@ -19,7 +19,7 @@ Look for the "Sub-Steps" table at the top of each spec file to see the breakdown
 |------|------|-------------|-----------------|-----------|--------|
 | 00 | [00-architecture-overview.md](00-architecture-overview.md) | Current state analysis and target architecture | 1-2 hours | - | - |
 | ✅ 01 | [01-mvvm-infrastructure-setup.md](01-mvvm-infrastructure-setup.md) | Add NuGet packages, create ViewModelBase | 1 hour | - | **DONE** |
-| 02 | [02-dependency-injection-setup.md](02-dependency-injection-setup.md) | Configure DI container in App.xaml.cs | 2 hours | - | - |
+| ✅ 02 | [02-dependency-injection-setup.md](02-dependency-injection-setup.md) | Configure DI container in App.xaml.cs | 2 hours | - | **DONE** |
 | 03 | [03-service-interface-extraction.md](03-service-interface-extraction.md) | Create service interfaces and implementations | 3-4 hours | **7 sub-steps (03a-03g)** | - |
 | 04 | [04-messaging-service-setup.md](04-messaging-service-setup.md) | Set up event aggregator/messenger | 2 hours | - | - |
 | 05 | [05-navigation-service.md](05-navigation-service.md) | Create navigation service for windows | 2 hours | - | - |
