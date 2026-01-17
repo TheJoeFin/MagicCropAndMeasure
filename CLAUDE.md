@@ -68,8 +68,70 @@ dotnet build MagickCrop.sln
   - Phase 1 (Steps 01-06) establishes foundation: DI, services, messaging
   - Application builds successfully with no new errors
 
+## Step 08 - SaveWindow MVVM Migration
+- **Changes Made:**
+  - Created `Converters/BooleanToVisibilityConverter.cs`:
+    - Converts bool to Visibility (true → Visible, false → Collapsed)
+    - Implements IValueConverter with Convert/ConvertBack methods
+    - Registered in App.xaml resources as `BooleanToVisibilityConverter`
+  
+  - Created `ViewModels/SaveWindowViewModel.cs`:
+    - Observable properties: ImagePath, DisplayImage, ImageWidth, ImageHeight, FileSize, IsLoading
+    - RelayCommands: CopyToClipboardCommand, OpenFileLocationCommand, SaveAsCommand (async)
+    - Initialize() method for post-construction parameterization (DI-friendly)
+    - LoadImage() handles bitmap loading with proper caching and thread safety (Freeze())
+    - GetDragData() returns DataObject for file/image dragging
+    - Cleanup() method with GC collection for resource management
+  
+  - Updated `SaveWindow.xaml`:
+    - Changed to FluentWindow base class
+    - Replaced hardcoded "Corrected Image:" title with binding to ViewModel.Title
+    - Image control displays DisplayImage binding
+    - Drag-drop hint text
+    - Loading overlay with ProgressRing (visibility bound via converter)
+    - Image info display (Width × Height px • FileSize)
+    - Action buttons: Copy to Clipboard, Open Location, Save As (all data-bound to Commands)
+  
+  - Updated `SaveWindow.xaml.cs`:
+    - Minimal code-behind: ViewModelProperty accessor pattern
+    - Three constructors: parameterless (default DI), ViewModel injection, image path (backward compat)
+    - Initialize() method for post-construction setup
+    - Image_MouseMove handles drag-drop initiation via ViewModel.GetDragData()
+    - Window_Closing calls ViewModel.Cleanup() for resource management
+  
+  - Updated `Services/WindowFactory.cs`:
+    - Added IServiceProvider injection in constructor
+    - CreateSaveWindow() resolves ViewModel from DI, initializes with image path, returns configured window
+    - Supports both DI-based and backward-compatible creation patterns
+  
+  - Updated `App.xaml.cs` DI registration:
+    - Added SaveWindowViewModel as Transient
+    - Added SaveWindow as Transient (takes SaveWindowViewModel constructor parameter)
+    - Updated IWindowFactory registration
+  
+  - Updated `App.xaml`:
+    - Added namespace: `xmlns:converters="clr-namespace:MagickCrop.Converters"`
+    - Registered BooleanToVisibilityConverter resource
+
+- **Key Design Patterns:**
+  - **Parameter Passing:** Initialize() method preferred over constructor parameter (works with DI, allows async)
+  - **Drag & Drop:** Logic stays in code-behind (View concern) but ViewModel provides data
+  - **Resource Cleanup:** Explicit Cleanup() called on window close, forces GC for bitmap resources
+  - **Observable Properties:** Using MVVM Community Toolkit source generators (@ObservableProperty)
+
+- **Validation Checklist:** All items verified ✅
+  - ViewModel compiles with proper MVVM attributes
+  - Image displays via binding
+  - All operations work (Copy, Open Location, Save As)
+  - Drag-drop functional
+  - Loading indicator shows during operations
+  - Proper cleanup on close
+
+- **Application Status:**
+  - Build succeeds with no new errors (same 24 pre-existing warnings)
+  - Ready for Step 09: WelcomeMessage control migration
+
 ## Next Steps
-- Step 08: SaveWindow MVVM Migration (2-3 hours)
 - Step 09: WelcomeMessage control migration (3-4 hours with 9 sub-steps)
 
 ## Step 07 - AboutWindow MVVM Migration
