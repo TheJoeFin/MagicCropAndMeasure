@@ -900,13 +900,14 @@ public partial class MainWindow : FluentWindow
 
     private async void PasteButton_Click(object sender, RoutedEventArgs e)
     {
-        // Check if clipboard contains image data
-        if (!Clipboard.ContainsImage())
+        // Check if clipboard contains image data using robust detection
+        if (!ClipboardHelper.ContainsImageData())
         {
+            string availableFormats = ClipboardHelper.GetClipboardFormatsInfo();
             Wpf.Ui.Controls.MessageBox uiMessageBox = new()
             {
                 Title = "Paste Error",
-                Content = "No image found in clipboard. Copy an image first.",
+                Content = $"No image found in clipboard. Copy an image first.\n\nAvailable clipboard formats: {availableFormats}",
             };
             await uiMessageBox.ShowDialogAsync();
             SetUiForCompletedTask();
@@ -918,29 +919,25 @@ public partial class MainWindow : FluentWindow
         try
         {
             WelcomeMessageModal.Visibility = Visibility.Collapsed;
-            BitmapSource clipboardImage = Clipboard.GetImage();
+
+            // Use robust clipboard image retrieval
+            BitmapSource? clipboardImage = ClipboardHelper.GetImageFromClipboard();
 
             if (clipboardImage is null)
             {
+                string availableFormats = ClipboardHelper.GetClipboardFormatsInfo();
                 Wpf.Ui.Controls.MessageBox uiMessageBox = new()
                 {
                     Title = "Paste Error",
-                    Content = "Could not retrieve a valid image from the clipboard.",
+                    Content = $"Could not retrieve a valid image from the clipboard.\n\nDetected formats: {availableFormats}\n\nTry copying the image again or using a different source.",
                 };
                 await uiMessageBox.ShowDialogAsync();
+                WelcomeMessageModal.Visibility = Visibility.Visible;
                 return;
             }
 
-            // Create a temporary file for the image
-            string tempFileName = System.IO.Path.GetTempFileName();
-            tempFileName = System.IO.Path.ChangeExtension(tempFileName, ".jpg");
-
-            // Save the clipboard image to the temporary file
-            using FileStream stream = new(tempFileName, FileMode.Create);
-
-            JpegBitmapEncoder encoder = new();
-            encoder.Frames.Add(BitmapFrame.Create(clipboardImage));
-            encoder.Save(stream);
+            // Save the clipboard image to a temporary file using optimal format
+            string tempFileName = ClipboardHelper.SaveImageToTempFile(clipboardImage);
 
             // Reset any current measurements
             RemoveMeasurementControls();
@@ -955,10 +952,11 @@ public partial class MainWindow : FluentWindow
         catch (Exception ex)
         {
             WelcomeMessageModal.Visibility = Visibility.Visible;
+            string availableFormats = ClipboardHelper.GetClipboardFormatsInfo();
             Wpf.Ui.Controls.MessageBox uiMessageBox = new()
             {
-                Title = "Error",
-                Content = $"Error pasting image: {ex.Message}",
+                Title = "Paste Error",
+                Content = $"Error pasting image: {ex.Message}\n\nClipboard formats: {availableFormats}\n\nPlease try copying the image again.",
             };
             await uiMessageBox.ShowDialogAsync();
         }
@@ -3933,6 +3931,18 @@ public partial class MainWindow : FluentWindow
 
     private void FluentWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        // Handle Ctrl+V for pasting
+        if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && e.Key == Key.V)
+        {
+            // Only paste if welcome screen is visible or no image is loaded
+            if (WelcomeMessageModal.Visibility == Visibility.Visible || string.IsNullOrEmpty(imagePath))
+            {
+                PasteButton_Click(sender, e);
+                e.Handled = true;
+                return;
+            }
+        }
+
         if (e.Key == Key.Escape)
         {
             UncheckAllBut();
