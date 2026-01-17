@@ -83,7 +83,6 @@ public partial class AspectRatioTransform : UserControl
             return [];
 
         float squareSize = 20;
-        (double x, double y) topLeft = (-10.0, -10.0);
 
         // Find the bounding box of the points
         double minX = fullPoints.Min(p => p.X);
@@ -98,18 +97,20 @@ public partial class AspectRatioTransform : UserControl
         // Determine the scaling factor to fit within the square
         double scale = squareSize / Math.Max(width, height);
 
-        // Scale and translate the points
+        // Calculate the center of the original bounding box
+        double centerX = (minX + maxX) / 2;
+        double centerY = (minY + maxY) / 2;
+
+        // Scale and center the points around (0, 0)
         PointCollection scaledPoints = [];
 
         foreach (System.Windows.Point p in fullPoints)
         {
-            System.Windows.Point newPoint = new(p.X * scale + topLeft.x, p.Y * scale + topLeft.y);
-            scaledPoints.Add(newPoint);
+            // Translate to origin, scale, then center at (0, 0)
+            double scaledX = (p.X - centerX) * scale;
+            double scaledY = (p.Y - centerY) * scale;
+            scaledPoints.Add(new System.Windows.Point(scaledX, scaledY));
         }
-        // .Select(p => (
-        //     topLeft.X + (p.X - minX) * scale,
-        //     topLeft.Y + (p.Y - minY) * scale))
-        // .ToList();]
 
         return scaledPoints;
     }

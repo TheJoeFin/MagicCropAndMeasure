@@ -1,4 +1,5 @@
-﻿using MagickCrop.Models;
+﻿using MagickCrop.Helpers;
+using MagickCrop.Models;
 using MagickCrop.Services;
 using MagickCrop.Windows;
 using System.Diagnostics;
@@ -54,8 +55,16 @@ public partial class WelcomeMessage : UserControl
         if (_recentProjectsManager.RecentProjects.Count > 0)
             RecentTab.IsSelected = true;
 
-        if (!Clipboard.ContainsImage())
-            PasteButton.Visibility = Visibility.Collapsed;
+        // Use robust clipboard detection
+        UpdatePasteButtonVisibility();
+    }
+
+    /// <summary>
+    /// Updates paste button visibility based on robust clipboard detection
+    /// </summary>
+    private void UpdatePasteButtonVisibility()
+    {
+        PasteButton.Visibility = ClipboardHelper.ContainsImageData() ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void UpdateRecentProjectsList(ICommand projectClickCommand, ICommand projectDeleteCommand)

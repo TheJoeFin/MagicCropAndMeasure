@@ -13,6 +13,14 @@ public record AspectRatioItem
         [
             new AspectRatioItem()
             {
+                ToolTip = "Original image aspect ratio",
+                Symbol = "Image24",
+                Text = "Original",
+                RatioValue = 1, // Will be updated dynamically
+                AspectRatioEnum = AspectRatio.Original
+            },
+            new AspectRatioItem()
+            {
                 ToolTip = "8.5 tall by 11 wide",
                 Symbol = "DocumentLandscape24",
                 Text = "Letter Landscape",

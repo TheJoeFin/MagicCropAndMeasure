@@ -21,15 +21,20 @@ Using ImageMagick to via to correct perspective distortion in images.
 After the perspective distortion has been removed you can use the measure tools!
 ![Measure Tools on the corrected image of a piece of paper](Images/Measure.png)
 
-## Powered by Image Magick and Magick.NET
+## Powered by Image Magick, Magick.NET, and OpenCV
 
-- GitHub: https://github.com/dlemstra/Magick.NET
-- Nuget search: https://www.nuget.org/packages?q=magick.net
+- **Magick.NET** - Image processing and transformation
+  - GitHub: https://github.com/dlemstra/Magick.NET
+  - Nuget: https://www.nuget.org/packages?q=magick.net
+- **Emgu.CV** - Computer vision and shape detection
+  - Website: http://www.emgu.com/
+  - Nuget: https://www.nuget.org/packages/Emgu.CV
 
 This is a simple app which does a few things.
 
 - Open an image
-- Align to the 4 corners of the rectangular subject
+- **Auto-detect rectangular shapes** using OpenCV (new!)
+- Align to the 4 corners of the rectangular subject (manually or automatically)
 - Set the Aspect Ratio with the drop down
 - Save the image which will square the opened image per the selected aspect ratio
 - Crop the image

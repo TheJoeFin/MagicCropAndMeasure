@@ -1,5 +1,6 @@
 ﻿using ImageMagick;
 using MagickCrop.Controls;
+using MagickCrop.Helpers;
 using MagickCrop.Models;
 using MagickCrop.Models.MeasurementControls;
 using MagickCrop.Services;
@@ -37,12 +38,18 @@ public partial class MainWindow : FluentWindow
     private bool isUpdatingFromCode = false;
     private bool isPixelMode = true;
     private bool isAspectRatioLocked = true;
+    private bool isDraggingResizeGrip = false;
     private double aspectRatio = 1.0;
     private int pointDraggingIndex = -1;
     private Polygon? lines;
     private string? imagePath;
+    private string? originalFilePath;
     private string? savedPath;
     private readonly int ImageWidthConst = 700;
+
+    // Quadrilateral detection parameters
+    private const double QuadDetectionMinArea = 0.02;
+    private const int QuadDetectionMaxResults = 5;
 
     private DraggingMode draggingMode = DraggingMode.None;
 
@@ -89,6 +96,12 @@ public partial class MainWindow : FluentWindow
 
     private bool isCreatingMeasurement = false;
 
+    // --- White point picker state ---
+    private bool isWhitePointPickerMode = false;
+
+    // --- Black point picker state ---
+    private bool isBlackPointPickerMode = false;
+
     // --- Angle measurement placement state ---
     private bool isPlacingAngleMeasurement = false;
     private AnglePlacementStep anglePlacementStep = AnglePlacementStep.None;
@@ -125,6 +138,9 @@ public partial class MainWindow : FluentWindow
     private RotateAdorner? rotateAdorner;
     private AdornerLayer? rotateAdornerLayer;
     private bool isAdornerRotatingDrag = false; // true while adorner has the mouse captured
+
+    // Hover highlight polygon for quadrilateral selector
+    private Polygon? hoverHighlightPolygon;
 
     public MainWindow()
     {
@@ -216,6 +232,9 @@ public partial class MainWindow : FluentWindow
         draggingMode = DraggingMode.MoveElement;
         clickedPoint = e.GetPosition(ShapeCanvas);
         CaptureMouse();
+
+        // Show pixel zoom for precise corner placement
+        ShowPixelZoom(clickedPoint);
     }
 
     private void TopLeft_MouseMove(object sender, MouseEventArgs e)
@@ -225,6 +244,7 @@ public partial class MainWindow : FluentWindow
             e.Handled = true;
             return;
         }
+
         if (isFreeRotatingDrag)
         {
             if (e.LeftButton == MouseButtonState.Pressed)
@@ -241,10 +261,29 @@ public partial class MainWindow : FluentWindow
             }
         }
 
+        // Update pixel zoom if it should be shown (including before first measurement placement)
+        Point mousePos = e.GetPosition(ShapeCanvas);
+        if (ShouldShowPixelZoom())
+        {
+            // Show the pixel zoom if not already visible
+            if (PixelZoomControl.Visibility != Visibility.Visible)
+            {
+                ShowPixelZoom(mousePos);
+            }
+            else
+            {
+                UpdatePixelZoom(mousePos);
+            }
+        }
+        else
+        {
+            // Hide zoom when conditions are no longer met
+            HidePixelZoom();
+        }
+
         // --- ANGLE MEASUREMENT PLACEMENT LOGIC ---
         if (isPlacingAngleMeasurement && activeAnglePlacementControl != null)
         {
-            Point mousePos = e.GetPosition(ShapeCanvas);
             if (anglePlacementStep == AnglePlacementStep.DraggingFirstLeg)
             {
                 activeAnglePlacementControl.MovePoint(1, mousePos); // Move point1 to follow mouse
@@ -262,7 +301,6 @@ public partial class MainWindow : FluentWindow
         // --- RECTANGLE MEASUREMENT PLACEMENT LOGIC ---
         if (isPlacingRectangleMeasurement && activeRectanglePlacementControl != null && draggingMode == DraggingMode.CreatingMeasurement)
         {
-            Point mousePos = e.GetPosition(ShapeCanvas);
             activeRectanglePlacementControl.MovePoint(1, mousePos); // Update bottom-right point as mouse moves
             e.Handled = true;
             return;
@@ -271,14 +309,12 @@ public partial class MainWindow : FluentWindow
         // --- POLYGON MEASUREMENT PLACEMENT LOGIC ---
         if (isPlacingPolygonMeasurement && activePolygonPlacementControl != null && !activePolygonPlacementControl.IsClosed)
         {
-            Point mousePos = e.GetPosition(ShapeCanvas);
             activePolygonPlacementControl.UpdatePreviewLine(mousePos);
             e.Handled = true;
             return;
         }        // --- CIRCLE MEASUREMENT PLACEMENT LOGIC ---
         if (isPlacingCircleMeasurement && activeCirclePlacementControl != null && draggingMode == DraggingMode.CreatingMeasurement)
         {
-            Point mousePos = e.GetPosition(ShapeCanvas);
             activeCirclePlacementControl.MovePoint(1, mousePos); // Update edge point as mouse moves
             e.Handled = true;
             return;
@@ -289,6 +325,11 @@ public partial class MainWindow : FluentWindow
             if (draggingMode == DraggingMode.Panning)
             {
                 // panning release handled in MouseUp, nothing else here
+            }
+
+            if (draggingMode == DraggingMode.Resizing)
+            {
+                isDraggingResizeGrip = false;
             }
 
             if (draggingMode == DraggingMode.MeasureDistance && activeMeasureControl is not null)
@@ -425,7 +466,62 @@ public partial class MainWindow : FluentWindow
         ImageGrid.Width = Math.Max(50, newWidth);
         ImageGrid.Height = Math.Max(50, newHeight);
 
+        // Update text boxes based on the current display size and full resolution
+        UpdateResizeTextBoxesFromDrag();
+
         e.Handled = true;
+    }
+
+    /// <summary>
+    /// Updates the width/height text boxes based on the current ImageGrid dimensions during resize grip drag.
+    /// Projects the current display aspect ratio back to full resolution to show the final image dimensions.
+    /// </summary>
+    private void UpdateResizeTextBoxesFromDrag()
+    {
+        if (actualImageSize.Width <= 0 || actualImageSize.Height <= 0)
+            return;
+
+        // Get current display dimensions
+        double displayWidth = ImageGrid.Width;
+        double displayHeight = ImageGrid.Height;
+
+        // Calculate the new aspect ratio from the current drag
+        double newAspectRatio = displayWidth / displayHeight;
+
+        // Determine final dimensions by projecting the new aspect ratio onto the full resolution
+        // Use the dimension that results in the largest image without exceeding original bounds
+        double finalWidth, finalHeight;
+
+        if (newAspectRatio > actualImageSize.Width / actualImageSize.Height)
+        {
+            // New aspect ratio is wider - use original width as base
+            finalWidth = actualImageSize.Width;
+            finalHeight = actualImageSize.Width / newAspectRatio;
+        }
+        else
+        {
+            // New aspect ratio is taller or same - use original height as base
+            finalHeight = actualImageSize.Height;
+            finalWidth = actualImageSize.Height * newAspectRatio;
+        }
+
+        isUpdatingFromCode = true;
+
+        if (isPixelMode)
+        {
+            WidthTextBox.Text = ((int)Math.Round(finalWidth)).ToString();
+            HeightTextBox.Text = ((int)Math.Round(finalHeight)).ToString();
+        }
+        else
+        {
+            // For percentage mode, calculate percentage relative to original actual size
+            double widthPercent = (finalWidth / actualImageSize.Width) * 100.0;
+            double heightPercent = (finalHeight / actualImageSize.Height) * 100.0;
+            WidthTextBox.Text = ((int)Math.Round(widthPercent)).ToString();
+            HeightTextBox.Text = ((int)Math.Round(heightPercent)).ToString();
+        }
+
+        isUpdatingFromCode = false;
     }
 
     private void PanCanvas(MouseEventArgs e)
@@ -544,7 +640,7 @@ public partial class MainWindow : FluentWindow
         Size originalDisplaySize = new(MainImage.ActualWidth, MainImage.ActualHeight);
         bool cropRectangleVisible = CroppingRectangle.Visibility == Visibility.Visible;
         double originalCropLeft = 0, originalCropTop = 0, originalCropWidth = 0, originalCropHeight = 0;
-        
+
         if (cropRectangleVisible)
         {
             originalCropLeft = Canvas.GetLeft(CroppingRectangle);
@@ -572,28 +668,28 @@ public partial class MainWindow : FluentWindow
         {
             // Force layout update to ensure MainImage has updated its ActualWidth/Height
             UpdateLayout();
-            
+
             Size newDisplaySize = new(MainImage.ActualWidth, MainImage.ActualHeight);
-            
-            if (newDisplaySize.Width > 0 && newDisplaySize.Height > 0 && 
+
+            if (newDisplaySize.Width > 0 && newDisplaySize.Height > 0 &&
                 originalDisplaySize.Width > 0 && originalDisplaySize.Height > 0)
             {
                 // Calculate scale factors for the display size change
                 double widthScale = newDisplaySize.Width / originalDisplaySize.Width;
                 double heightScale = newDisplaySize.Height / originalDisplaySize.Height;
-                
+
                 // Transform the crop rectangle position and size
                 double newCropLeft = originalCropLeft * widthScale;
                 double newCropTop = originalCropTop * heightScale;
                 double newCropWidth = originalCropWidth * widthScale;
                 double newCropHeight = originalCropHeight * heightScale;
-                
+
                 // Ensure the adjusted rectangle stays within bounds
                 newCropLeft = Math.Max(0, Math.Min(newCropLeft, newDisplaySize.Width - newCropWidth));
                 newCropTop = Math.Max(0, Math.Min(newCropTop, newDisplaySize.Height - newCropHeight));
                 newCropWidth = Math.Min(newCropWidth, newDisplaySize.Width - newCropLeft);
                 newCropHeight = Math.Min(newCropHeight, newDisplaySize.Height - newCropTop);
-                
+
                 // Apply the adjusted position and size
                 Canvas.SetLeft(CroppingRectangle, newCropLeft);
                 Canvas.SetTop(CroppingRectangle, newCropTop);
@@ -619,6 +715,7 @@ public partial class MainWindow : FluentWindow
             Filter = "Image Files|*.jpg;",
             RestoreDirectory = true,
             FileName = $"{openedFileName}_corrected.jpg",
+            InitialDirectory = !string.IsNullOrEmpty(originalFilePath) ? System.IO.Path.GetDirectoryName(originalFilePath) : null,
         };
 
         if (saveFileDialog.ShowDialog() is not true || lines is null)
@@ -812,13 +909,14 @@ public partial class MainWindow : FluentWindow
 
     private async void PasteButton_Click(object sender, RoutedEventArgs e)
     {
-        // Check if clipboard contains image data
-        if (!Clipboard.ContainsImage())
+        // Check if clipboard contains image data using robust detection
+        if (!ClipboardHelper.ContainsImageData())
         {
+            string availableFormats = ClipboardHelper.GetClipboardFormatsInfo();
             Wpf.Ui.Controls.MessageBox uiMessageBox = new()
             {
                 Title = "Paste Error",
-                Content = "No image found in clipboard. Copy an image first.",
+                Content = $"No image found in clipboard. Copy an image first.\n\nAvailable clipboard formats: {availableFormats}",
             };
             await uiMessageBox.ShowDialogAsync();
             SetUiForCompletedTask();
@@ -830,29 +928,25 @@ public partial class MainWindow : FluentWindow
         try
         {
             WelcomeMessageModal.Visibility = Visibility.Collapsed;
-            BitmapSource clipboardImage = Clipboard.GetImage();
+
+            // Use robust clipboard image retrieval
+            BitmapSource? clipboardImage = ClipboardHelper.GetImageFromClipboard();
 
             if (clipboardImage is null)
             {
+                string availableFormats = ClipboardHelper.GetClipboardFormatsInfo();
                 Wpf.Ui.Controls.MessageBox uiMessageBox = new()
                 {
                     Title = "Paste Error",
-                    Content = "Could not retrieve a valid image from the clipboard.",
+                    Content = $"Could not retrieve a valid image from the clipboard.\n\nDetected formats: {availableFormats}\n\nTry copying the image again or using a different source.",
                 };
                 await uiMessageBox.ShowDialogAsync();
+                WelcomeMessageModal.Visibility = Visibility.Visible;
                 return;
             }
 
-            // Create a temporary file for the image
-            string tempFileName = System.IO.Path.GetTempFileName();
-            tempFileName = System.IO.Path.ChangeExtension(tempFileName, ".jpg");
-
-            // Save the clipboard image to the temporary file
-            using FileStream stream = new(tempFileName, FileMode.Create);
-
-            JpegBitmapEncoder encoder = new();
-            encoder.Frames.Add(BitmapFrame.Create(clipboardImage));
-            encoder.Save(stream);
+            // Save the clipboard image to a temporary file using optimal format
+            string tempFileName = ClipboardHelper.SaveImageToTempFile(clipboardImage);
 
             // Reset any current measurements
             RemoveMeasurementControls();
@@ -867,11 +961,13 @@ public partial class MainWindow : FluentWindow
         catch (Exception ex)
         {
             WelcomeMessageModal.Visibility = Visibility.Visible;
+            string availableFormats = ClipboardHelper.GetClipboardFormatsInfo();
             Wpf.Ui.Controls.MessageBox uiMessageBox = new()
             {
-                Title = "Error",
-                Content = $"Error pasting image: {ex.Message}",
+                Title = "Paste Error",
+                Content = $"Error pasting image: {ex.Message}\n\nClipboard formats: {availableFormats}\n\nPlease try copying the image again.",
             };
+            await uiMessageBox.ShowDialogAsync();
         }
         finally
         {
@@ -943,6 +1039,7 @@ public partial class MainWindow : FluentWindow
         MagickImage bitmapImage = new(tempFileName);
 
         imagePath = tempFileName;
+        originalFilePath = imageFilePath;
         openedFileName = System.IO.Path.GetFileNameWithoutExtension(imageFilePath);
         MainImage.Source = bitmapImage.ToBitmapSource();
 
@@ -957,6 +1054,9 @@ public partial class MainWindow : FluentWindow
 
         // Update the ReOpenFileButton to show the current file name
         UpdateOpenedFileNameText();
+
+        // Center and zoom to fit the image in the viewport
+        CenterAndZoomToFit();
     }
 
     private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
@@ -1040,6 +1140,32 @@ public partial class MainWindow : FluentWindow
             }
         }
 
+        // White point picker mode - pick color from image
+        if (isWhitePointPickerMode && e.LeftButton == MouseButtonState.Pressed)
+        {
+            Point imagePoint = e.GetPosition(MainImage);
+            // Ensure click is within image bounds
+            if (imagePoint.X >= 0 && imagePoint.Y >= 0 && imagePoint.X < MainImage.ActualWidth && imagePoint.Y < MainImage.ActualHeight)
+            {
+                _ = PickWhitePointColorAsync(imagePoint);
+                e.Handled = true;
+                return;
+            }
+        }
+
+        // Black point picker mode - pick color from image
+        if (isBlackPointPickerMode && e.LeftButton == MouseButtonState.Pressed)
+        {
+            Point imagePoint = e.GetPosition(MainImage);
+            // Ensure click is within image bounds
+            if (imagePoint.X >= 0 && imagePoint.Y >= 0 && imagePoint.X < MainImage.ActualWidth && imagePoint.Y < MainImage.ActualHeight)
+            {
+                _ = PickBlackPointColorAsync(imagePoint);
+                e.Handled = true;
+                return;
+            }
+        }
+
         // Middle mouse always initiates panning regardless of tool (quick navigation)
         if (e.ChangedButton == MouseButton.Middle)
         {
@@ -1097,6 +1223,9 @@ public partial class MainWindow : FluentWindow
             measurementControl.MovePoint(0, clickedPoint);
             measurementControl.StartDraggingPoint(1);
             isCreatingMeasurement = true;
+
+            // Show pixel zoom for precise measurement placement
+            ShowPixelZoom(clickedPoint);
         }
         else if (MeasureAngleToggle.IsChecked is true)
         {
@@ -1119,6 +1248,10 @@ public partial class MainWindow : FluentWindow
 
             ShapeCanvas.Children.Add(activeAnglePlacementControl);
             ShapeCanvas.CaptureMouse();
+
+            // Show pixel zoom for precise angle placement
+            ShowPixelZoom(clickedPoint);
+
             e.Handled = true;
             return;
         }
@@ -1134,6 +1267,9 @@ public partial class MainWindow : FluentWindow
                 ScaleFactor = ScaleInput.Value ?? 1.0,
                 Units = MeasurementUnits.Text
             };
+
+            // Show pixel zoom for precise rectangle placement
+            ShowPixelZoom(clickedPoint);
 
             activeRectanglePlacementControl.MovePoint(0, clickedPoint); // Set top-left to initial click
             activeRectanglePlacementControl.MovePoint(1, clickedPoint); // Set bottom-right to initial click, will be updated on mouse move/up
@@ -1194,6 +1330,9 @@ public partial class MainWindow : FluentWindow
                 Units = MeasurementUnits.Text
             };
 
+            // Show pixel zoom for precise circle placement
+            ShowPixelZoom(clickedPoint);
+
             activeCirclePlacementControl.MovePoint(0, clickedPoint); // Set center to initial click
             activeCirclePlacementControl.MovePoint(1, clickedPoint); // Set edge to initial click, will be updated on mouse move/up
             ShapeCanvas.Children.Add(activeCirclePlacementControl);
@@ -1236,6 +1375,12 @@ public partial class MainWindow : FluentWindow
 
     private void ShapeCanvas_MouseUp(object sender, MouseButtonEventArgs e)
     {
+        // Hide pixel zoom only if we're not in a precision mode anymore
+        if (!ShouldShowPixelZoom())
+        {
+            HidePixelZoom();
+        }
+
         // If we were panning, release immediately so wheel events work even without a post-release move
         if (draggingMode == DraggingMode.Panning)
         {
@@ -1392,6 +1537,72 @@ public partial class MainWindow : FluentWindow
         canvasTranslate.Y = 0;
     }
 
+    /// <summary>
+    /// Centers and zooms the canvas to fit the image in the viewport with padding.
+    /// </summary>
+    private void CenterAndZoomToFit()
+    {
+        if (MainImage.Source == null || MainGrid.ActualWidth == 0 || MainGrid.ActualHeight == 0)
+            return;
+
+        // Force layout update to ensure ImageGrid has rendered
+        UpdateLayout();
+
+        // Get the viewport size (the visible area in MainGrid)
+        double viewportWidth = MainGrid.ActualWidth;
+        double viewportHeight = MainGrid.ActualHeight;
+
+        // Get the image size (ImageGrid size which contains the image)
+        double imageWidth = ImageGrid.ActualWidth;
+        double imageHeight = ImageGrid.ActualHeight;
+
+        if (imageWidth == 0 || imageHeight == 0)
+            return;
+
+        // Add padding (10% on each side)
+        double paddingFactor = 0.9; // Use 90% of viewport to leave 10% padding
+        double availableWidth = viewportWidth * paddingFactor;
+        double availableHeight = viewportHeight * paddingFactor;
+
+        // Calculate scale factors to fit the image in the viewport
+        double scaleX = availableWidth / imageWidth;
+        double scaleY = availableHeight / imageHeight;
+
+        // Use the smaller scale to ensure the entire image fits
+        double scale = Math.Min(scaleX, scaleY);
+
+        // Clamp scale to min/max zoom limits
+        scale = Math.Clamp(scale, MinZoom, MaxZoom);
+
+        // Apply the scale
+        canvasScale.ScaleX = scale;
+        canvasScale.ScaleY = scale;
+
+        // Calculate the scaled image dimensions
+        double scaledImageWidth = imageWidth * scale;
+        double scaledImageHeight = imageHeight * scale;
+
+        // Calculate translation to center the image
+        // The canvas has a 50,50 margin, so we need to account for that
+        double canvasMarginX = 50;
+        double canvasMarginY = 50;
+
+        // Center the scaled image in the viewport
+        double translateX = (viewportWidth - scaledImageWidth) / 2 - (canvasMarginX * scale);
+        double translateY = (viewportHeight - scaledImageHeight) / 2 - (canvasMarginY * scale);
+
+            canvasTranslate.X = translateX;
+            canvasTranslate.Y = translateY;
+        }
+
+        /// <summary>
+        /// Menu item handler to center and zoom to fit the image on demand.
+        /// </summary>
+        private void CenterAndZoomToFitMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            CenterAndZoomToFit();
+        }
+
     private async void AutoContrastMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(imagePath))
@@ -1399,7 +1610,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.SigmoidalContrast(10));
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1412,6 +1623,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1422,7 +1636,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.WhiteBalance());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1435,17 +1649,250 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
-    private async void BlackPointMenuItem_Click(object sender, RoutedEventArgs e)
+    private void WhitePointPickerToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            WhitePointPickerToggle.IsChecked = false;
+            return;
+        }
+
+        // Enable white point picker mode
+        isWhitePointPickerMode = true;
+        draggingMode = DraggingMode.WhitePointPicker;
+
+        // Change cursor to indicate picking mode
+        Cursor = Cursors.Cross;
+    }
+
+    private void WhitePointPickerToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        // Disable white point picker mode
+        isWhitePointPickerMode = false;
+        draggingMode = DraggingMode.None;
+        Cursor = null;
+    }
+
+    private void BlackPointPickerToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            BlackPointPickerToggle.IsChecked = false;
+            return;
+        }
+
+        // Enable black point picker mode
+        isBlackPointPickerMode = true;
+        draggingMode = DraggingMode.BlackPointPicker;
+
+        // Change cursor to indicate picking mode
+        Cursor = Cursors.Cross;
+    }
+
+    private void BlackPointPickerToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        // Disable black point picker mode
+        isBlackPointPickerMode = false;
+        draggingMode = DraggingMode.None;
+        Cursor = null;
+    }
+
+    private async Task PickWhitePointColorAsync(Point imagePoint)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return;
+
+        try
+        {
+            // Reset picker mode and cursor
+            isWhitePointPickerMode = false;
+            draggingMode = DraggingMode.None;
+            Cursor = null;
+            WhitePointPickerToggle.IsChecked = false;
+
+            using MagickImage magickImage = new(imagePath);
+
+            // Convert display coordinates to actual image pixel coordinates
+            double scaleX = magickImage.Width / MainImage.ActualWidth;
+            double scaleY = magickImage.Height / MainImage.ActualHeight;
+            int pixelX = (int)(imagePoint.X * scaleX);
+            int pixelY = (int)(imagePoint.Y * scaleY);
+
+            // Clamp to image bounds
+            pixelX = Math.Clamp(pixelX, 0, (int)magickImage.Width - 1);
+            pixelY = Math.Clamp(pixelY, 0, (int)magickImage.Height - 1);
+
+            // Get the color at the clicked pixel
+            IMagickColor<ushort> pixelColor = magickImage.GetPixels().GetPixel(pixelX, pixelY).ToColor() ?? throw new InvalidOperationException("Could not get pixel color");
+
+            // Convert ushort (0-65535) to byte range (0-255)
+            byte r = (byte)(pixelColor.R / 257);
+            byte g = (byte)(pixelColor.G / 257);
+            byte b = (byte)(pixelColor.B / 257);
+
+            // Show the picked color in the preview
+            WhitePointColorRectangle.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb(r, g, b));
+            WhitePointColorPreview.Visibility = Visibility.Visible;
+
+            // Wait a moment for user to see the picked color
+            await Task.Delay(800);
+
+            SetUiForLongTask();
+
+            // Apply white balance using the picked color as the white reference
+            await Task.Run(() =>
+            {
+                // Avoid division by zero
+                if (r == 0) r = 1;
+                if (g == 0) g = 1;
+                if (b == 0) b = 1;
+
+                // Use Level per channel to map the picked color to white (255)
+                // Level adjusts the range from [black, white] to [0, 255]
+                // By setting the white point to the picked color, that color becomes maximum brightness
+                magickImage.Level(new Percentage(0), new Percentage((r / 255.0) * 100), 1.0, Channels.Red);
+                magickImage.Level(new Percentage(0), new Percentage((g / 255.0) * 100), 1.0, Channels.Green);
+                magickImage.Level(new Percentage(0), new Percentage((b / 255.0) * 100), 1.0, Channels.Blue);
+            });
+
+            string tempFileName = System.IO.Path.GetTempFileName();
+            await magickImage.WriteAsync(tempFileName);
+
+            MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
+            undoRedo.AddUndo(undoRedoItem);
+
+            imagePath = tempFileName;
+
+            MainImage.Source = magickImage.ToBitmapSource();
+
+            // Update actualImageSize to reflect current dimensions
+            actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
+            // Hide the color preview after a delay
+            await Task.Delay(1500);
+            WhitePointColorPreview.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception ex)
+        {
+            WhitePointColorPreview.Visibility = Visibility.Collapsed;
+            Wpf.Ui.Controls.MessageBox errorBox = new()
+            {
+                Title = "Error",
+                Content = $"Failed to apply white point: {ex.Message}",
+            };
+            await errorBox.ShowDialogAsync();
+        }
+            finally
+            {
+                SetUiForCompletedTask();
+            }
+        }
+
+        private async Task PickBlackPointColorAsync(Point imagePoint)
+        {
+            if (string.IsNullOrWhiteSpace(imagePath))
+                return;
+
+            try
+            {
+                // Reset picker mode and cursor
+                isBlackPointPickerMode = false;
+                draggingMode = DraggingMode.None;
+                Cursor = null;
+                BlackPointPickerToggle.IsChecked = false;
+
+                using MagickImage magickImage = new(imagePath);
+
+                // Convert display coordinates to actual image pixel coordinates
+                double scaleX = magickImage.Width / MainImage.ActualWidth;
+                double scaleY = magickImage.Height / MainImage.ActualHeight;
+                int pixelX = (int)(imagePoint.X * scaleX);
+                int pixelY = (int)(imagePoint.Y * scaleY);
+
+                // Clamp to image bounds
+                pixelX = Math.Clamp(pixelX, 0, (int)magickImage.Width - 1);
+                pixelY = Math.Clamp(pixelY, 0, (int)magickImage.Height - 1);
+
+                // Get the color at the clicked pixel
+                IMagickColor<ushort> pixelColor = magickImage.GetPixels().GetPixel(pixelX, pixelY).ToColor() ?? throw new InvalidOperationException("Could not get pixel color");
+
+                // Convert ushort (0-65535) to byte range (0-255)
+                byte r = (byte)(pixelColor.R / 257);
+                byte g = (byte)(pixelColor.G / 257);
+                byte b = (byte)(pixelColor.B / 257);
+
+                // Show the picked color in the preview
+                WhitePointColorRectangle.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb(r, g, b));
+                WhitePointColorPreview.Visibility = Visibility.Visible;
+
+                // Wait a moment for user to see the picked color
+                await Task.Delay(800);
+
+                SetUiForLongTask();
+
+                // Apply black point adjustment using the picked color as the black reference
+                await Task.Run(() =>
+                {
+                    // Avoid overflow to 255
+                    if (r == 255) r = 254;
+                    if (g == 255) g = 254;
+                    if (b == 255) b = 254;
+
+                    // Use Level per channel to map the picked color to black (0)
+                    // Level adjusts the range from [black, white] to [0, 255]
+                    // By setting the black point to the picked color, that color becomes minimum brightness
+                    magickImage.Level(new Percentage((r / 255.0) * 100), new Percentage(100), 1.0, Channels.Red);
+                    magickImage.Level(new Percentage((g / 255.0) * 100), new Percentage(100), 1.0, Channels.Green);
+                    magickImage.Level(new Percentage((b / 255.0) * 100), new Percentage(100), 1.0, Channels.Blue);
+                });
+
+                string tempFileName = System.IO.Path.GetTempFileName();
+                await magickImage.WriteAsync(tempFileName);
+
+                MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
+                undoRedo.AddUndo(undoRedoItem);
+
+                imagePath = tempFileName;
+
+                MainImage.Source = magickImage.ToBitmapSource();
+
+                // Update actualImageSize to reflect current dimensions
+                actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
+                // Hide the color preview after a delay
+                await Task.Delay(1500);
+                WhitePointColorPreview.Visibility = Visibility.Collapsed;
+            }
+            catch (Exception ex)
+            {
+                WhitePointColorPreview.Visibility = Visibility.Collapsed;
+                Wpf.Ui.Controls.MessageBox errorBox = new()
+                {
+                    Title = "Error",
+                    Content = $"Failed to apply black point: {ex.Message}",
+                };
+                await errorBox.ShowDialogAsync();
+            }
+            finally
+            {
+                SetUiForCompletedTask();
+            }
+        }
+
+        private async void BlackPointMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(imagePath))
             return;
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.BlackThreshold(new Percentage(10)));
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1458,6 +1905,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1468,7 +1918,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.WhiteThreshold(new Percentage(90)));
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1481,6 +1931,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1491,7 +1944,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.Grayscale());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1504,6 +1957,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1514,7 +1970,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.Negate());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1527,6 +1983,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1537,7 +1996,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.AutoLevel());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1550,6 +2009,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1560,7 +2022,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.AutoGamma());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1573,6 +2035,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1583,7 +2048,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.Blur(20, 10));
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1596,6 +2061,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1606,7 +2074,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.CannyEdge());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1619,6 +2087,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1629,7 +2100,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.Rotate(90));
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1642,6 +2113,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1652,7 +2126,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.Rotate(-90));
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1665,6 +2139,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1675,7 +2152,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.Flip());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1688,6 +2165,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = magickImage.ToBitmapSource();
 
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
         SetUiForCompletedTask();
     }
 
@@ -1698,7 +2178,7 @@ public partial class MainWindow : FluentWindow
 
         SetUiForLongTask();
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
         await Task.Run(() => magickImage.Flop());
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -1710,6 +2190,9 @@ public partial class MainWindow : FluentWindow
         imagePath = tempFileName;
 
         MainImage.Source = magickImage.ToBitmapSource();
+
+        // Update actualImageSize to reflect current dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
 
         SetUiForCompletedTask();
     }
@@ -1740,10 +2223,21 @@ public partial class MainWindow : FluentWindow
             return;
 
         MagickGeometry cropGeometry = CroppingRectangle.CropShape;
-        MagickImage magickImage = new(imagePath);
-        MagickGeometry actualSize = new(magickImage.Width, magickImage.Height);
+        using MagickImage magickImage = new(imagePath);
 
-        double factor = actualSize.Height / MainImage.ActualHeight;
+        // Calculate scale factor based on actual image dimensions vs display dimensions
+        // Use the MainImage.Source dimensions, which reflect the actual loaded image
+        double displayWidth = MainImage.ActualWidth;
+        double displayHeight = MainImage.ActualHeight;
+
+        if (displayWidth == 0 || displayHeight == 0)
+        {
+            SetUiForCompletedTask();
+            return;
+        }
+
+        // Scale factor to convert from display coordinates to actual image coordinates
+        double factor = magickImage.Height / displayHeight;
         cropGeometry.ScaleAll(factor);
 
         SetUiForLongTask();
@@ -1759,6 +2253,9 @@ public partial class MainWindow : FluentWindow
         imagePath = tempFileName;
 
         MainImage.Source = magickImage.ToBitmapSource();
+
+        // Update actualImageSize to reflect the new cropped dimensions
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
 
         SetUiForCompletedTask();
 
@@ -1803,6 +2300,123 @@ public partial class MainWindow : FluentWindow
 
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Collapsed;
+
+        lines?.Visibility = Visibility.Collapsed;
+    }
+
+    private async void DetectShapeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+        {
+            _ = System.Windows.MessageBox.Show("Please open an image first.", "No Image", System.Windows.MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        // Show progress indicator
+        IsWorkingBar.Visibility = Visibility.Visible;
+
+        try
+        {
+            // Detect quadrilaterals in background thread
+            QuadrilateralDetector.DetectionResult detectionResult = await Task.Run(() =>
+                QuadrilateralDetector.DetectQuadrilateralsWithDimensions(imagePath, minArea: QuadDetectionMinArea, maxResults: QuadDetectionMaxResults));
+
+            if (detectionResult.Quadrilaterals.Count == 0)
+            {
+                _ = System.Windows.MessageBox.Show(
+                    "No quadrilaterals detected in the image.\n\nPlease position the corner markers manually.",
+                    "No Shapes Detected",
+                    System.Windows.MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            else
+            {
+                // Scale quadrilaterals to display coordinates
+                List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads = [.. detectionResult.Quadrilaterals.Select(q =>
+                    QuadrilateralDetector.ScaleToDisplay(
+                        q,
+                        detectionResult.ImageWidth,
+                        detectionResult.ImageHeight,
+                        MainImage.ActualWidth,
+                        MainImage.ActualHeight))];
+
+                // Show selector
+                QuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
+                QuadrilateralSelectorControl.QuadrilateralHoverEnter += QuadrilateralSelector_HoverEnter;
+                QuadrilateralSelectorControl.QuadrilateralHoverExit += QuadrilateralSelector_HoverExit;
+                ShowQuadrilateralSelector();
+            }
+        }
+        catch (IOException ioEx)
+        {
+            _ = System.Windows.MessageBox.Show(
+                $"File error while detecting quadrilaterals: {ioEx.Message}",
+                "File Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        catch (UnauthorizedAccessException uaEx)
+        {
+            _ = System.Windows.MessageBox.Show(
+                $"Access denied while detecting quadrilaterals: {uaEx.Message}",
+                "Access Denied",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        catch (Exception ex)
+        {
+            _ = System.Windows.MessageBox.Show(
+                $"Error detecting quadrilaterals: {ex.Message}",
+                "Detection Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            IsWorkingBar.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void QuadrilateralSelector_Selected(object? sender, QuadrilateralDetector.DetectedQuadrilateral quad)
+    {
+        // Position corner markers at the selected quadrilateral's corners
+        PositionCornerMarkers(quad);
+        // Hide the selector overlay
+        HideQuadrilateralSelector();
+    }
+
+    private void QuadrilateralSelector_ManualSelection(object? sender, EventArgs e)
+    {
+        // Hide selector overlay and let user position markers manually
+        HideQuadrilateralSelector();
+    }
+
+    private void QuadrilateralSelector_Cancelled(object? sender, EventArgs e)
+    {
+        // Hide selector overlay
+        HideQuadrilateralSelector();
+    }
+
+    private void PositionCornerMarkers(Helpers.QuadrilateralDetector.DetectedQuadrilateral quad)
+    {
+        // Position TopLeft marker
+        Canvas.SetLeft(TopLeft, quad.TopLeft.X - (TopLeft.Width / 2));
+        Canvas.SetTop(TopLeft, quad.TopLeft.Y - (TopLeft.Height / 2));
+
+        // Position TopRight marker
+        Canvas.SetLeft(TopRight, quad.TopRight.X - (TopRight.Width / 2));
+        Canvas.SetTop(TopRight, quad.TopRight.Y - (TopRight.Height / 2));
+
+        // Position BottomRight marker
+        Canvas.SetLeft(BottomRight, quad.BottomRight.X - (BottomRight.Width / 2));
+        Canvas.SetTop(BottomRight, quad.BottomRight.Y - (BottomRight.Height / 2));
+
+        // Position BottomLeft marker
+        Canvas.SetLeft(BottomLeft, quad.BottomLeft.X - (BottomLeft.Width / 2));
+        Canvas.SetTop(BottomLeft, quad.BottomLeft.Y - (BottomLeft.Height / 2));
+
+        // Update the polyline
+        DrawPolyLine();
     }
 
     private void ImageResizeGrip_MouseDown(object sender, MouseButtonEventArgs e)
@@ -1815,7 +2429,12 @@ public partial class MainWindow : FluentWindow
         if (Mouse.LeftButton == MouseButtonState.Pressed)
         {
             clickedPoint = e.GetPosition(ShapeCanvas);
+            oldGridSize = new Size(ImageGrid.ActualWidth, ImageGrid.ActualHeight);
             draggingMode = DraggingMode.Resizing;
+            isDraggingResizeGrip = true;
+
+            // Uncheck aspect ratio lock when dragging the resize grip
+            AspectRatioLockToggle.IsChecked = false;
         }
     }
 
@@ -1824,7 +2443,7 @@ public partial class MainWindow : FluentWindow
         if (string.IsNullOrEmpty(imagePath))
             return;
 
-        MagickImage magickImage = new(imagePath);
+        using MagickImage magickImage = new(imagePath);
 
         // Get target dimensions from user input
         int targetWidth, targetHeight;
@@ -1862,6 +2481,9 @@ public partial class MainWindow : FluentWindow
 
         MainImage.Source = null;
         MainImage.Source = magickImage.ToBitmapSource();
+
+        // Update actualImageSize to reflect the new dimensions
+        actualImageSize = new Size(targetWidth, targetHeight);
 
         SetUiForCompletedTask();
         HideResizeControls();
@@ -1948,6 +2570,9 @@ public partial class MainWindow : FluentWindow
     private void SizeTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (isUpdatingFromCode) return;
+
+        // Skip processing if user is actively dragging the resize grip
+        if (isDraggingResizeGrip) return;
 
         if (sender is not Wpf.Ui.Controls.TextBox textBox) return;
 
@@ -2045,16 +2670,14 @@ public partial class MainWindow : FluentWindow
     {
         isAspectRatioLocked = true;
         MainImage.Stretch = Stretch.Uniform;
-        if (AspectRatioIcon is not null)
-            AspectRatioIcon.Symbol = SymbolRegular.Link24;
+        AspectRatioIcon?.Symbol = SymbolRegular.Link24;
     }
 
     private void AspectRatioLockToggle_Unchecked(object sender, RoutedEventArgs e)
     {
         isAspectRatioLocked = false;
         MainImage.Stretch = Stretch.Fill; // Allow stretching without maintaining aspect ratio
-        if (AspectRatioIcon is not null)
-            AspectRatioIcon.Symbol = SymbolRegular.LinkDismiss24;
+        AspectRatioIcon?.Symbol = SymbolRegular.LinkDismiss24;
     }
 
     private void UndoMenuItem_Click(object sender, RoutedEventArgs e)
@@ -2292,7 +2915,7 @@ public partial class MainWindow : FluentWindow
     {
         if (isAdornerRotatingDrag)
         {
-            if (e is not null) e.Handled = true;
+            e?.Handled = true;
             return;
         }
         if (sender is Ellipse senderEllipse
@@ -2304,7 +2927,11 @@ public partial class MainWindow : FluentWindow
 
             draggingMode = DraggingMode.MeasureDistance;
             if (e is not null)
+            {
                 clickedPoint = e.GetPosition(ShapeCanvas);
+                // Show pixel zoom for precise point adjustment
+                ShowPixelZoom(clickedPoint);
+            }
             CaptureMouse();
         }
     }
@@ -2325,6 +2952,8 @@ public partial class MainWindow : FluentWindow
 
             draggingMode = DraggingMode.MeasureAngle;
             clickedPoint = e.GetPosition(ShapeCanvas);
+            // Show pixel zoom for precise point adjustment
+            ShowPixelZoom(clickedPoint);
             CaptureMouse();
         }
     }
@@ -2343,6 +2972,8 @@ public partial class MainWindow : FluentWindow
             activeRectangleMeasureControl = measureControl;
             draggingMode = DraggingMode.MeasureRectangle;
             clickedPoint = e.GetPosition(ShapeCanvas);
+            // Show pixel zoom for precise point adjustment
+            ShowPixelZoom(clickedPoint);
             CaptureMouse();
         }
     }
@@ -2361,6 +2992,8 @@ public partial class MainWindow : FluentWindow
             activePolygonMeasureControl = measureControl;
             draggingMode = DraggingMode.MeasurePolygon;
             clickedPoint = e.GetPosition(ShapeCanvas);
+            // Show pixel zoom for precise point adjustment
+            ShowPixelZoom(clickedPoint);
             CaptureMouse();
         }
     }
@@ -2379,6 +3012,8 @@ public partial class MainWindow : FluentWindow
             activeCircleMeasureControl = measureControl;
             draggingMode = DraggingMode.MeasureCircle;
             clickedPoint = e.GetPosition(ShapeCanvas);
+            // Show pixel zoom for precise point adjustment
+            ShowPixelZoom(clickedPoint);
             CaptureMouse();
         }
     }
@@ -2511,7 +3146,6 @@ public partial class MainWindow : FluentWindow
         {
             package.Measurements.PolygonMeasurements.Add(control.ToDto());
         }
-        Debug.WriteLine($"Saved {polygonMeasurementTools.Count} polygon measurements");
 
         foreach (VerticalLineControl control in verticalLineControls)
             package.Measurements.VerticalLines.Add(control.ToDto());
@@ -2622,6 +3256,14 @@ public partial class MainWindow : FluentWindow
 
             // Load the image
             await OpenImagePath(package.ImagePath);
+
+            // Restore the original filename from the package metadata
+            // This is important because OpenImagePath sets openedFileName from the temp file path
+            if (!string.IsNullOrEmpty(package.Metadata.OriginalFilename))
+            {
+                openedFileName = package.Metadata.OriginalFilename;
+                UpdateOpenedFileNameText();
+            }
         }
         finally
         {
@@ -2771,6 +3413,9 @@ public partial class MainWindow : FluentWindow
 
         MeasureTabItem.IsSelected = true;
         UpdateOpenedFileNameText();
+
+        // Center and zoom to fit the image in the viewport
+        CenterAndZoomToFit();
     }
 
     public async void LoadMeasurementsPackageFromFile(string filePath)
@@ -3295,9 +3940,39 @@ public partial class MainWindow : FluentWindow
 
     private void FluentWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        // Handle Ctrl+V for pasting
+        if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && e.Key == Key.V)
+        {
+            // Only paste if welcome screen is visible or no image is loaded
+            if (WelcomeMessageModal.Visibility == Visibility.Visible || string.IsNullOrEmpty(imagePath))
+            {
+                PasteButton_Click(sender, e);
+                e.Handled = true;
+                return;
+            }
+        }
+
         if (e.Key == Key.Escape)
         {
             UncheckAllBut();
+
+            // Cancel white point picker mode
+            if (isWhitePointPickerMode)
+            {
+                isWhitePointPickerMode = false;
+                draggingMode = DraggingMode.None;
+                Cursor = null;
+                WhitePointPickerToggle.IsChecked = false;
+            }
+
+            // Cancel black point picker mode
+            if (isBlackPointPickerMode)
+            {
+                isBlackPointPickerMode = false;
+                draggingMode = DraggingMode.None;
+                Cursor = null;
+                BlackPointPickerToggle.IsChecked = false;
+            }
 
             isPlacingAngleMeasurement = false;
             anglePlacementStep = AnglePlacementStep.None;
@@ -3330,18 +4005,15 @@ public partial class MainWindow : FluentWindow
 
     private void ShowRotationOverlay()
     {
-        if (rotationOverlayLabel is not null)
-            rotationOverlayLabel.Visibility = Visibility.Visible;
+        rotationOverlayLabel?.Visibility = Visibility.Visible;
     }
     private void HideRotationOverlay()
     {
-        if (rotationOverlayLabel is not null)
-            rotationOverlayLabel.Visibility = Visibility.Collapsed;
+        rotationOverlayLabel?.Visibility = Visibility.Collapsed;
     }
     private void UpdateRotationOverlay()
     {
-        if (rotationOverlayLabel is not null)
-            rotationOverlayLabel.Text = $"{currentPreviewRotation:0.0}°";
+        rotationOverlayLabel?.Text = $"{currentPreviewRotation:0.0}°";
     }
 
     private void ToggleRotateMode(bool enable)
@@ -3363,7 +4035,7 @@ public partial class MainWindow : FluentWindow
             {
                 return;
             }
-            
+
             try
             {
                 rotateAdornerLayer ??= AdornerLayer.GetAdornerLayer(ImageGrid);
@@ -3390,7 +4062,7 @@ public partial class MainWindow : FluentWindow
             HideRotationOverlay();
             // Ensure adorner is removed and toggle unchecked
             RemoveRotateAdorner();
-            try { if (FreeRotateToggle != null) FreeRotateToggle.IsChecked = false; } catch { }
+            try { FreeRotateToggle?.IsChecked = false; } catch { }
             isFreeRotatingDrag = false;
         }
     }
@@ -3444,6 +4116,7 @@ public partial class MainWindow : FluentWindow
     {
         if (previewRotateTransform == null)
             return;
+
         previewRotateTransform.Angle = currentPreviewRotation;
     }
 
@@ -3464,6 +4137,7 @@ public partial class MainWindow : FluentWindow
     {
         if (suppressRotateEvents || !isRotateMode)
             return;
+
         currentPreviewRotation = e.NewValue;
         UpdateRotationUiValues(currentPreviewRotation); // keep number box in sync
         ApplyPreviewRotation();
@@ -3522,7 +4196,7 @@ public partial class MainWindow : FluentWindow
             {
                 try { Mouse.Captured?.ReleaseMouseCapture(); } catch { }
             }
-            try { if (ShapeCanvas != null) ShapeCanvas.IsHitTestVisible = false; } catch { }
+            try { ShapeCanvas?.IsHitTestVisible = false; } catch { }
         }
         // Throttle to reduce jitter and UI thrash
         long now = Environment.TickCount64;
@@ -3550,7 +4224,7 @@ public partial class MainWindow : FluentWindow
         ShowRotationOverlay();
         UpdateRotationOverlay();
         isAdornerRotatingDrag = false;
-        try { if (ShapeCanvas != null) ShapeCanvas.IsHitTestVisible = true; } catch { }
+        try { ShapeCanvas?.IsHitTestVisible = true; } catch { }
     }
 
     private void RemoveRotateAdorner()
@@ -3558,12 +4232,12 @@ public partial class MainWindow : FluentWindow
         if (rotateAdornerLayer != null && rotateAdorner != null)
         {
             rotateAdorner.AngleChanging -= RotateAdorner_AngleChanging;
-            rotateAdorner.AngleChangedFinal -= RotateAdorner_AngleChangedFinal;            
+            rotateAdorner.AngleChangedFinal -= RotateAdorner_AngleChangedFinal;
             rotateAdornerLayer.Remove(rotateAdorner);
             rotateAdorner = null;
         }
         isAdornerRotatingDrag = false;
-        try { if (ShapeCanvas != null) ShapeCanvas.IsHitTestVisible = true; } catch { }
+        try { ShapeCanvas?.IsHitTestVisible = true; } catch { }
     }
 
     private void ResetRotationButton_Click(object sender, RoutedEventArgs e)
@@ -3611,6 +4285,9 @@ public partial class MainWindow : FluentWindow
 
             using MagickImage newImage = new(imagePath);
             MainImage.Source = newImage.ToBitmapSource();
+
+            // Update actualImageSize to reflect current dimensions
+            actualImageSize = new Size(newImage.Width, newImage.Height);
         }
         catch (Exception ex)
         {
@@ -3663,6 +4340,182 @@ public partial class MainWindow : FluentWindow
             return;
         ToggleRotateMode(true);
     }
+
+    #region Pixel Precision Zoom
+
+    /// <summary>
+    /// Shows the pixel precision zoom control at the current mouse position.
+    /// </summary>
+    /// <param name="mousePosition">Mouse position in ShapeCanvas coordinates</param>
+    private void ShowPixelZoom(Point mousePosition)
+    {
+        if (MainImage.Source == null)
+            return;
+
+        try
+        {
+            // Set the source image for the zoom control
+            PixelZoomControl.SourceImage = MainImage.Source;
+
+            // Convert mouse position to image coordinates
+            Point imagePosition = ConvertCanvasToImageCoordinates(mousePosition);
+            PixelZoomControl.CurrentPosition = imagePosition;
+
+            // Convert ShapeCanvas coordinates to MainGrid coordinates
+            // ShapeCanvas has transforms applied, so we need to transform the point
+            Point mainGridPosition = ShapeCanvas.TransformToAncestor(MainGrid).Transform(mousePosition);
+
+            // Position the zoom control near the cursor in MainGrid coordinates
+            PixelZoomControl.PositionNearCursor(mainGridPosition, MainGrid.ActualWidth, MainGrid.ActualHeight);
+
+            // Show the control
+            PixelZoomControl.Visibility = Visibility.Visible;
+        }
+        catch (Exception)
+        {
+            // Silently handle any errors
+            HidePixelZoom();
+        }
+    }
+
+    /// <summary>
+    /// Updates the pixel precision zoom control position and preview.
+    /// </summary>
+    /// <param name="mousePosition">Mouse position in ShapeCanvas coordinates</param>
+    private void UpdatePixelZoom(Point mousePosition)
+    {
+        if (PixelZoomControl.Visibility != Visibility.Visible)
+            return;
+
+        try
+        {
+            // Convert mouse position to image coordinates
+            Point imagePosition = ConvertCanvasToImageCoordinates(mousePosition);
+            PixelZoomControl.CurrentPosition = imagePosition;
+
+            // Convert ShapeCanvas coordinates to MainGrid coordinates
+            // ShapeCanvas has transforms applied, so we need to transform the point
+            Point mainGridPosition = ShapeCanvas.TransformToAncestor(MainGrid).Transform(mousePosition);
+
+            // Update the zoom control position in MainGrid coordinates
+            PixelZoomControl.PositionNearCursor(mainGridPosition, MainGrid.ActualWidth, MainGrid.ActualHeight);
+        }
+        catch (Exception)
+        {
+            // Silently handle any errors
+        }
+    }
+
+    /// <summary>
+    /// Hides the pixel precision zoom control.
+    /// </summary>
+    private void HidePixelZoom()
+    {
+        PixelZoomControl.Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// Converts a point from ShapeCanvas coordinates to MainImage pixel coordinates.
+    /// </summary>
+    /// <param name="canvasPoint">Point in ShapeCanvas coordinates</param>
+    /// <returns>Point in image pixel coordinates</returns>
+    private Point ConvertCanvasToImageCoordinates(Point canvasPoint)
+    {
+        if (MainImage.Source == null)
+            return new Point(0, 0);
+
+        try
+        {
+            // Get the transform from canvas to image
+            GeneralTransform transform = ShapeCanvas.TransformToVisual(MainImage);
+            Point imagePoint = transform.Transform(canvasPoint);
+
+            // MainImage might have its own transform/scale, so we need to map to actual pixels
+            double imageWidth = MainImage.Source.Width;
+            double imageHeight = MainImage.Source.Height;
+            double actualWidth = MainImage.ActualWidth;
+            double actualHeight = MainImage.ActualHeight;
+
+            // Calculate scale based on Stretch mode
+            double scaleX = imageWidth / actualWidth;
+            double scaleY = imageHeight / actualHeight;
+
+            // For Uniform stretch, use the same scale for both dimensions
+            if (MainImage.Stretch == Stretch.Uniform)
+            {
+                double scale = Math.Max(scaleX, scaleY);
+                scaleX = scaleY = scale;
+            }
+
+            // Convert to pixel coordinates
+            double pixelX = imagePoint.X * scaleX;
+            double pixelY = imagePoint.Y * scaleY;
+
+            // Clamp to image bounds
+            pixelX = Math.Max(0, Math.Min(imageWidth - 1, pixelX));
+            pixelY = Math.Max(0, Math.Min(imageHeight - 1, pixelY));
+
+            return new Point(pixelX, pixelY);
+        }
+        catch (Exception)
+        {
+            return new Point(0, 0);
+        }
+    }
+
+    /// <summary>
+    /// Checks if pixel zoom should be shown for the current operation.
+    /// Shows when a measurement tool is active, including hover before first placement.
+    /// </summary>
+    /// <returns>True if pixel zoom should be active</returns>
+    private bool ShouldShowPixelZoom()
+    {
+        // Show pixel zoom when dragging corner markers for transform
+        if (draggingMode == DraggingMode.MoveElement && clickedElement != null)
+            return true;
+
+        // Show pixel zoom when placing/dragging measurement points
+        if (draggingMode is DraggingMode.MeasureDistance or
+            DraggingMode.MeasureAngle or
+            DraggingMode.MeasureRectangle or
+            DraggingMode.MeasurePolygon or
+            DraggingMode.MeasureCircle)
+            return true;
+
+        // Show during measurement creation (active drag)
+        if (isCreatingMeasurement && draggingMode == DraggingMode.CreatingMeasurement)
+            return true;
+
+        // Show during angle placement (active placement)
+        if (isPlacingAngleMeasurement && anglePlacementStep != AnglePlacementStep.None)
+            return true;
+
+        // Show during polygon placement (active placement)
+        if (isPlacingPolygonMeasurement && activePolygonPlacementControl != null)
+            return true;
+
+        // Show during rectangle placement (active drag)
+        if (isPlacingRectangleMeasurement && draggingMode == DraggingMode.CreatingMeasurement)
+            return true;
+
+        // Show during circle placement (active drag)
+        if (isPlacingCircleMeasurement && draggingMode == DraggingMode.CreatingMeasurement)
+            return true;
+
+        // Show when any measurement tool is active, even before first placement
+        if (MeasureDistanceToggle?.IsChecked == true ||
+            MeasureAngleToggle?.IsChecked == true ||
+            RectangleMeasureToggle?.IsChecked == true ||
+            CircleMeasureToggle?.IsChecked == true ||
+            PolygonMeasureToggle?.IsChecked == true ||
+            HorizontalLineRadio?.IsChecked == true ||
+            VerticalLineToggle?.IsChecked == true)
+            return true;
+
+        return false;
+    }
+
+    #endregion Pixel Precision Zoom
 }
 internal enum AnglePlacementStep
 {

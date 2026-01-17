@@ -11,5 +11,7 @@ public enum DraggingMode
     MeasureRectangle,
     MeasureCircle,
     MeasurePolygon,
-    CreatingMeasurement
+    CreatingMeasurement,
+    WhitePointPicker,
+    BlackPointPicker
 }
