@@ -22,7 +22,7 @@ Look for the "Sub-Steps" table at the top of each spec file to see the breakdown
 | ✅ 02 | [02-dependency-injection-setup.md](02-dependency-injection-setup.md) | Configure DI container in App.xaml.cs | 2 hours | - | **DONE** |
 | ✅ 03 | [03-service-interface-extraction.md](03-service-interface-extraction.md) | Create service interfaces and implementations | 3-4 hours | **7 sub-steps (03a-03g)** | ✅ **DONE** |
 | ✅ 04 | [04-messaging-service-setup.md](04-messaging-service-setup.md) | Set up event aggregator/messenger | 2 hours | - | ✅ **DONE** |
-| 05 | [05-navigation-service.md](05-navigation-service.md) | Create navigation service for windows | 2 hours | - | - |
+| ✅ 05 | [05-navigation-service.md](05-navigation-service.md) | Create navigation service for windows | 2 hours | - | ✅ **DONE** |
 | 06 | [06-observable-models.md](06-observable-models.md) | Add INotifyPropertyChanged to models | 2-3 hours | **6 sub-steps (06a-06f)** | - |
 | 07 | [07-aboutwindow-migration.md](07-aboutwindow-migration.md) | Migrate AboutWindow to MVVM | 1-2 hours | - | - |
 | 08 | [08-savewindow-migration.md](08-savewindow-migration.md) | Migrate SaveWindow to MVVM | 2-3 hours | - | - |

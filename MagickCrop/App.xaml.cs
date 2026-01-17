@@ -57,6 +57,8 @@ public partial class App : Application
         services.AddSingleton<IRecentProjectsService, RecentProjectsManager>();
         services.AddSingleton<IFileDialogService, FileDialogService>();
         services.AddSingleton<IClipboardService, ClipboardService>();
+        services.AddSingleton<INavigationService, NavigationService>();
+        services.AddSingleton<IWindowFactory, WindowFactory>();
         // services.AddSingleton<IImageProcessingService, ImageProcessingService>(); // To be implemented in Step 14
         // services.AddSingleton<IThemeService, ThemeService>(); // To be implemented in future step
 
