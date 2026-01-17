@@ -1,55 +1,52 @@
 using System.Windows;
 using System.Windows.Media;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace MagickCrop.Models;
 
 /// <summary>
 /// Metadata about a MagickCrop measurement package
 /// </summary>
-public class PackageMetadata
+public partial class PackageMetadata : ObservableObject
 {
-    /// <summary>
-    /// Format version to ensure compatibility
-    /// </summary>
-    public int FormatVersion { get; set; } = 1;
+    [ObservableProperty]
+    private int _formatVersion = 1;
+
+    [ObservableProperty]
+    private DateTime _creationDate = DateTime.Now;
+
+    [ObservableProperty]
+    private string? _originalFilename;
+
+    [ObservableProperty]
+    private string? _notes;
+
+    [ObservableProperty]
+    private string? _projectId;
+
+    [ObservableProperty]
+    private DateTime _lastModified = DateTime.Now;
+
+    [ObservableProperty]
+    private Size _originalImageSize = new();
+
+    [ObservableProperty]
+    private Size _currentImageSize = new();
+
+    [ObservableProperty]
+    private Stretch _imageStretch = Stretch.Uniform;
 
     /// <summary>
-    /// Date the package was created
+    /// Updates the modified date to now.
     /// </summary>
-    public DateTime CreationDate { get; set; } = DateTime.Now;
+    public void MarkAsModified()
+    {
+        LastModified = DateTime.Now;
+    }
 
     /// <summary>
-    /// Original filename of the source image (for reference only)
+    /// Gets whether the image has been resized from original.
     /// </summary>
-    public string? OriginalFilename { get; set; }
-
-    /// <summary>
-    /// Notes or description about the measurements
-    /// </summary>
-    public string? Notes { get; set; }
-
-    /// <summary>
-    /// Unique identifier for the project
-    /// </summary>
-    public string? ProjectId { get; set; }
-
-    /// <summary>
-    /// Date the package was last modified
-    /// </summary>
-    public DateTime LastModified { get; set; } = DateTime.Now;
-
-    /// <summary>
-    /// Original image dimensions when first loaded
-    /// </summary>
-    public Size OriginalImageSize { get; set; } = new();
-
-    /// <summary>
-    /// Current image dimensions after any resize operations
-    /// </summary>
-    public Size CurrentImageSize { get; set; } = new();
-
-    /// <summary>
-    /// Image stretch mode (Uniform or Fill)
-    /// </summary>
-    public Stretch ImageStretch { get; set; } = Stretch.Uniform;
+    public bool IsResized => OriginalImageSize.Width != CurrentImageSize.Width || 
+                             OriginalImageSize.Height != CurrentImageSize.Height;
 }

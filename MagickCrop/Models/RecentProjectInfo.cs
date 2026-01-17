@@ -1,40 +1,41 @@
 using System.IO;
 using System.Windows.Media.Imaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace MagickCrop.Models;
 
-public class RecentProjectInfo
+/// <summary>
+/// Information about a recent project for display in the UI.
+/// </summary>
+public partial class RecentProjectInfo : ObservableObject
 {
-    /// <summary>
-    /// Unique identifier for the project
-    /// </summary>
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    [ObservableProperty]
+    private string _id = Guid.NewGuid().ToString();
+
+    [ObservableProperty]
+    private string _name = string.Empty;
+
+    [ObservableProperty]
+    private string _packagePath = string.Empty;
+
+    [ObservableProperty]
+    private DateTime _lastModified = DateTime.Now;
+
+    [ObservableProperty]
+    private string _thumbnailPath = string.Empty;
+
+    private BitmapImage? _thumbnail;
 
     /// <summary>
-    /// Name of the project (usually derived from the filename)
-    /// </summary>
-    public string Name { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Path to the package file for this project
-    /// </summary>
-    public string PackagePath { get; set; } = string.Empty;
-
-    /// <summary>
-    /// When the project was last modified/saved
-    /// </summary>
-    public DateTime LastModified { get; set; } = DateTime.Now;
-
-    /// <summary>
-    /// Path to the thumbnail file
-    /// </summary>
-    public string ThumbnailPath { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Thumbnail image for display in the recent projects gallery
+    /// Gets or sets the thumbnail image for the project.
+    /// Excluded from JSON serialization.
     /// </summary>
     [System.Text.Json.Serialization.JsonIgnore]
-    public BitmapImage? Thumbnail { get; set; }
+    public BitmapImage? Thumbnail
+    {
+        get => _thumbnail;
+        set => SetProperty(ref _thumbnail, value);
+    }
 
     /// <summary>
     /// Loads the thumbnail image

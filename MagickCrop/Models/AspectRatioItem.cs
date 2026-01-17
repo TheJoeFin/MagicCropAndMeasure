@@ -1,25 +1,49 @@
-﻿namespace MagickCrop.Models;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-public record AspectRatioItem
+namespace MagickCrop.Models;
+
+/// <summary>
+/// Represents an aspect ratio option for selection.
+/// </summary>
+public partial class AspectRatioItem : ObservableObject
 {
-    public string Name { get; set; } = string.Empty;
-    public string ToolTip { get; set; } = string.Empty;
-    public string Symbol { get; set; } = string.Empty;
-    public string Text { get; set; } = string.Empty;
-    public double RatioValue { get; set; } = 0;
-    public AspectRatio AspectRatioEnum { get; set; }
+    [ObservableProperty]
+    private string _name = string.Empty;
+
+    [ObservableProperty]
+    private string _toolTip = string.Empty;
+
+    [ObservableProperty]
+    private string _symbol = string.Empty;
+
+    [ObservableProperty]
+    private string _text = string.Empty;
+
+    [ObservableProperty]
+    private double _ratioValue;
+
+    [ObservableProperty]
+    private AspectRatio _aspectRatioEnum;
+
+    [ObservableProperty]
+    private bool _isSelected;
+
+    /// <summary>
+    /// Gets the display name combining text and ratio.
+    /// </summary>
+    public string DisplayName => $"{Text} ({RatioValue})";
 
     public static List<AspectRatioItem> GetStandardAspectRatios() =>
         [
-            new AspectRatioItem()
+            new AspectRatioItem
             {
                 ToolTip = "Original image aspect ratio",
                 Symbol = "Image24",
                 Text = "Original",
-                RatioValue = 1, // Will be updated dynamically
+                RatioValue = 1,
                 AspectRatioEnum = AspectRatio.Original
             },
-            new AspectRatioItem()
+            new AspectRatioItem
             {
                 ToolTip = "8.5 tall by 11 wide",
                 Symbol = "DocumentLandscape24",
@@ -80,7 +104,7 @@ public record AspectRatioItem
                 ToolTip = "Whatever aspect ratio you choose",
                 Symbol = "TableEdit24",
                 Text = "Custom...",
-                RatioValue = 0, // Custom aspect ratio to be defined by user
+                RatioValue = 0,
                 AspectRatioEnum = AspectRatio.Custom
             }
         ];

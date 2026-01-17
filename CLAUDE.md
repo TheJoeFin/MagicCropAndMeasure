@@ -14,6 +14,37 @@ dotnet build MagickCrop.sln
 
 ## Key Learnings
 
+### Step 06 - Observable Models
+- **Models Updated to Observable:**
+  - `RecentProjectInfo` - Uses `ObservableObject` with `[ObservableProperty]` attributes
+  - `StrokeInfo` - Observable with `OnPixelLengthChanged()`, `OnScaledLengthChanged()`, `OnUnitsChanged()` partial methods
+  - `PackageMetadata` - Observable for metadata tracking (creation, modification dates, dimensions)
+  - `SaveOptions` - Uses `ObservableValidator` for validation support with `[NotifyDataErrorInfo]`
+  - `AspectRatioItem` - Converted from `record` to `partial class : ObservableObject` with `IsSelected` property
+  
+- **ObservableValidator vs ObservableObject:**
+  - Use `ObservableValidator` when model needs validation (data annotations like `[Required]`, `[Range]`)
+  - Use `ObservableObject` for simple property notification
+  - `SaveOptions` properly maintains aspect ratio via `OnResizeWidthChanged()` and `OnResizeHeightChanged()` partial methods
+  - `[NotifyPropertyChangedFor]` attribute triggers updates to dependent computed properties like `SupportsQuality`, `IsResizeValid`
+  
+- **JSON Serialization Compatibility:**
+  - `ObservableObject` properties still serialize correctly with `System.Text.Json`
+  - Private backing fields (e.g., `_thumbnail`) are not serialized
+  - `[JsonIgnore]` still works on non-serialized properties
+  - DTOs remain as POCOs (not observable) for serialization-only purposes
+  
+- **Property Name Updates for SaveOptions:**
+  - Old: `Format`, `Resize`, `Width`, `Height`
+  - New: `SelectedFormat`, `ShouldResize`, `ResizeWidth`, `ResizeHeight`
+  - Updated all usages in `SaveOptionsDialog.xaml.cs` and `MainWindow.xaml.cs`
+  - Added `OriginalWidth`, `OriginalHeight` for aspect ratio calculations
+  
+- **Application Status:**
+  - Build succeeds with no new errors (24 pre-existing warnings remain)
+  - All models now observable and ready for MVVM binding
+  - Ready for Step 07: AboutWindow MVVM Migration
+
 ### Step 01 - MVVM Infrastructure Setup
 - **NuGet Packages Added:**
   - `CommunityToolkit.Mvvm` 8.4.0 - Source generators for MVVM (ObservableProperty, RelayCommand)
@@ -38,9 +69,9 @@ dotnet build MagickCrop.sln
   - Application builds successfully with no new errors
 
 ## Next Steps
-- Step 04: Messaging setup (needed for loose coupling)
-- Step 05: Navigation service (needed for Step 07-08)
-- Step 06: Observable models (needed for Step 09-16)
+- Step 07: AboutWindow MVVM Migration (1-2 hours)
+- Step 08: SaveWindow MVVM Migration (2-3 hours)
+- Step 09: WelcomeMessage control migration (3-4 hours with 9 sub-steps)
 
 ## Step 03 - Service Interface Extraction
 - **Changes Made:**

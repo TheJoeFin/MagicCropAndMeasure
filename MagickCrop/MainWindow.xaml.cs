@@ -818,7 +818,7 @@ public partial class MainWindow : FluentWindow
             SaveFileDialog saveFileDialog = new()
             {
                 Filter = SaveOptionsDialog.GetFileFilter(
-                            _formats.FirstOrDefault(f => f.Format == options.Format)
+                            _formats.FirstOrDefault(f => f.Format == options.SelectedFormat)
                             ?? _formats[0]),
                 DefaultExt = options.Extension,
                 RestoreDirectory = true,
@@ -837,9 +837,9 @@ public partial class MainWindow : FluentWindow
             using MagickImage image = new(imagePath);
 
             // Resize if requested
-            if (options.Resize)
+            if (options.ShouldResize)
             {
-                MagickGeometry resizeGeometry = new((uint)options.Width, (uint)options.Height)
+                MagickGeometry resizeGeometry = new((uint)options.ResizeWidth, (uint)options.ResizeHeight)
                 {
                     IgnoreAspectRatio = !options.MaintainAspectRatio
                 };
@@ -850,7 +850,7 @@ public partial class MainWindow : FluentWindow
             image.Quality = (uint)options.Quality;
 
             // Save with the selected format
-            await image.WriteAsync(correctedImageFileName, options.Format);
+            await image.WriteAsync(correctedImageFileName, options.SelectedFormat ?? MagickFormat.Png);
 
             // Show preview and enable open folder button
             OpenFolderButton.IsEnabled = true;

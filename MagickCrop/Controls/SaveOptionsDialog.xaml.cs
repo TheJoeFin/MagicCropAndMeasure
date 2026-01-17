@@ -44,11 +44,13 @@ public partial class SaveOptionsDialog : UserControl
         // Initialize options object
         Options = new SaveOptions
         {
-            Format = MagickFormat.Png,
+            SelectedFormat = MagickFormat.Png,
             Extension = ".png",
-            Resize = false,
-            Width = (int)originalWidth,
-            Height = (int)originalHeight,
+            ShouldResize = false,
+            ResizeWidth = (int)originalWidth,
+            ResizeHeight = (int)originalHeight,
+            OriginalWidth = (int)originalWidth,
+            OriginalHeight = (int)originalHeight,
             MaintainAspectRatio = true
         };
     }
@@ -59,7 +61,7 @@ public partial class SaveOptionsDialog : UserControl
 
         if (FormatComboBox.SelectedItem is FormatItem selectedFormat)
         {
-            Options.Format = selectedFormat.Format;
+            Options.SelectedFormat = selectedFormat.Format;
             Options.Extension = selectedFormat.Extension;
 
             // Show/hide quality slider based on format
@@ -86,7 +88,7 @@ public partial class SaveOptionsDialog : UserControl
         HeightBox.IsEnabled = isChecked;
         MaintainAspectRatioCheckBox.IsEnabled = isChecked;
 
-        Options.Resize = isChecked;
+        Options.ShouldResize = isChecked;
     }
 
     private void WidthBox_ValueChanged(object sender, RoutedEventArgs e)
@@ -96,13 +98,13 @@ public partial class SaveOptionsDialog : UserControl
         if (updatingDimensions || WidthBox.Value == null)
             return;
 
-        Options.Width = (int)WidthBox.Value.Value;
+        Options.ResizeWidth = (int)WidthBox.Value.Value;
 
         if (MaintainAspectRatioCheckBox.IsChecked == true)
         {
             updatingDimensions = true;
             HeightBox.Value = (int)(WidthBox.Value.Value * aspectRatio);
-            Options.Height = (int)HeightBox.Value.Value;
+            Options.ResizeHeight = (int)HeightBox.Value.Value;
             updatingDimensions = false;
         }
     }
@@ -114,13 +116,13 @@ public partial class SaveOptionsDialog : UserControl
         if (updatingDimensions || HeightBox.Value == null)
             return;
 
-        Options.Height = (int)HeightBox.Value.Value;
+        Options.ResizeHeight = (int)HeightBox.Value.Value;
 
         if (MaintainAspectRatioCheckBox.IsChecked == true)
         {
             updatingDimensions = true;
             WidthBox.Value = (int)(HeightBox.Value.Value / aspectRatio);
-            Options.Width = (int)WidthBox.Value.Value;
+            Options.ResizeWidth = (int)WidthBox.Value.Value;
             updatingDimensions = false;
         }
     }
