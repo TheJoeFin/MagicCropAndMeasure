@@ -220,10 +220,7 @@
 
         <c:WelcomeMessage
             x:Name="WelcomeMessageModal"
-            Grid.Row="1"
-            OverlayButtonEvent="OverlayButton_Click"
-            PasteButtonEvent="PasteButton_Click"
-            PrimaryButtonEvent="OpenFileButton_Click" />
+            Grid.Row="1" />
 
         <Border
             x:Name="BottomBorder"

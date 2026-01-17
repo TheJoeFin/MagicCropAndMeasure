@@ -1,190 +1,120 @@
-﻿using MagickCrop.Helpers;
-using MagickCrop.Models;
-using MagickCrop.Services;
-using MagickCrop.Windows;
-using System.Diagnostics;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using MagickCrop.ViewModels;
 
 namespace MagickCrop.Controls;
 
+/// <summary>
+/// Welcome message control displayed when no image is loaded.
+/// </summary>
 public partial class WelcomeMessage : UserControl
 {
-    private readonly RecentProjectsManager _recentProjectsManager;
+    public WelcomeViewModel ViewModel => (WelcomeViewModel)DataContext;
 
-    public RoutedEventHandler PrimaryButtonEvent
+    #region Dependency Properties (for backward compatibility)
+
+    public static readonly DependencyProperty OpenFileCommandProperty =
+        DependencyProperty.Register(nameof(OpenFileCommand), typeof(ICommand), typeof(WelcomeMessage),
+            new PropertyMetadata(null, OnOpenFileCommandChanged));
+
+    public static readonly DependencyProperty PasteCommandProperty =
+        DependencyProperty.Register(nameof(PasteCommand), typeof(ICommand), typeof(WelcomeMessage),
+            new PropertyMetadata(null, OnPasteCommandChanged));
+
+    public static readonly DependencyProperty OverlayCommandProperty =
+        DependencyProperty.Register(nameof(OverlayCommand), typeof(ICommand), typeof(WelcomeMessage),
+            new PropertyMetadata(null, OnOverlayCommandChanged));
+
+    public ICommand? OpenFileCommand
     {
-        get { return (RoutedEventHandler)GetValue(PrimaryButtonEventProperty); }
-        set { SetValue(PrimaryButtonEventProperty, value); }
+        get => (ICommand?)GetValue(OpenFileCommandProperty);
+        set => SetValue(OpenFileCommandProperty, value);
     }
 
-    public static readonly DependencyProperty PrimaryButtonEventProperty =
-        DependencyProperty.Register(nameof(PrimaryButtonEvent), typeof(RoutedEventHandler), typeof(WelcomeMessage), new PropertyMetadata(null));
-
-    public RoutedEventHandler PasteButtonEvent
+    public ICommand? PasteCommand
     {
-        get { return (RoutedEventHandler)GetValue(PasteButtonEventProperty); }
-        set { SetValue(PasteButtonEventProperty, value); }
+        get => (ICommand?)GetValue(PasteCommandProperty);
+        set => SetValue(PasteCommandProperty, value);
     }
 
-    public static readonly DependencyProperty PasteButtonEventProperty =
-        DependencyProperty.Register(nameof(PasteButtonEvent), typeof(RoutedEventHandler), typeof(WelcomeMessage), new PropertyMetadata(null));
-
-    public RoutedEventHandler OverlayButtonEvent
+    public ICommand? OverlayCommand
     {
-        get { return (RoutedEventHandler)GetValue(OverlayButtonEventProperty); }
-        set { SetValue(OverlayButtonEventProperty, value); }
+        get => (ICommand?)GetValue(OverlayCommandProperty);
+        set => SetValue(OverlayCommandProperty, value);
     }
 
-    public static readonly DependencyProperty OverlayButtonEventProperty =
-        DependencyProperty.Register(nameof(OverlayButtonEvent), typeof(RoutedEventHandler), typeof(WelcomeMessage), new PropertyMetadata(null));
+    private static void OnOpenFileCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is WelcomeMessage control && e.NewValue is ICommand command)
+        {
+            control.ViewModel.OpenFileCommand = command;
+        }
+    }
+
+    private static void OnPasteCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is WelcomeMessage control && e.NewValue is ICommand command)
+        {
+            control.ViewModel.PasteFromClipboardCommand = command;
+        }
+    }
+
+    private static void OnOverlayCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is WelcomeMessage control && e.NewValue is ICommand command)
+        {
+            control.ViewModel.OpenOverlayCommand = command;
+        }
+    }
+
+    #endregion
 
     public WelcomeMessage()
     {
+        var viewModel = App.GetService<WelcomeViewModel>();
+        DataContext = viewModel;
         InitializeComponent();
-        _recentProjectsManager = Singleton<RecentProjectsManager>.Instance;
+        
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
 
-        // Create command for project click
-        RelayCommand<RecentProjectInfo> projectClickCommand = new(OpenProject);
-        RelayCommand<RecentProjectInfo> projectDeleteCommand = new(RemoveProject);
+    private async void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.InitializeAsync();
+        
+        // Refresh clipboard when control gains focus
+        var window = Window.GetWindow(this);
+        if (window != null)
+        {
+            window.Activated += Window_Activated;
+        }
+    }
 
-        // Populate recent projects list
-        UpdateRecentProjectsList(projectClickCommand, projectDeleteCommand);
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        ViewModel.Cleanup();
+        
+        var window = Window.GetWindow(this);
+        if (window != null)
+        {
+            window.Activated -= Window_Activated;
+        }
+    }
 
-        if (_recentProjectsManager.RecentProjects.Count > 0)
-            RecentTab.IsSelected = true;
-
-        // Use robust clipboard detection
-        UpdatePasteButtonVisibility();
+    private async void Window_Activated(object? sender, EventArgs e)
+    {
+        // Refresh clipboard state when window gains focus
+        await ViewModel.RefreshClipboardCommand.ExecuteAsync(null);
     }
 
     /// <summary>
-    /// Updates paste button visibility based on robust clipboard detection
+    /// Updates the recent projects list by refreshing from the ViewModel.
+    /// Called by MainWindow when recent projects change.
     /// </summary>
-    private void UpdatePasteButtonVisibility()
+    internal async void UpdateRecentProjects()
     {
-        PasteButton.Visibility = ClipboardHelper.ContainsImageData() ? Visibility.Visible : Visibility.Collapsed;
-    }
-
-    private void UpdateRecentProjectsList(ICommand projectClickCommand, ICommand projectDeleteCommand)
-    {
-        RecentProjectsList.Items.Clear();
-
-        foreach (RecentProjectInfo project in _recentProjectsManager.RecentProjects)
-        {
-            RecentProjectItem item = new()
-            {
-                Project = project,
-                ProjectClickedCommand = projectClickCommand,
-                ProjectDeletedCommand = projectDeleteCommand,
-                Margin = new Thickness(5)
-            };
-
-            RecentProjectsList.Items.Add(item);
-        }
-
-        // Show/hide the "no projects" message
-        NoRecentProjectsMessage.Visibility =
-            _recentProjectsManager.RecentProjects.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
-    }
-
-    private void OpenProject(RecentProjectInfo? project)
-    {
-        if (project == null) return;
-
-        // Close the welcome screen
-        Visibility = Visibility.Collapsed;
-
-        // Get the main window and open the project
-        if (Window.GetWindow(this) is MainWindow mainWindow)
-        {
-            mainWindow.LoadMeasurementsPackageFromFile(project.PackagePath);
-        }
-    }
-
-    private async void RemoveProject(RecentProjectInfo? project)
-    {
-        if (project is null)
-            return;
-
-        Wpf.Ui.Controls.MessageBox uiMessageBox = new()
-        {
-            Title = "Confirm delete",
-            Content = $"Remove '{project.Name}' from recent projects?",
-            PrimaryButtonText = "Remove",
-            PrimaryButtonAppearance = Wpf.Ui.Controls.ControlAppearance.Danger
-        };
-        Wpf.Ui.Controls.MessageBoxResult result = await uiMessageBox.ShowDialogAsync();
-
-        if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
-        {
-            _recentProjectsManager.RemoveProject(project.Id, true);
-
-            // Update the UI
-            RelayCommand<RecentProjectInfo> projectClickCommand = new(OpenProject);
-            RelayCommand<RecentProjectInfo> projectDeleteCommand = new(RemoveProject);
-            UpdateRecentProjectsList(projectClickCommand, projectDeleteCommand);
-        }
-    }
-
-    private void Hyperlink_Click(object sender, RoutedEventArgs e)
-    {
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = "https://www.JoeFinApps.com",
-            UseShellExecute = true
-        });
-    }
-
-    private void OpenFileButton_Click(object sender, RoutedEventArgs e)
-    {
-        Visibility = Visibility.Collapsed;
-        PrimaryButtonEvent?.Invoke(sender, e);
-    }
-
-    private void SourceLink_Click(object sender, RoutedEventArgs e)
-    {
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = "https://github.com/TheJoeFin/MagickCrop",
-            UseShellExecute = true
-        });
-    }
-
-    private void AboutHyperbuttons_Click(object sender, RoutedEventArgs e)
-    {
-        AboutWindow aboutWindow = new();
-        aboutWindow.ShowDialog();
-    }
-
-    private async void OpenPackageButton_Click(object sender, RoutedEventArgs e)
-    {
-        Visibility = Visibility.Collapsed;
-
-        bool opened = false;
-        if (Window.GetWindow(this) is MainWindow mainWindow)
-            opened = await mainWindow.LoadMeasurementsPackageFromFile();
-
-        if (!opened)
-            Visibility = Visibility.Visible;
-    }
-
-    private void OverlayModeButton_Click(object sender, RoutedEventArgs e)
-    {
-        OverlayButtonEvent?.Invoke(sender, e);
-    }
-
-    private void PasteButton_Click(object sender, RoutedEventArgs e)
-    {
-        PasteButtonEvent?.Invoke(sender, e);
-    }
-
-    internal void UpdateRecentProjects()
-    {
-        RelayCommand<RecentProjectInfo> projectClickCommand = new(OpenProject);
-        RelayCommand<RecentProjectInfo> projectDeleteCommand = new(RemoveProject);
-
-        UpdateRecentProjectsList(projectClickCommand, projectDeleteCommand);
+        await ViewModel.InitializeAsync();
     }
 }

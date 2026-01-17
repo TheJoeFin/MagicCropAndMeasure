@@ -66,6 +66,7 @@ public partial class App : Application
             (RecentProjectsManager)sp.GetRequiredService<IRecentProjectsService>());
         
         // Register ViewModels
+        services.AddTransient<WelcomeViewModel>();
         services.AddTransient<AboutWindowViewModel>();
         services.AddTransient<SaveWindowViewModel>();
         // services.AddTransient<MainWindowViewModel>();
