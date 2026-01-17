@@ -522,36 +522,28 @@
                                             <wpfui:SymbolIcon Symbol="Whiteboard24" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-                                    <ToggleButton
+                                    <MenuItem
                                         x:Name="WhitePointPickerToggle"
-                                        Width="150"
-                                        Margin="8,4"
-                                        HorizontalAlignment="Center"
                                         Checked="WhitePointPickerToggle_Checked"
+                                        Header="Pick White Point"
+                                        IsCheckable="True"
                                         ToolTip="Toggle white point picker tool"
                                         Unchecked="WhitePointPickerToggle_Unchecked">
-                                        <ToggleButton.Content>
-                                            <StackPanel Orientation="Horizontal">
-                                                <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Eyedropper24" />
-                                                <TextBlock VerticalAlignment="Center" Text="Pick White Point" />
-                                            </StackPanel>
-                                        </ToggleButton.Content>
-                                    </ToggleButton>
-                                    <ToggleButton
+                                        <MenuItem.Icon>
+                                            <wpfui:SymbolIcon Symbol="Eyedropper24" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem
                                         x:Name="BlackPointPickerToggle"
-                                        Width="150"
-                                        Margin="8,4"
-                                        HorizontalAlignment="Center"
                                         Checked="BlackPointPickerToggle_Checked"
+                                        Header="Pick Black Point"
+                                        IsCheckable="True"
                                         ToolTip="Toggle black point picker tool"
                                         Unchecked="BlackPointPickerToggle_Unchecked">
-                                        <ToggleButton.Content>
-                                            <StackPanel Orientation="Horizontal">
-                                                <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Eyedropper24" />
-                                                <TextBlock VerticalAlignment="Center" Text="Pick Black Point" />
-                                            </StackPanel>
-                                        </ToggleButton.Content>
-                                    </ToggleButton>
+                                        <MenuItem.Icon>
+                                            <wpfui:SymbolIcon Symbol="Eyedropper24" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
                                     <MenuItem
                                         Name="AutoLevelsMenuItem"
                                         Click="AutoLevelsMenuItem_Click"
