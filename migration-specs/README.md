@@ -24,7 +24,7 @@ Look for the "Sub-Steps" table at the top of each spec file to see the breakdown
 | ✅ 04 | [04-messaging-service-setup.md](04-messaging-service-setup.md) | Set up event aggregator/messenger | 2 hours | - | ✅ **DONE** |
 | ✅ 05 | [05-navigation-service.md](05-navigation-service.md) | Create navigation service for windows | 2 hours | - | ✅ **DONE** |
 | ✅ 06 | [06-observable-models.md](06-observable-models.md) | Add INotifyPropertyChanged to models | 2-3 hours | **6 sub-steps (06a-06f)** | ✅ **DONE** |
-| 07 | [07-aboutwindow-migration.md](07-aboutwindow-migration.md) | Migrate AboutWindow to MVVM | 1-2 hours | - | - |
+| 07 | [07-aboutwindow-migration.md](07-aboutwindow-migration.md) | Migrate AboutWindow to MVVM | 1-2 hours | - | ✅ **DONE** |
 | 08 | [08-savewindow-migration.md](08-savewindow-migration.md) | Migrate SaveWindow to MVVM | 2-3 hours | - | - |
 | 09 | [09-welcomemessage-migration.md](09-welcomemessage-migration.md) | Migrate WelcomeMessage control | 3-4 hours | **9 sub-steps (09a-09i)** | - |
 | 10 | [10-recentprojectitem-migration.md](10-recentprojectitem-migration.md) | Migrate RecentProjectItem control | 1-2 hours | - | - |

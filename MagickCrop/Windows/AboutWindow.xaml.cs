@@ -1,27 +1,25 @@
-﻿using System.Diagnostics;
-using System.Windows.Navigation;
-using Windows.ApplicationModel;
+﻿using MagickCrop.ViewModels;
 using Wpf.Ui.Controls;
 
 namespace MagickCrop.Windows;
 
+/// <summary>
+/// About window displaying application information.
+/// </summary>
 public partial class AboutWindow : FluentWindow
 {
-    public AboutWindow()
+    public AboutWindow() : this(new AboutWindowViewModel())
     {
+    }
+
+    public AboutWindow(AboutWindowViewModel viewModel)
+    {
+        DataContext = viewModel;
         InitializeComponent();
-        VersionTextBlock.Text = $"Version {GetAppVersion()}";
     }
 
-    private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+    private void CloseButton_Click(object sender, System.Windows.RoutedEventArgs e)
     {
-        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
-        e.Handled = true;
-    }
-
-    private static string GetAppVersion()
-    {
-        PackageVersion version = Package.Current.Id.Version;
-        return $"{version.Major}.{version.Minor}.{version.Build}";
+        Close();
     }
 }

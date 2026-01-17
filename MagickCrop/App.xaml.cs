@@ -67,14 +67,15 @@ public partial class App : Application
             (RecentProjectsManager)sp.GetRequiredService<IRecentProjectsService>());
         
         // Register ViewModels (to be added in future steps)
+        services.AddTransient<AboutWindowViewModel>();
         // services.AddTransient<MainWindowViewModel>();
         // services.AddTransient<SaveWindowViewModel>();
-        // services.AddTransient<AboutWindowViewModel>();
 
         // Register Windows/Views
         services.AddTransient<MainWindow>();
         services.AddTransient<SaveWindow>();
-        services.AddTransient<Windows.AboutWindow>();
+        services.AddTransient<Windows.AboutWindow>(sp => 
+            new Windows.AboutWindow(sp.GetRequiredService<AboutWindowViewModel>()));
     }
 
     protected override void OnExit(ExitEventArgs e)

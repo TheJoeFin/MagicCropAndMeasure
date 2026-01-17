@@ -69,9 +69,45 @@ dotnet build MagickCrop.sln
   - Application builds successfully with no new errors
 
 ## Next Steps
-- Step 07: AboutWindow MVVM Migration (1-2 hours)
 - Step 08: SaveWindow MVVM Migration (2-3 hours)
 - Step 09: WelcomeMessage control migration (3-4 hours with 9 sub-steps)
+
+## Step 07 - AboutWindow MVVM Migration
+- **Changes Made:**
+  - Created `ViewModels/AboutWindowViewModel.cs`:
+    - Observable properties: AppName, Version, Copyright, Description
+    - RelayCommands for opening URLs: OpenGithub, OpenWebsite, OpenImageMagick, OpenMagickNet, OpenWpfUi, Close
+    - LoadVersionInfo() gets version from Package.Current (MSIX) with Assembly fallback
+    - Proper namespace registration: `using Windows.ApplicationModel;`
+  
+  - Updated `Windows/AboutWindow.xaml`:
+    - Replaced hardcoded hyperlinks with command bindings
+    - Used WPF-UI's HyperlinkButton for styling consistency
+    - Data binding for AppName, Version, Copyright, Description
+    - Design-time DataContext for IntelliSense support
+    - Reorganized layout with Grid.RowDefinitions for cleaner structure
+  
+  - Updated `Windows/AboutWindow.xaml.cs`:
+    - Minimal code-behind (3 lines for constructor + CloseButton_Click)
+    - Accepts AboutWindowViewModel via dependency injection
+    - Parameterless constructor provides default ViewModel
+    - CloseButton_Click handler closes window (View responsibility)
+  
+  - Updated `App.xaml.cs`:
+    - Registered AboutWindowViewModel as Transient service
+    - Updated AboutWindow registration to inject ViewModel via factory method
+    - ViewModel automatically gets MessageBroker for future messaging needs
+  
+- **Benefits:**
+  - AboutWindow now fully MVVM-compliant
+  - Commands tested independently from View
+  - Version info loads dynamically
+  - URL handling isolated in ViewModel
+  - Pattern established for other windows
+  
+- **Application Status:**
+  - Build succeeds with no new errors (same 16 pre-existing warnings)
+  - Ready for Step 08: SaveWindow MVVM Migration
 
 ## Step 03 - Service Interface Extraction
 - **Changes Made:**
