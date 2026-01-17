@@ -27,7 +27,7 @@ Look for the "Sub-Steps" table at the top of each spec file to see the breakdown
 | 07 | [07-aboutwindow-migration.md](07-aboutwindow-migration.md) | Migrate AboutWindow to MVVM | 1-2 hours | - | ✅ **DONE** |
 | ✅ 08 | [08-savewindow-migration.md](08-savewindow-migration.md) | Migrate SaveWindow to MVVM | 2-3 hours | - | ✅ **DONE** |
 | ✅ 09 | [09-welcomemessage-migration.md](09-welcomemessage-migration.md) | Migrate WelcomeMessage control | 3-4 hours | **9 sub-steps (09a-09i)** | ✅ **DONE** |
-| 10 | [10-recentprojectitem-migration.md](10-recentprojectitem-migration.md) | Migrate RecentProjectItem control | 1-2 hours | - | - |
+| ✅ 10 | [10-recentprojectitem-migration.md](10-recentprojectitem-migration.md) | Migrate RecentProjectItem control | 1-2 hours | - | ✅ **DONE** |
 | 11 | [11-measurement-controls-base.md](11-measurement-controls-base.md) | Create measurement base classes | 3-4 hours | **10 sub-steps (11a-11j)** | - |
 | 12 | [12-measurement-controls-migration.md](12-measurement-controls-migration.md) | Migrate individual measurement controls | 4-6 hours | **9 sub-steps (12a-12i)** | - |
 | 13 | [13-mainwindow-state-management.md](13-mainwindow-state-management.md) | Extract state management to ViewModel | 4-5 hours | **11 sub-steps (13a-13k)** | - |

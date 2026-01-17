@@ -5,111 +5,89 @@ using System.Windows.Input;
 
 namespace MagickCrop.Controls;
 
+/// <summary>
+/// Control for displaying a recent project item.
+/// </summary>
 public partial class RecentProjectItem : UserControl
 {
+    #region Dependency Properties
+
     public static readonly DependencyProperty ProjectProperty =
         DependencyProperty.Register(
-            "Project", 
-            typeof(RecentProjectInfo), 
-            typeof(RecentProjectItem), 
+            nameof(Project),
+            typeof(RecentProjectInfo),
+            typeof(RecentProjectItem),
             new PropertyMetadata(null, OnProjectChanged));
 
     public static readonly DependencyProperty ProjectClickedCommandProperty =
         DependencyProperty.Register(
-            "ProjectClickedCommand",
+            nameof(ProjectClickedCommand),
             typeof(ICommand),
             typeof(RecentProjectItem));
 
     public static readonly DependencyProperty ProjectDeletedCommandProperty =
         DependencyProperty.Register(
-            "ProjectDeletedCommand",
+            nameof(ProjectDeletedCommand),
             typeof(ICommand),
             typeof(RecentProjectItem));
 
+    /// <summary>
+    /// Gets or sets the project info to display.
+    /// </summary>
     public RecentProjectInfo? Project
     {
-        get { return (RecentProjectInfo)GetValue(ProjectProperty); }
-        set { SetValue(ProjectProperty, value); }
+        get => (RecentProjectInfo?)GetValue(ProjectProperty);
+        set => SetValue(ProjectProperty, value);
     }
 
-    public ICommand ProjectClickedCommand
+    /// <summary>
+    /// Gets or sets the command to execute when the project is clicked.
+    /// </summary>
+    public ICommand? ProjectClickedCommand
     {
-        get { return (ICommand)GetValue(ProjectClickedCommandProperty); }
-        set { SetValue(ProjectClickedCommandProperty, value); }
+        get => (ICommand?)GetValue(ProjectClickedCommandProperty);
+        set => SetValue(ProjectClickedCommandProperty, value);
     }
 
-    public ICommand ProjectDeletedCommand
+    /// <summary>
+    /// Gets or sets the command to execute when delete is clicked.
+    /// </summary>
+    public ICommand? ProjectDeletedCommand
     {
-        get { return (ICommand)GetValue(ProjectDeletedCommandProperty); }
-        set { SetValue(ProjectDeletedCommandProperty, value); }
+        get => (ICommand?)GetValue(ProjectDeletedCommandProperty);
+        set => SetValue(ProjectDeletedCommandProperty, value);
     }
+
+    #endregion
 
     public RecentProjectItem()
     {
         InitializeComponent();
-        this.MouseLeftButtonUp += RecentProjectItem_MouseLeftButtonUp;
     }
 
     private static void OnProjectChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is RecentProjectItem control && e.NewValue is RecentProjectInfo project)
         {
-            control.UpdateUI(project);
+            control.DataContext = project;
         }
     }
 
-    private void UpdateUI(RecentProjectInfo project)
+    private void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        ProjectNameTextBlock.Text = project.Name;
-        
-        string timeAgo = GetTimeAgo(project.LastModified);
-        LastModifiedTextBlock.Text = timeAgo;
-        
-        if (project.Thumbnail != null)
-        {
-            ThumbnailImage.Source = project.Thumbnail;
-        }
-    }
-
-    private void RecentProjectItem_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-    {
-        if (Project != null && ProjectClickedCommand != null && ProjectClickedCommand.CanExecute(Project))
+        if (Project != null && ProjectClickedCommand?.CanExecute(Project) == true)
         {
             ProjectClickedCommand.Execute(Project);
         }
     }
 
-    private void DeleteButton_Click(object sender, RoutedEventArgs e)
+    private void OnDeleteClick(object sender, RoutedEventArgs e)
     {
-        e.Handled = true; // Prevent the click from being handled by the item click handler
-        
-        if (Project != null && ProjectDeletedCommand != null && ProjectDeletedCommand.CanExecute(Project))
+        e.Handled = true; // Prevent bubbling to parent click handler
+
+        if (Project != null && ProjectDeletedCommand?.CanExecute(Project) == true)
         {
             ProjectDeletedCommand.Execute(Project);
         }
-    }
-
-    private string GetTimeAgo(DateTime dateTime)
-    {
-        TimeSpan span = DateTime.Now - dateTime;
-
-        if (span.TotalDays > 30)
-        {
-            return $"Edited {dateTime:MMM d, yyyy}";
-        }
-        if (span.TotalDays > 1)
-        {
-            return $"Edited {(int)span.TotalDays} days ago";
-        }
-        if (span.TotalHours > 1)
-        {
-            return $"Edited {(int)span.TotalHours} hours ago";
-        }
-        if (span.TotalMinutes > 1)
-        {
-            return $"Edited {(int)span.TotalMinutes} minutes ago";
-        }
-        
-        return "Edited just now";
     }
 }

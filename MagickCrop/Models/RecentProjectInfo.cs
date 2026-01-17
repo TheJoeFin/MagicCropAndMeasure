@@ -38,6 +38,12 @@ public partial class RecentProjectInfo : ObservableObject
     }
 
     /// <summary>
+    /// Gets the formatted last modified time for display.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string LastModifiedFormatted => FormatRelativeTime(LastModified);
+
+    /// <summary>
     /// Loads the thumbnail image
     /// </summary>
     public void LoadThumbnail()
@@ -59,5 +65,32 @@ public partial class RecentProjectInfo : ObservableObject
                 Thumbnail = null;
             }
         }
+    }
+
+    /// <summary>
+    /// Formats a relative time string for display.
+    /// </summary>
+    private static string FormatRelativeTime(DateTime dateTime)
+    {
+        TimeSpan span = DateTime.Now - dateTime;
+
+        if (span.TotalDays > 30)
+        {
+            return $"Edited {dateTime:MMM d, yyyy}";
+        }
+        if (span.TotalDays > 1)
+        {
+            return $"Edited {(int)span.TotalDays} days ago";
+        }
+        if (span.TotalHours > 1)
+        {
+            return $"Edited {(int)span.TotalHours} hours ago";
+        }
+        if (span.TotalMinutes > 1)
+        {
+            return $"Edited {(int)span.TotalMinutes} minutes ago";
+        }
+
+        return "Edited just now";
     }
 }

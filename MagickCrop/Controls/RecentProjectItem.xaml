@@ -5,9 +5,13 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:wpfui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:models="clr-namespace:MagickCrop.Models"
     Width="200"
     Height="150"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type=models:RecentProjectInfo}"
+    Cursor="Hand"
+    MouseLeftButtonUp="OnMouseLeftButtonUp">
     <Border
         Margin="5"
         Background="{wpfui:ThemeResource ControlFillColorDefaultBrush}"
@@ -32,8 +36,8 @@
                 BorderThickness="0"
                 CornerRadius="8,8,0,0">
                 <Image
-                    x:Name="ThumbnailImage"
                     Margin="5"
+                    Source="{Binding Thumbnail}"
                     Stretch="Uniform" />
             </Border>
 
@@ -45,18 +49,17 @@
 
                 <StackPanel Grid.Column="0">
                     <TextBlock
-                        x:Name="ProjectNameTextBlock"
                         FontWeight="SemiBold"
+                        Text="{Binding Name}"
                         TextTrimming="CharacterEllipsis"
                         TextWrapping="NoWrap" />
                     <TextBlock
-                        x:Name="LastModifiedTextBlock"
                         FontSize="11"
-                        Opacity="0.7" />
+                        Opacity="0.7"
+                        Text="{Binding LastModifiedFormatted}" />
                 </StackPanel>
 
-                <Button
-                    x:Name="DeleteButton"
+                <wpfui:Button
                     Grid.Column="1"
                     Width="24"
                     Height="24"
@@ -64,10 +67,10 @@
                     Padding="0"
                     Background="Transparent"
                     BorderThickness="0"
-                    Click="DeleteButton_Click"
+                    Click="OnDeleteClick"
                     ToolTip="Remove from recent projects">
                     <wpfui:SymbolIcon Symbol="Delete24" />
-                </Button>
+                </wpfui:Button>
             </Grid>
         </Grid>
     </Border>

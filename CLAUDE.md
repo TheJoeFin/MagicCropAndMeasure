@@ -179,8 +179,45 @@ dotnet build MagickCrop.sln
    - Build succeeds with no new errors (same 4 pre-existing NuGet warnings)
    - Ready for Step 10: RecentProjectItem control migration
 
+## Step 10 - RecentProjectItem Control Migration
+- **Changes Made:**
+  - Added `LastModifiedFormatted` property to `RecentProjectInfo`:
+    - Uses `FormatRelativeTime()` method to display relative time (e.g., "Edited 2 days ago")
+    - Private backing field with `[JsonIgnore]` attribute
+    - Moved formatting logic from code-behind to model
+  
+  - Updated `Controls/RecentProjectItem.xaml`:
+    - Added namespace for models: `xmlns:models="clr-namespace:MagickCrop.Models"`
+    - Added design-time DataContext: `d:DataContext="{d:DesignInstance Type=models:RecentProjectInfo}"`
+    - Replaced named elements (ThumbnailImage, ProjectNameTextBlock, LastModifiedTextBlock) with direct bindings
+    - Image now binds to `{Binding Thumbnail}`
+    - Project name binds to `{Binding Name}`
+    - Last modified time binds to `{Binding LastModifiedFormatted}`
+    - Changed Button to `wpfui:Button` for consistency
+    - Changed event handler from `DeleteButton_Click` to `OnDeleteClick`
+    - Added `Cursor="Hand"` and `MouseLeftButtonUp="OnMouseLeftButtonUp"` to UserControl
+  
+  - Updated `Controls/RecentProjectItem.xaml.cs`:
+    - Removed `UpdateUI()` method and `GetTimeAgo()` method (moved to model)
+    - Simplified `OnProjectChanged()` to just set DataContext
+    - Changed event handler names: `RecentProjectItem_MouseLeftButtonUp` → `OnMouseLeftButtonUp`, `DeleteButton_Click` → `OnDeleteClick`
+    - Removed named element references
+    - Removed explicit event subscription in constructor
+    - Now fully relies on data binding instead of code-behind updates
+    - Added XML documentation comments
+
+- **Key Design Patterns:**
+  - **Data Binding First:** All UI updates now via XAML bindings instead of code-behind
+  - **Model Responsibility:** Time formatting logic moved to RecentProjectInfo model
+  - **Design-Time Data:** Added design-time DataContext for XAML editor IntelliSense
+  - **Command Pattern:** Still uses ProjectClickedCommand and ProjectDeletedCommand DependencyProperties
+
+- **Application Status:**
+  - Build succeeds with no new errors (same 24 pre-existing warnings remain)
+  - Ready for Step 11: Measurement Controls Base Class
+
 ## Next Steps
-- Step 10: RecentProjectItem control migration (1-2 hours)
+- Step 11: Measurement Controls Base Class (3-4 hours)
 
 ## Step 07 - AboutWindow MVVM Migration
 - **Changes Made:**
