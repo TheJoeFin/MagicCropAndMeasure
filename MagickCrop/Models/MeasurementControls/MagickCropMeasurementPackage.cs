@@ -29,6 +29,11 @@ public class MagickCropMeasurementPackage
     public string? ImagePath { get; set; }
 
     /// <summary>
+    /// Raw image data (optional, for in-memory operations)
+    /// </summary>
+    public byte[]? ImageData { get; set; }
+
+    /// <summary>
     /// Save the package to a .mcm file (zip archive with measurements and image)
     /// </summary>
     /// <param name="packagePath">Path to save the package to</param>
