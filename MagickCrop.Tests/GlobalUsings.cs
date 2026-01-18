@@ -1,9 +1,13 @@
 global using System;
+global using System.Collections.Generic;
 global using System.Collections.ObjectModel;
 global using System.IO;
 global using System.Linq;
 global using System.Threading.Tasks;
 global using Microsoft.VisualStudio.TestTools.UnitTesting;
 global using Moq;
+global using MagickCrop.Models;
+global using MagickCrop.Models.MeasurementControls;
+global using MagickCrop.Services;
 global using MagickCrop.Services.Interfaces;
 global using MagickCrop.ViewModels;
