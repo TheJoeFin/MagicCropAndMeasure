@@ -37,7 +37,7 @@ Look for the "Sub-Steps" table at the top of each spec file to see the breakdown
 | ✅ 17 | [17-value-converters.md](17-value-converters.md) | Create comprehensive converter set | 2-3 hours | **10 sub-steps (17a-17j)** | ✅ **DONE** |
 | ✅ 18 | [18-commands-cleanup.md](18-commands-cleanup.md) | Standardize command implementations | 3-4 hours | **10 sub-steps (18a-18j)** | ✅ **DONE** |
 | ✅ 19 | [19-final-integration-testing.md](19-final-integration-testing.md) | Complete integration and testing | 4-6 hours | **14 sub-steps (19a-19n)** | ✅ **MOSTLY DONE** |
-| 20 | [20-unit-testing-framework.md](20-unit-testing-framework.md) | Set up unit testing infrastructure | 4-5 hours | **10 sub-steps (20a-20j)** | ⏳ **IN PROGRESS** |
+| 20 | [20-unit-testing-framework.md](20-unit-testing-framework.md) | Set up unit testing infrastructure | 4-5 hours | **10 sub-steps (20a-20j)** | ⏳ **20a-20b DONE** |
 
 **Total Estimated Effort: 54-75 hours**
 **Total Sub-Steps: ~125 independently committable changes**

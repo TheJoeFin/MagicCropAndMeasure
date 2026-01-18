@@ -22,7 +22,7 @@ public class TestServiceFixture : IDisposable
             {
                 BuildProvider();
             }
-            return _provider;
+            return _provider!;
         }
     }
 
@@ -33,13 +33,14 @@ public class TestServiceFixture : IDisposable
 
     public void BuildProvider()
     {
-        // Register mocks
+        // Register concrete mocks
         _services.AddSingleton<IRecentProjectsService, MockRecentProjectsService>();
-        _services.AddSingleton<IFileDialogService>(new Mock<IFileDialogService>().Object);
-        _services.AddSingleton<IClipboardService>(new Mock<IClipboardService>().Object);
-        _services.AddSingleton<IImageProcessingService>(new Mock<IImageProcessingService>().Object);
-        _services.AddSingleton<INavigationService>(new Mock<INavigationService>().Object);
-        _services.AddSingleton<IWindowFactory>(new Mock<IWindowFactory>().Object);
+        _services.AddSingleton<IFileDialogService, MockFileDialogService>();
+        _services.AddSingleton<IClipboardService, MockClipboardService>();
+        _services.AddSingleton<IImageProcessingService, MockImageProcessingService>();
+        _services.AddSingleton<INavigationService, MockNavigationService>();
+        _services.AddSingleton<IWindowFactory, MockWindowFactory>();
+        _services.AddSingleton<IThemeService, MockThemeService>();
 
         _provider = _services.BuildServiceProvider();
     }

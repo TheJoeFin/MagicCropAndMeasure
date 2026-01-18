@@ -31,7 +31,7 @@ The MVVM migration of MagickCrop has been successfully completed across all 19 s
 
 ## Key Learnings
 
-### Step 20 - Unit Testing Framework (IN PROGRESS)
+### Step 20 - Unit Testing Framework (IN PROGRESS - Step 20b COMPLETE)
 
 #### **20a - Create Test Project and Configure MSTest** (COMPLETE ✅)
 - **Test Project Setup:**
@@ -60,6 +60,56 @@ The MVVM migration of MagickCrop has been successfully completed across all 19 s
   
 - **Build Status:** ✅ 0 errors, all tests passing
 - **Next Steps:** Step 20b - Create mock implementations for remaining services
+
+#### **20b - Create Mock/Fake Implementations of All Services** (COMPLETE ✅)
+- **New Mock Services Created:**
+  - `MockFileDialogService` - Tracks dialog calls and returns configurable results
+    - Tracks filter, title, and filename for verification
+    - Properties: SelectedOpenFile, SelectedSaveFile, SelectedFolder
+    - Useful for testing file dialog interactions without UI
+  
+  - `MockClipboardService` - In-memory clipboard simulation
+    - Methods: SetFileDropList(), Clear() for test helpers
+    - Tracks image, text, and file drop list data
+    - Returns proper IReadOnlyList<string> for clipboard compatibility
+  
+  - `MockImageProcessingService` - Non-op image operations for testing
+    - Tracks loaded/saved files for verification
+    - Returns dummy WriteableBitmap and MagickImage objects
+    - Suitable for testing logic without actual image processing
+  
+  - `MockNavigationService` - Window/dialog interaction tracking
+    - Tracks all dialog shows, window shows, and message boxes
+    - Properties: DialogResult, MessageBoxResult, ConfirmationResult for control
+    - Useful for testing navigation workflows
+  
+  - `MockWindowFactory` - Simple window creation tracking
+    - Tracks all SaveWindow creations with image paths
+    - Returns new SaveWindow instances for testing
+  
+  - `MockThemeService` - Simple theme state tracking
+    - Toggling between dark and light modes
+    - Property: IsDarkTheme to check current theme
+
+- **Updated TestServiceFixture:**
+  - Replaced Moq empty mocks with concrete implementations
+  - All services now properly registered as Singletons
+  - Fixed nullable warning in Services property (added null-coalescing operator)
+
+- **Extended Test Infrastructure Tests (15 total passing tests):**
+  - `MockFileDialogService_TracksOpenDialogCalls` - Verifies dialog tracking
+  - `MockFileDialogService_TracksSaveDialogCalls` - Verifies save dialog tracking
+  - `MockClipboardService_CanStoreAndRetrieveFileList` - Tests file list storage
+  - `MockClipboardService_CanClearData` - Tests clearing clipboard
+  - `MockImageProcessingService_TracksLoadedFiles` - Verifies file tracking
+  - `MockImageProcessingService_TracksSavedFiles` - Verifies save tracking with format/quality
+  - `MockNavigationService_TracksDialogCalls` - Verifies dialog tracking
+  - `MockNavigationService_TracksMessageCalls` - Verifies message box tracking
+  - `MockNavigationService_TracksConfirmationCalls` - Verifies confirmation tracking
+  - `MockThemeService_CanChangeTheme` - Tests theme switching
+
+- **Build Status:** ✅ 0 errors, 15/15 tests passing
+- **Next Steps:** Step 20c - Create test base classes for ViewModel testing
 
 ### Step 19 - Final Integration and Testing (COMPLETED)
   - Registered all 7 measurement ViewModels: Distance, Angle, Rectangle, Circle, Polygon, HorizontalLine, VerticalLine
