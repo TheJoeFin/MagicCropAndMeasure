@@ -8,6 +8,12 @@ MagickCrop is a WPF desktop application for Windows with extensive image editing
 # Build MagickCrop project only (packaging project has unrelated issues)
 cd MagickCrop && dotnet build MagickCrop.csproj
 
+# Build test project
+dotnet build MagickCrop.Tests/MagickCrop.Tests.csproj
+
+# Run all tests
+dotnet test MagickCrop.Tests/MagickCrop.Tests.csproj
+
 # Full solution build (fails on packaging, succeeds on main app)
 dotnet build MagickCrop.sln
 ```
@@ -25,8 +31,37 @@ The MVVM migration of MagickCrop has been successfully completed across all 19 s
 
 ## Key Learnings
 
+### Step 20 - Unit Testing Framework (IN PROGRESS)
+
+#### **20a - Create Test Project and Configure MSTest** (COMPLETE ✅)
+- **Test Project Setup:**
+  - Created `MagickCrop.Tests` project targeting `.NET 10.0-windows`
+  - Configured with MSTest, Moq, and CommunityToolkit.Mvvm
+  - Added to solution with proper project references
+  
+- **Project Structure:**
+  - `GlobalUsings.cs` - Global using statements for common namespaces
+  - `Fixtures/TestServiceFixture.cs` - Test setup/teardown infrastructure
+  - `Mocks/MockRecentProjectsService.cs` - Mock implementation of IRecentProjectsService
+  - `TestInfrastructureTests.cs` - Basic infrastructure verification tests
+  
+- **MockRecentProjectsService Implementation:**
+  - Implements full IRecentProjectsService interface
+  - Properly handles string-based Guid IDs (matches RecentProjectInfo.Id type)
+  - Returns Task.CompletedTask for async methods
+  - Provides observable collection for testing
+  
+- **Test Infrastructure Tests (5 passing tests):**
+  - `TestFixture_CanBuildServices` - Verifies service fixture builds properly
+  - `MockRecentProjectsService_CanAddProject` - Tests adding project to collection
+  - `MockRecentProjectsService_CanRemoveProject` - Tests removing by Guid ID
+  - `MockRecentProjectsService_CanClearProjects` - Tests clearing all projects
+  - `MockRecentProjectsService_GetAutosavePath` - Tests autosave path generation
+  
+- **Build Status:** ✅ 0 errors, all tests passing
+- **Next Steps:** Step 20b - Create mock implementations for remaining services
+
 ### Step 19 - Final Integration and Testing (COMPLETED)
-- **19a - Complete DI Registration:**
   - Registered all 7 measurement ViewModels: Distance, Angle, Rectangle, Circle, Polygon, HorizontalLine, VerticalLine
   - All 6 core services properly registered as Singletons: RecentProjects, FileDialog, Clipboard, ImageProcessing, Navigation, WindowFactory
   - Verified constructor dependency injection with null checks
