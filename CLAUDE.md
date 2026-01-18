@@ -558,6 +558,50 @@ dotnet build MagickCrop.sln
 ### Application Status
 - ✅ Build succeeds with 19 pre-existing warnings (0 new errors)
 - ✅ No regressions from MVVM migration
+
+## Step 16 - MainWindow File Operations ✅ COMPLETE
+- **Changes Made:**
+  - Implemented `CreateMeasurementPackage()` private method:
+    - Creates PackageMetadata with creation/modification dates, image dimensions, filename, project ID
+    - Calls `ToMeasurementCollection()` to serialize all current measurements
+    - Sets ImagePath from `_currentImagePath`
+    - Returns fully configured MagickCropMeasurementPackage
+  
+  - Implemented `SavePackageToFile()` private method:
+    - Calls package.SaveToFileAsync(filePath) to perform file I/O
+    - Throws InvalidOperationException if save fails
+    - Proper error propagation for caller to handle
+  
+  - Completed `SaveProjectToPathAsync()` implementation:
+    - Replaced TODOs with CreateMeasurementPackage() + SavePackageToFile() calls
+    - Calls UpdateRecentProjectsAsync() to track recent projects
+    - Proper IsSaving state management and error handling
+  
+  - Added `NewProjectCommand` [RelayCommand]:
+    - Prompts for unsaved changes before clearing
+    - Clears all measurements, image data, and undo history
+    - Resets UI to show welcome screen
+    - Properly disposes image resources
+  
+  - Verified existing implementations:
+    - SaveProjectCommand → SaveProject() method working
+    - SaveAsCommand → SaveProjectAs() method working
+    - OpenProjectCommand → OpenProject() method working
+    - LoadProjectFromFileAsync() handles .mcm file loading with unsaved changes check
+    - ExportImageCommand → ExportImage() method for image format export
+    - ShowSaveWindowCommand → ShowSaveWindow() for export options dialog
+    - UpdateRecentProjectsAsync() already properly implemented
+
+- **File Operations Workflow:**
+  - Save: MainWindowViewModel.SaveProject() → SaveProjectToPathAsync() → CreateMeasurementPackage() → SavePackageToFile() → Updates recent projects
+  - Load: MainWindowViewModel.OpenProject() → LoadProjectFromFileAsync() → LoadPackageFromFile() → Updates UI/measurements
+  - Export: MainWindowViewModel.ExportImage() → IImageProcessingService.SaveImageAsync()
+  - New Project: NewProjectCommand clears all state and resets UI
+
+- **Application Status:**
+  - ✅ Build succeeds (2 pre-existing NuGet warnings, 0 new errors)
+  - ✅ All file operations working end-to-end
+  - ✅ Ready for Step 17: Value Converters
 - ✅ All measurement features preserved and working
 - ✅ Ready for Step 13: MainWindow State Management
 
