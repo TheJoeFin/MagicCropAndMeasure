@@ -18,7 +18,7 @@ public partial class CircleMeasurementControl : MeasurementControlBase
     private Point _clickedPoint;
 
     // Backward compatibility events for MainWindow
-    public event MouseButtonEventHandler? MeasurementPointMouseDown;
+    public new event MouseButtonEventHandler? MeasurementPointMouseDown;
     public delegate void RemoveControlRequestedEventHandler(object sender, EventArgs e);
     public event RemoveControlRequestedEventHandler? RemoveControlRequested;
 
