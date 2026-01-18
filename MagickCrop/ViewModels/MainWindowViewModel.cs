@@ -1,6 +1,9 @@
 using System.IO;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using MagickCrop.Messages;
 using MagickCrop.Services.Interfaces;
 using MagickCrop.ViewModels.Base;
 
@@ -186,6 +189,92 @@ public partial class MainWindowViewModel : ViewModelBase
     public override void Cleanup()
     {
         base.Cleanup();
+    }
+
+    #endregion
+
+    #region Tool Commands
+
+    /// <summary>
+    /// Selects a specific tool/mode.
+    /// Can only execute when an image is loaded.
+    /// </summary>
+    /// <param name="tool">The tool mode to select.</param>
+    [RelayCommand(CanExecute = nameof(HasImage))]
+    private void SelectTool(DraggingMode tool)
+    {
+        // Cancel any in-progress placement
+        if (IsPlacingMeasurement)
+        {
+            CancelPlacement();
+        }
+
+        CurrentTool = tool;
+        Send(new ActiveToolChangedMessage(tool.ToString()));
+    }
+
+    /// <summary>
+    /// Starts the measurement placement process for the specified measurement type.
+    /// Can only execute when image operations are possible.
+    /// </summary>
+    /// <param name="measurementType">The type of measurement to place (e.g., "Distance", "Angle").</param>
+    [RelayCommand(CanExecute = nameof(CanPerformImageOperations))]
+    private void StartMeasurementPlacement(string measurementType)
+    {
+        IsPlacingMeasurement = true;
+        PlacementState = PlacementState.WaitingForFirstPoint;
+        PlacementStep = 0;
+        
+        // Set tool based on measurement type
+        CurrentTool = measurementType switch
+        {
+            "Distance" => DraggingMode.MeasureDistance,
+            "Angle" => DraggingMode.MeasureAngle,
+            "Rectangle" => DraggingMode.MeasureRectangle,
+            "Circle" => DraggingMode.MeasureCircle,
+            "Polygon" => DraggingMode.MeasurePolygon,
+            _ => DraggingMode.None
+        };
+
+        Send(new ActiveToolChangedMessage(CurrentTool.ToString()));
+    }
+
+    /// <summary>
+    /// Cancels the current measurement placement.
+    /// Can only execute when a measurement is being placed.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(IsPlacingMeasurement))]
+    private void CancelPlacement()
+    {
+        IsPlacingMeasurement = false;
+        PlacementState = PlacementState.NotPlacing;
+        PlacementStep = 0;
+        CurrentTool = DraggingMode.None;
+    }
+
+    /// <summary>
+    /// Advances the measurement placement to the next step.
+    /// Updates PlacementState based on the current tool and step count.
+    /// </summary>
+    [RelayCommand]
+    private void AdvancePlacementStep()
+    {
+        PlacementStep++;
+        
+        PlacementState = CurrentTool switch
+        {
+            DraggingMode.MeasureDistance => PlacementStep >= 1 ? PlacementState.Complete : PlacementState.WaitingForSecondPoint,
+            DraggingMode.MeasureAngle => PlacementStep >= 2 ? PlacementState.Complete : PlacementState.WaitingForSecondPoint,
+            DraggingMode.MeasureRectangle => PlacementStep >= 1 ? PlacementState.Complete : PlacementState.WaitingForSecondPoint,
+            DraggingMode.MeasureCircle => PlacementStep >= 1 ? PlacementState.Complete : PlacementState.WaitingForSecondPoint,
+            _ => PlacementState.WaitingForMorePoints
+        };
+
+        if (PlacementState == PlacementState.Complete)
+        {
+            IsPlacingMeasurement = false;
+            CurrentTool = DraggingMode.None;
+        }
     }
 
     #endregion
