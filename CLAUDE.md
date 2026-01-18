@@ -1306,6 +1306,40 @@ This refactoring demonstrates the ongoing value of MVVM and DI architecture. Eve
 | File Operations | NewProject, OpenProject, SaveProject, SaveProjectAs, ExportImage | CanPerformImageOperations | AllowConcurrentExecutions=false |
 | Image Transform | RotateClockwise, RotateCounterClockwise, FlipHorizontal, FlipVertical | CanPerformImageOperations | - |
 | Undo/Redo | Undo, Redo | CanUndo/CanRedo | - |
+
+## Critical Threading Fix - Image Rendering Issue (January 18, 2026)
+
+**Problem**: Application crashed with `System.ArgumentException: Must create DependencySource on same Thread as the DependencyObject` when rendering images after async operations.
+
+**Root Cause**: 
+- Multiple `MainImage.Source` (DependencyProperty) assignments from potential background thread contexts
+- `ToBitmapSource()` method disposing MemoryStream prematurely, causing thread affinity issues with BitmapImage
+
+**Solution**:
+1. Modified `ImageProcessingService.ToBitmapSource()`: Removed `using` statement for MemoryStream to prevent premature disposal
+2. Added `SetMainImageSource()` helper method in MainWindow that:
+   - Checks if current thread is UI thread via `Dispatcher.CheckAccess()`
+   - Uses `Dispatcher.BeginInvoke()` to marshal to UI thread if needed
+   - Ensures thread-safe DependencyProperty updates
+3. Replaced all 23 instances of `MainImage.Source = ` with `SetMainImageSource()` calls
+
+**Files Modified**:
+- `MagickCrop/Services/ImageProcessingService.cs`: ToBitmapSource method
+- `MagickCrop/MainWindow.xaml.cs`: Added SetMainImageSource helper, 23 assignment replacements
+
+**Verification**:
+- ✅ Build succeeded (0 errors)
+- ✅ All 291 tests passing
+- ✅ Commit: 836a94a "Fix: Resolve critical threading issue in image rendering"
+
+**Key Pattern**:
+```csharp
+// Before (UNSAFE - may crash on multi-threaded operations)
+MainImage.Source = magickImage.ToBitmapSource();
+
+// After (SAFE - thread-aware)
+SetMainImageSource(magickImage.ToBitmapSource());
+```
 | Measurements | AddDistance, AddAngle, AddRectangle, AddCircle, AddPolygon, AddHorizontalLine, AddVerticalLine | HasImage | - |
 | Measurement Mgmt | AdvancePlacementStep, ClearAllMeasurements | IsPlacingMeasurement/HasMeasurements | New CanExecute |
 | Placement | CancelPlacement, StartMeasurementPlacement | IsPlacingMeasurement/CanPerformImageOperations | - |
