@@ -14,6 +14,9 @@ dotnet build MagickCrop.Tests/MagickCrop.Tests.csproj
 # Run all tests
 dotnet test MagickCrop.Tests/MagickCrop.Tests.csproj
 
+# Run the Windows app to ensure the app actually can load at runtime at the very least, then shut it down after 5 seconds
+dotnet run MagickCrop/MagickCrop.csproj
+
 # Full solution build (fails on packaging, succeeds on main app)
 dotnet build MagickCrop.sln
 ```

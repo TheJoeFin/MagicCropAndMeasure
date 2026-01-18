@@ -208,3 +208,12 @@ When reporting new issues, please include:
 **Status:** ✅ Fixed and tested
 
 
+
+New Issue
+System.ArgumentException
+  HResult=0x80070057
+  Message=Must create DependencySource on same Thread as the DependencyObject.
+  Source=<Cannot evaluate the exception source>
+  StackTrace:
+<Cannot evaluate the exception stack trace>
+
