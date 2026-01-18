@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MagickCrop", "MagickCrop\Ma
 EndProject
 Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "MagickCrop-Package", "MagickCrop-Package\MagickCrop-Package.wapproj", "{F6C2CFAD-9A9B-48F6-A5F3-DB3BCC25CACB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MagickCrop.Tests", "MagickCrop.Tests\MagickCrop.Tests.csproj", "{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +73,26 @@ Global
 		{F6C2CFAD-9A9B-48F6-A5F3-DB3BCC25CACB}.Release|x86.ActiveCfg = Release|x86
 		{F6C2CFAD-9A9B-48F6-A5F3-DB3BCC25CACB}.Release|x86.Build.0 = Release|x86
 		{F6C2CFAD-9A9B-48F6-A5F3-DB3BCC25CACB}.Release|x86.Deploy.0 = Release|x86
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Debug|ARM.Build.0 = Debug|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Debug|x64.Build.0 = Debug|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Debug|x86.Build.0 = Debug|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Release|ARM.ActiveCfg = Release|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Release|ARM.Build.0 = Release|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Release|ARM64.Build.0 = Release|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Release|x64.ActiveCfg = Release|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Release|x64.Build.0 = Release|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Release|x86.ActiveCfg = Release|Any CPU
+		{2D584E6B-2B2D-45C9-B992-A66EAA4650CB}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
