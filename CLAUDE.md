@@ -939,3 +939,87 @@ After reviewing remaining handlers, the following categories were identified:
 - ✅ Removed 12+ lines of event handler code
 - ✅ MVVM command binding working for both buttons
 - ✅ Ready for Step 18c: Edit Menu Commands (or Step 18e if Edit commands deferred)
+
+## Step 18 - Commands Cleanup - ✅ COMPLETE
+
+### Overview
+- Standardized all RelayCommand implementations with proper CanExecute validation
+- Converted 21 simple event handlers to RelayCommand methods in MainWindowViewModel
+- Added CanExecute logic to existing commands that needed state validation
+- Wired commands via messaging for clean MVVM separation
+- All complex UI interactions remain in code-behind as required
+
+### Sub-Steps Completed (18a-18j)
+
+**18a: Audit Event Handlers** ✅
+- Reviewed all remaining event handlers in MainWindow.xaml.cs
+- Identified 21 simple handlers suitable for conversion to commands
+- Categorized 40+ complex handlers to remain in code-behind (mouse drag, canvas painting, focus management)
+
+**18b-18f: Convert Simple Event Handlers to Commands** ✅
+- **UI/View Commands** (7 new):
+  - ResetView, CenterAndZoomToFit, ClearDrawings, CloseMeasurementPanel, CloseWelcomeModal, CancelCrop, CancelTransform
+- **Picker Mode Commands** (4 new):
+  - EnableWhitePointPicker, DisableWhitePointPicker, EnableBlackPointPicker, DisableBlackPointPicker
+- **Resize/Transform Commands** (4 new):
+  - SetPixelMode, SetPercentageMode, LockAspectRatio, UnlockAspectRatio
+- **Drawing Mode Commands** (2 new):
+  - EnableDrawingMode, DisableDrawingMode
+- **Rotation Commands** (4 new):
+  - EnableFreeRotate, DisableFreeRotate, ResetRotation, CancelRotation
+
+**18g: Wire Commands via Messaging** ✅
+- Created 17 new message classes in AppMessages.cs
+- Registered message handlers in MainWindow.xaml.cs Loaded event
+- Maintains clean MVVM separation without tight coupling
+
+**18h: Add CanExecute Logic** ✅
+- AdvancePlacementStep: Requires IsPlacingMeasurement
+- ClearAllMeasurements: Requires HasMeasurements
+- LoadImage, PasteFromClipboard: Require CanPerformImageOperations (!IsLoading && HasImage)
+- NewProject, OpenProject: Require CanPerformImageOperations
+
+**18i: Update RelayCommand.cs** ✅
+- Marked old RelayCommand.cs as [Obsolete] with guidance to use CommunityToolkit.Mvvm
+- Kept for backward compatibility
+
+**18j: Verification** ✅
+- ✅ Build succeeds with 0 new errors (41 pre-existing warnings remain)
+- ✅ Application runs successfully
+- ✅ All command bindings work correctly
+- ✅ Complex UI interactions preserved in code-behind
+
+### Key Architecture Decisions
+- **View Responsibility**: Mouse drag, canvas painting, keyboard navigation, window lifecycle remain in code-behind
+- **ViewModel Responsibility**: All business logic now in commands with proper CanExecute validation
+- **Messaging Pattern**: Commands communicate with View through typed messages (WeakReferenceMessenger)
+- **Consistency**: All async operations use AllowConcurrentExecutions=false where applicable
+- **Testing**: Commands are now independently testable from UI
+
+### Command Summary
+| Category | Commands | CanExecute | Notes |
+|----------|----------|-----------|-------|
+| File Operations | NewProject, OpenProject, SaveProject, SaveProjectAs, ExportImage | CanPerformImageOperations | AllowConcurrentExecutions=false |
+| Image Transform | RotateClockwise, RotateCounterClockwise, FlipHorizontal, FlipVertical | CanPerformImageOperations | - |
+| Undo/Redo | Undo, Redo | CanUndo/CanRedo | - |
+| Measurements | AddDistance, AddAngle, AddRectangle, AddCircle, AddPolygon, AddHorizontalLine, AddVerticalLine | HasImage | - |
+| Measurement Mgmt | AdvancePlacementStep, ClearAllMeasurements | IsPlacingMeasurement/HasMeasurements | New CanExecute |
+| Placement | CancelPlacement, StartMeasurementPlacement | IsPlacingMeasurement/CanPerformImageOperations | - |
+| View/UI | ResetView, CenterAndZoomToFit, ClearDrawings, CloseMeasurementPanel, etc. | None/Always | Simple UI state |
+| Tool Selection | SelectTool(ToolMode) | HasImage | - |
+
+### Files Modified
+- `ViewModels/MainWindowViewModel.cs` - Added 21 RelayCommand methods with proper CanExecute logic
+- `Messages/AppMessages.cs` - Added 17 new message classes
+- `MainWindow.xaml.cs` - Added message handler registrations
+- `Models/RelayCommand.cs` - Marked as [Obsolete]
+- `migration-specs/README.md` - Marked Step 18 as DONE
+- `migration-specs/18-commands-cleanup.md` - Added completion summary
+
+### Application Status
+- ✅ Build succeeds: 0 new errors, 41 pre-existing warnings remain (unrelated)
+- ✅ All 21 new commands implemented and working
+- ✅ CanExecute logic properly validates command availability
+- ✅ Message-based communication maintains MVVM separation
+- ✅ Complex UI interactions appropriately remain in code-behind
+- ✅ Ready for Step 19: Final Integration and Testing
