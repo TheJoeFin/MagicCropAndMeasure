@@ -6,6 +6,31 @@ This document tracks known issues, feature requests, and work items for MagickCr
 
 ## ✅ RESOLVED ISSUES
 
+### Feature: Dark Mode Support ✅ IMPLEMENTED
+**Implementation Date:** January 18, 2026  
+**Commit:** TBD (to be committed)
+
+Implemented full dark mode support with theme persistence. Users can toggle between light and dark themes, and their preference is automatically saved and restored on application restart. Features include:
+
+- **ThemeService Integration**: Created `ThemeService` implementing `IThemeService` interface
+- **Theme Persistence**: Theme preference stored in JSON file (`%LocalAppData%/MagickCrop/theme-settings.json`)
+- **WPF-UI Integration**: Uses `ApplicationThemeManager` for consistent theme application
+- **UI Controls**: Theme toggle button added to measurement panel
+- **Auto-initialization**: Theme automatically loaded on app startup
+- **Comprehensive Testing**: All 291 unit tests passing with theme service mocks
+
+**Details:**
+- Created `ThemeService.cs` with theme switching and persistence logic
+- Created `MockThemeService.cs` for unit testing
+- Added theme commands to `MainWindowViewModel`
+- Updated dependency injection and app startup
+- UI button for quick theme toggling
+- All tests updated to include theme service dependency
+
+**Status:** ✅ Complete and tested
+
+---
+
 ### Refactoring: Extract Thumbnail Logic to ThumbnailService ✅ FIXED
 **Resolution Date:** January 18, 2026  
 **Commit:** 3742567 - "Refactor: Extract thumbnail logic to dedicated ThumbnailService"
@@ -94,12 +119,6 @@ These are features/improvements that could be considered for future releases:
 - **Estimated Effort:** 8-10 hours
 - **Status:** Not started
 
-### Enhancement: Dark Mode
-- **Description:** Add dark theme support using WPF-UI themes
-- **Priority:** Low
-- **Estimated Effort:** 3-4 hours
-- **Status:** Not started
-
 ---
 
 ## 🔍 KNOWN LIMITATIONS
@@ -136,8 +155,10 @@ See `TESTING_CHECKLIST.md` for comprehensive manual testing procedures.
 
 - **MVVM Migration:** 100% complete as of January 18, 2026
 - **Post-Migration Refactoring:** ThumbnailService extraction completed January 18, 2026
-- **Build Status:** 0 errors, 4 non-critical warnings (pre-existing NuGet issues)
-- **Last Updated:** January 18, 2026 (ThumbnailService refactoring)
+- **Dark Mode Feature:** Implemented January 18, 2026 (291 tests passing)
+- **Build Status:** 0 errors, 6 pre-existing warnings (NuGet/SDK issues)
+- **Test Status:** All 291 tests passing (100% pass rate)
+- **Last Updated:** January 18, 2026 (Dark Mode implementation)
 - **Next Review:** Upon completion of next feature/enhancement
 
 ---

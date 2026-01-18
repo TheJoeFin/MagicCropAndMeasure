@@ -29,6 +29,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly INavigationService _navigationService;
     private readonly IImageProcessingService _imageProcessingService;
     private readonly IWindowFactory _windowFactory;
+    private readonly IThemeService _themeService;
     private string? _currentImagePath;
     private MagickImage? _magickImage;
 
@@ -655,7 +656,8 @@ public partial class MainWindowViewModel : ViewModelBase
         App.GetService<IClipboardService>(),
         App.GetService<IImageProcessingService>(),
         App.GetService<INavigationService>(),
-        App.GetService<IWindowFactory>())
+        App.GetService<IWindowFactory>(),
+        App.GetService<IThemeService>())
     {
     }
 
@@ -668,13 +670,15 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <param name="imageProcessingService">Service for image processing operations.</param>
     /// <param name="navigationService">Service for window navigation.</param>
     /// <param name="windowFactory">Factory for creating windows.</param>
+    /// <param name="themeService">Service for managing application theme.</param>
     public MainWindowViewModel(
         IRecentProjectsService recentProjectsService,
         IFileDialogService fileDialogService,
         IClipboardService clipboardService,
         IImageProcessingService imageProcessingService,
         INavigationService navigationService,
-        IWindowFactory windowFactory)
+        IWindowFactory windowFactory,
+        IThemeService themeService)
     {
         _recentProjectsService = recentProjectsService ?? throw new ArgumentNullException(nameof(recentProjectsService));
         _fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
@@ -682,6 +686,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _imageProcessingService = imageProcessingService ?? throw new ArgumentNullException(nameof(imageProcessingService));
         _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
         _windowFactory = windowFactory ?? throw new ArgumentNullException(nameof(windowFactory));
+        _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
 
         Title = "Magic Crop & Measure";
     }
@@ -1889,6 +1894,44 @@ public partial class MainWindowViewModel : ViewModelBase
         PolygonMeasurements.Clear();
         HorizontalLines.Clear();
         VerticalLines.Clear();
+    }
+
+    #endregion
+
+    #region Theme Commands
+
+    /// <summary>
+    /// Toggles the application theme between dark and light mode.
+    /// </summary>
+    [RelayCommand]
+    private void ToggleTheme()
+    {
+        if (_themeService.IsDarkTheme)
+        {
+            _themeService.SetLightTheme();
+        }
+        else
+        {
+            _themeService.SetDarkTheme();
+        }
+    }
+
+    /// <summary>
+    /// Sets the application theme to dark mode.
+    /// </summary>
+    [RelayCommand]
+    private void SetDarkTheme()
+    {
+        _themeService.SetDarkTheme();
+    }
+
+    /// <summary>
+    /// Sets the application theme to light mode.
+    /// </summary>
+    [RelayCommand]
+    private void SetLightTheme()
+    {
+        _themeService.SetLightTheme();
     }
 
     #endregion

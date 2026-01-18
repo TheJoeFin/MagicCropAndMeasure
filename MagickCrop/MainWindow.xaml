@@ -390,6 +390,22 @@
                                 </StackPanel>
                             </wpfui:Button>
                         </StackPanel>
+                        <StackPanel
+                            x:Name="ThemePanel"
+                            HorizontalAlignment="Center"
+                            Orientation="Horizontal"
+                            Margin="0,8,0,0">
+                            <wpfui:Button
+                                x:Name="ToggleThemeButton"
+                                Width="160"
+                                Command="{Binding ToggleThemeCommand}"
+                                ToolTip="Toggle between dark and light theme">
+                                <StackPanel Orientation="Horizontal">
+                                    <wpfui:SymbolIcon Margin="0,0,6,0" Symbol="WeatherMoon24" />
+                                    <TextBlock VerticalAlignment="Center" Text="Toggle Theme" />
+                                </StackPanel>
+                            </wpfui:Button>
+                        </StackPanel>
                         <TextBlock Text="Tools" />
                         <TabControl ItemContainerStyle="{StaticResource NarrowTabHeaderStyle}">
                             <TabItem x:Name="TransformTabItem">

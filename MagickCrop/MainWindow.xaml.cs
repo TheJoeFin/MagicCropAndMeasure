@@ -156,9 +156,6 @@ public partial class MainWindow : FluentWindow
     {
         _recentProjectsManager = recentProjectsManager ?? throw new ArgumentNullException(nameof(recentProjectsManager));
         
-        ThemeService themeService = new();
-        themeService.SetTheme(ApplicationTheme.Dark);
-
         Color teal = (Color)ColorConverter.ConvertFromString("#0066FF");
         ApplicationAccentColorManager.Apply(teal);
 
@@ -187,9 +184,6 @@ public partial class MainWindow : FluentWindow
     {
         _recentProjectsManager = recentProjectsManager;
         
-        ThemeService themeService = new();
-        themeService.SetTheme(ApplicationTheme.Dark);
-
         Color teal = (Color)ColorConverter.ConvertFromString("#0066FF");
         ApplicationAccentColorManager.Apply(teal);
 

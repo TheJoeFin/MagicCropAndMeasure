@@ -25,7 +25,8 @@ public class MainWindowViewModelTests : ViewModelTestBase
             GetMockClipboardService(),
             GetMockImageProcessingService(),
             GetMockNavigationService(),
-            GetMockWindowFactory());
+            GetMockWindowFactory(),
+            GetMockThemeService());
     }
 
     #region Initialization Tests
@@ -782,7 +783,8 @@ public class MainWindowViewModelTests : ViewModelTestBase
             GetMockClipboardService(),
             GetMockImageProcessingService(),
             GetMockNavigationService(),
-            GetMockWindowFactory());
+            GetMockWindowFactory(),
+            GetMockThemeService());
     }
 
     [TestMethod]
@@ -796,7 +798,8 @@ public class MainWindowViewModelTests : ViewModelTestBase
             GetMockClipboardService(),
             GetMockImageProcessingService(),
             GetMockNavigationService(),
-            GetMockWindowFactory());
+            GetMockWindowFactory(),
+            GetMockThemeService());
     }
 
     [TestMethod]
@@ -810,7 +813,8 @@ public class MainWindowViewModelTests : ViewModelTestBase
             null!,
             GetMockImageProcessingService(),
             GetMockNavigationService(),
-            GetMockWindowFactory());
+            GetMockWindowFactory(),
+            GetMockThemeService());
     }
 
     [TestMethod]
@@ -824,7 +828,8 @@ public class MainWindowViewModelTests : ViewModelTestBase
             GetMockClipboardService(),
             null!,
             GetMockNavigationService(),
-            GetMockWindowFactory());
+            GetMockWindowFactory(),
+            GetMockThemeService());
     }
 
     [TestMethod]
@@ -838,7 +843,8 @@ public class MainWindowViewModelTests : ViewModelTestBase
             GetMockClipboardService(),
             GetMockImageProcessingService(),
             null!,
-            GetMockWindowFactory());
+            GetMockWindowFactory(),
+            GetMockThemeService());
     }
 
     [TestMethod]
@@ -852,7 +858,8 @@ public class MainWindowViewModelTests : ViewModelTestBase
             GetMockClipboardService(),
             GetMockImageProcessingService(),
             GetMockNavigationService(),
-            null!);
+            null!,
+            GetMockThemeService());
     }
 
     #endregion

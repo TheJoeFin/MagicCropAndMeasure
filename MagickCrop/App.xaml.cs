@@ -35,6 +35,9 @@ public partial class App : Application
         ConfigureServices(services);
         _serviceProvider = services.BuildServiceProvider();
 
+        // Initialize theme service (load saved preference)
+        var themeService = GetService<IThemeService>();
+        
         // Handle .mcm file association
         if (e.Args.Length > 0 && File.Exists(e.Args[0])
             && Path.GetExtension(e.Args[0]).Equals(".mcm", StringComparison.OrdinalIgnoreCase))
@@ -64,6 +67,7 @@ public partial class App : Application
         // Register Infrastructure Services
         services.AddSingleton<IAppPaths, AppPaths>();
         services.AddSingleton<IThumbnailService, ThumbnailService>();
+        services.AddSingleton<IThemeService, ThemeService>();
         
         // Register Service Interfaces
         services.AddSingleton<IRecentProjectsService, RecentProjectsManager>();
@@ -71,7 +75,6 @@ public partial class App : Application
         services.AddSingleton<IClipboardService, ClipboardService>();
         services.AddSingleton<IImageProcessingService, ImageProcessingService>();
         services.AddSingleton<INavigationService, NavigationService>();
-        // services.AddSingleton<IThemeService, ThemeService>(); // To be implemented in future step
         
         // Register ViewModels
         services.AddTransient<MainWindowViewModel>();
