@@ -30,7 +30,8 @@ public class RecentProjectsServiceTests : ServiceTestBase
         
         // Create the service instance with the isolated folder
         var mockAppPaths = new MockAppPaths(_testAppDataFolder);
-        _service = new RecentProjectsManager(mockAppPaths);
+        var mockThumbnailService = new MockThumbnailService();
+        _service = new RecentProjectsManager(mockAppPaths, mockThumbnailService);
     }
 
     [TestCleanup]
@@ -57,7 +58,8 @@ public class RecentProjectsServiceTests : ServiceTestBase
         // Act & Assert - Fresh service instance should have empty collection initially
         var testFolder = CreateTempDirectory();
         var mockAppPaths = new MockAppPaths(testFolder);
-        var newService = new RecentProjectsManager(mockAppPaths);
+        var mockThumbnailService = new MockThumbnailService();
+        var newService = new RecentProjectsManager(mockAppPaths, mockThumbnailService);
         // Should either be empty or load from existing file
         Assert.IsNotNull(newService.RecentProjects);
     }
@@ -368,7 +370,8 @@ public class RecentProjectsServiceTests : ServiceTestBase
         // Act
         var testFolder = CreateTempDirectory();
         var mockAppPaths = new MockAppPaths(testFolder);
-        var newService = new RecentProjectsManager(mockAppPaths);
+        var mockThumbnailService = new MockThumbnailService();
+        var newService = new RecentProjectsManager(mockAppPaths, mockThumbnailService);
         await newService.LoadRecentProjectsAsync();
 
         // Assert

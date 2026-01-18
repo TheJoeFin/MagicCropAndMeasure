@@ -1,0 +1,370 @@
+Build started 1/18/2026 12:02:41 AM.
+Test run for D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\bin\Debug\net10.0-windows10.0.20348.0\MagickCrop.Tests.dll (.NETCoreApp,Version=v10.0)
+VSTest version 18.0.1 (arm64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+  Passed TestFixture_CanBuildServices [24 ms]
+  Passed MockRecentProjectsService_CanAddProject [4 ms]
+  Passed MockRecentProjectsService_CanRemoveProject [< 1 ms]
+  Passed MockRecentProjectsService_CanClearProjects [< 1 ms]
+  Passed MockRecentProjectsService_GetAutosavePath [< 1 ms]
+  Passed MockFileDialogService_TracksOpenDialogCalls [< 1 ms]
+  Passed MockFileDialogService_TracksSaveDialogCalls [< 1 ms]
+  Passed MockClipboardService_CanStoreAndRetrieveFileList [< 1 ms]
+  Passed MockClipboardService_CanClearData [< 1 ms]
+  Passed MockImageProcessingService_TracksLoadedFiles [6 ms]
+  Passed MockImageProcessingService_TracksSavedFiles [35 ms]
+  Passed MockNavigationService_TracksDialogCalls [6 ms]
+  Passed MockNavigationService_TracksMessageCalls [< 1 ms]
+  Passed MockNavigationService_TracksConfirmationCalls [< 1 ms]
+  Passed MockThemeService_CanChangeTheme [< 1 ms]
+  Passed TestInitialization_CreatesValidState [1 ms]
+  Passed TestInitialization_VerifiesAllServicesInjected [< 1 ms]
+  Passed TestInitialization_ImageStateDefaultsCorrect [< 1 ms]
+  Passed TestInitialization_UIStateDefaultsCorrect [< 1 ms]
+  Passed TestInitialization_ProjectStateDefaultsCorrect [< 1 ms]
+  Passed TestInitialization_ToolStateDefaultsCorrect [< 1 ms]
+  Passed TestInitialization_FileOperationStateDefaultsCorrect [< 1 ms]
+  Passed TestInitialization_UndoRedoStateDefaultsCorrect [< 1 ms]
+  Passed TestInitialization_MeasurementStateDefaultsCorrect [< 1 ms]
+  Passed TestInitialization_MeasurementCollectionsInitializedEmpty [< 1 ms]
+  Passed TestInitialization_AsyncInitializeCreatesUndoRedo [2 ms]
+  Passed TestInitialization_AllCommandsInitialized [1 ms]
+  Passed TestPropertyChanges_CurrentImageRaisesNotification [87 ms]
+  Passed TestPropertyChanges_HasImageRaisesNotification [< 1 ms]
+  Passed TestPropertyChanges_ImageDimensionsRaiseNotifications [< 1 ms]
+  Passed TestPropertyChanges_IsDirtyRaisesNotification [< 1 ms]
+  Passed TestPropertyChanges_CurrentFilePathRaisesNotification [< 1 ms]
+  Passed TestPropertyChanges_CurrentProjectIdRaisesNotification [< 1 ms]
+  Passed TestPropertyChanges_CurrentToolRaisesNotification [< 1 ms]
+  Passed TestPropertyChanges_IsPlacingMeasurementRaisesNotification [< 1 ms]
+  Passed TestPropertyChanges_PlacementStateRaisesNotification [< 1 ms]
+  Passed TestPropertyChanges_GlobalScaleFactorRaisesNotification [< 1 ms]
+  Passed TestPropertyChanges_GlobalUnitsRaisesNotification [< 1 ms]
+  Passed TestPropertyChanges_IsDirtyUpdatesWindowTitle [< 1 ms]
+  Passed TestStateManagement_CanPerformImageOperations_WhenHasImageTrue [< 1 ms]
+  Passed TestStateManagement_CanPerformImageOperations_WhenHasImageFalse [< 1 ms]
+  Passed TestStateManagement_CanPerformImageOperations_WhenIsLoadingTrue [< 1 ms]
+  Passed TestStateManagement_HasMeasurements_WhenDistanceMeasurementsExist [< 1 ms]
+  Passed TestStateManagement_HasMeasurements_WhenMultipleMeasurementTypes [< 1 ms]
+  Passed TestStateManagement_HasSavedPath_WhenLastSavedPathSet [< 1 ms]
+  Passed TestStateManagement_HasSavedPath_WhenLastSavedPathNull [< 1 ms]
+  Passed TestStateManagement_WindowTitle_WithUnsavedChanges [< 1 ms]
+  Passed TestStateManagement_WindowTitle_WithoutUnsavedChanges [< 1 ms]
+  Passed TestStateManagement_WindowTitle_DefaultWhenNoFile [< 1 ms]
+  Passed TestCommandAvailability_SaveProjectCommand_WhenHasImageTrue [< 1 ms]
+  Passed TestCommandAvailability_SaveProjectCommand_WhenHasImageFalse [1 ms]
+  Passed TestCommandAvailability_OpenProjectCommand_WhenCanPerformOperations [< 1 ms]
+  Passed TestCommandAvailability_OpenProjectCommand_WhenIsLoading [< 1 ms]
+  Passed TestCommandAvailability_ExportImageCommand_WhenHasImageTrue [< 1 ms]
+  Passed TestCommandAvailability_ExportImageCommand_WhenHasImageFalse [< 1 ms]
+  Passed TestCommandAvailability_ClearAllMeasurementsCommand_WhenHasMeasurements [< 1 ms]
+  Passed TestCommandAvailability_ClearAllMeasurementsCommand_WhenNoMeasurements [< 1 ms]
+  Passed TestCommandAvailability_SelectToolCommand_WhenHasImage [< 1 ms]
+  Passed TestCommandAvailability_SelectToolCommand_WhenNoImage [< 1 ms]
+  Passed TestCommandAvailability_StartMeasurementCommand_WhenCanPerformOperations [< 1 ms]
+  Passed TestCommandAvailability_CancelPlacementCommand_WhenIsPlacingMeasurement [< 1 ms]
+  Passed TestCommandAvailability_CancelPlacementCommand_WhenNotPlacingMeasurement [< 1 ms]
+  Passed TestCommandAvailability_UndoCommand_WhenCanUndoFalse [< 1 ms]
+  Passed TestCommandAvailability_RedoCommand_WhenCanRedoFalse [< 1 ms]
+  Passed TestCommandAvailability_OpenFolderCommand_WhenHasSavedPath [< 1 ms]
+  Passed TestCommandAvailability_OpenFolderCommand_WhenNoSavedPath [< 1 ms]
+  Passed TestMeasurementCollections_AddDistance_UpdatesCount [< 1 ms]
+  Passed TestMeasurementCollections_AllTypesInitialized [< 1 ms]
+  Passed TestMeasurementCollections_GlobalSettings [< 1 ms]
+  Passed TestEdgeCase_SetCurrentImage_UpdatesAllImageProperties [1 ms]
+  Passed TestEdgeCase_MultipleProjectIdChanges [< 1 ms]
+  Passed TestEdgeCase_ZoomLevelPersistence [< 1 ms]
+  Passed TestEdgeCase_PlacementStateTransitions [< 1 ms]
+  Passed TestEdgeCase_GlobalUnitChanges [< 1 ms]
+  Passed TestEdgeCase_MeasurementCountTracking [< 1 ms]
+  Passed TestEdgeCase_NullFilePathHandling [< 1 ms]
+  Passed TestEdgeCase_EmptyFilePathHandling [< 1 ms]
+  Passed TestNullSafety_ConstructorThrowsOnNullRecentProjectsService [< 1 ms]
+  Passed TestNullSafety_ConstructorThrowsOnNullFileDialogService [< 1 ms]
+  Passed TestNullSafety_ConstructorThrowsOnNullClipboardService [< 1 ms]
+  Passed TestNullSafety_ConstructorThrowsOnNullImageProcessingService [< 1 ms]
+  Passed TestNullSafety_ConstructorThrowsOnNullNavigationService [< 1 ms]
+  Passed TestNullSafety_ConstructorThrowsOnNullWindowFactory [< 1 ms]
+  Passed TestCommandExecution_SelectToolCommand_ChangesTool [1 ms]
+  Passed TestCommandExecution_StartMeasurementPlacementCommand_SetsPlacementState [< 1 ms]
+  Passed TestCommandExecution_CancelPlacementCommand_ClearsPlacementState [< 1 ms]
+  Passed TestCommandExecution_AdvancePlacementStepCommand_IncrementsStep [< 1 ms]
+  Passed TestCommandExecution_AdvancePlacementStepCommand_AngleRequiresThreePoints [< 1 ms]
+  Passed TestMeasurementCommands_SetCurrentImage_InitializesImageProperties [6 ms]
+  Passed TestMeasurementCommands_GlobalScaleAndUnitsAppliedToMeasurements [< 1 ms]
+  Passed TestMeasurementCommands_ToMeasurementCollection_SerializesCurrentState [3 ms]
+  Passed TestMeasurementCommands_ClearAllMeasurementsInternal_ClearsAllCollections [< 1 ms]
+  Passed TestPlacementStateTransitions_StartAndCancelMeasurement [< 1 ms]
+  Passed TestPlacementStateTransitions_RectangleMeasurement [< 1 ms]
+  Passed TestPlacementStateTransitions_CircleMeasurement [< 1 ms]
+  Passed TestPlacementStateTransitions_PolygonMeasurement [< 1 ms]
+  Passed TestPlacementStateTransitions_InvalidMeasurementType [< 1 ms]
+  Passed TestToolCommands_SelectTool_CancelsPriorPlacement [< 1 ms]
+  Passed TestToolCommands_SelectTool_CannotExecuteWithoutImage [< 1 ms]
+  Passed TestUIStateToggles_PanelVisibilityDefaults [< 1 ms]
+  Passed TestUIStateToggles_ZoomLevelDefault [< 1 ms]
+  Passed TestUIStateToggles_ZoomLevelCanChange [< 1 ms]
+  Passed TestUIStateToggles_PanelVisibilityCanToggle [< 1 ms]
+  Passed TestFileOperationState_IsSavingDefaults [< 1 ms]
+  Passed TestFileOperationState_LastSavedPathCanBeSet [< 1 ms]
+  Passed TestFileOperationState_HasSavedPathFalseWhenNull [< 1 ms]
+  Passed TestPropertyInterdependencies_IsDirtyAffectsWindowTitle [< 1 ms]
+  Passed TestPropertyInterdependencies_HasImageAffectsCanPerformOperations [< 1 ms]
+  Passed TestPropertyInterdependencies_IsLoadingAffectsCanPerformOperations [< 1 ms]
+  Passed TestPropertyInterdependencies_TotalMeasurementCount_UpdatesHasMeasurements [< 1 ms]
+  Passed TestCommandSequences_MultipleToolSelections [< 1 ms]
+  Passed TestCommandSequences_StartAndAdvancePlacementSequence [< 1 ms]
+  Passed TestAsyncOperations_InitializeAsync_SetupsMeasurementCollections [< 1 ms]
+  Passed TestCommandAvailability_MultipleStatesAffectCommandExecution [< 1 ms]
+  Passed TestCommandAvailability_AdvancePlacementStepCommand_CanExecuteWhenPlacing [< 1 ms]
+  Passed TestCommandAvailability_ImageOperationCommands_RequireHasImage [< 1 ms]
+  Passed TestCommandAvailability_ImageOperationCommands_AvailableWithImage [< 1 ms]
+  Passed TestCommandAvailability_ClearAllMeasurementsCommand_DependsOnHasMeasurements [< 1 ms]
+  Passed TestCommandAvailability_SaveProjectCommand_RequiresImage [< 1 ms]
+  Passed TestMeasurementSerialization_ToMeasurementCollection_PreservesGlobalSettings [< 1 ms]
+  Passed TestMeasurementSerialization_LoadMeasurementCollection_RestoresGlobalSettings [1 ms]
+  Passed TestMeasurementSerialization_LoadMeasurementCollection_ClearsExisting [< 1 ms]
+  Passed TestStateConsistency_SettingCurrentImageUpdatesAllProperties [< 1 ms]
+  Passed TestStateConsistency_PlacementStateMustMatchIsPlacing [< 1 ms]
+  Passed TestStateConsistency_WindowTitleAlwaysIncludesAppName [< 1 ms]
+  Passed TestStateConsistency_ProjectIdChanges [< 1 ms]
+  Passed TestToolSpecific_DistanceMeasurement_Placement [< 1 ms]
+  Passed TestToolSpecific_AngleMeasurement_RequiresThreePoints [< 1 ms]
+  Passed TestToolSpecific_SelectToolDuringMeasurementPlacement [< 1 ms]
+  Passed TestBoundaryCondition_ZoomLevelExtreme [< 1 ms]
+  Passed TestBoundaryCondition_ImageDimensionsZero [< 1 ms]
+  Passed TestBoundaryCondition_LargeImageDimensions [< 1 ms]
+  Passed TestBoundaryCondition_PlacementStepCounters [< 1 ms]
+  Passed TestBoundaryCondition_MeasurementCountLarge [< 1 ms]
+  Passed TestBoundaryCondition_GlobalScaleFactorVariations [< 1 ms]
+  Passed TestBoundaryCondition_EmptyStringPathHandling [< 1 ms]
+  Passed TestServiceInitialization_CreatesValidService [210 ms]
+  Passed TestLoadValidImageReturnsValidMagickImage [249 ms]
+  Passed TestLoadInvalidFilePathReturnsNull [238 ms]
+  Passed TestLoadEmptyFilePathReturnsNull [258 ms]
+  Passed TestLoadSmallImageSucceeds [216 ms]
+  Passed TestLoadLargeImageSucceeds [318 ms]
+  Passed TestLoadCorruptedImageReturnsNull [210 ms]
+  Passed TestLoadPngFormatSucceeds [234 ms]
+  Passed TestLoadJpegFormatSucceeds [265 ms]
+  Passed TestLoadBmpFormatSucceeds [236 ms]
+  Passed TestCropWithValidCoordinatesSucceeds [238 ms]
+  Passed TestCropWithZeroCoordinatesSucceeds [243 ms]
+  Passed TestCropFullImageDimensions [229 ms]
+  Passed TestCropSmallRegionSucceeds [224 ms]
+  Passed TestResizeWithValidDimensionsSucceeds [254 ms]
+  Passed TestResizeToSmallerDimensions [264 ms]
+  Passed TestResizeToLargerDimensions [328 ms]
+  Passed TestResizeToSquareDimensions [246 ms]
+  Passed TestResizePreservesImageContent [255 ms]
+  Passed TestRotate90DegreesSucceeds [233 ms]
+  Passed TestRotate180DegreesSucceeds [268 ms]
+  Passed TestRotate270DegreesSucceeds [244 ms]
+  Passed TestRotate360DegreesReturnsOriginalDimensions [238 ms]
+  Passed TestRotateNegativeDegreesSucceeds [230 ms]
+  Passed TestRotateArbitraryDegrees [487 ms]
+  Passed TestFlipHorizontalSucceeds [252 ms]
+  Passed TestFlipVerticalSucceeds [250 ms]
+  Passed TestFlipHorizontalTwiceRestoresOriginal [236 ms]
+  Passed TestFlipVerticalTwiceRestoresOriginal [264 ms]
+  Passed TestSaveImageAsPngSucceeds [240 ms]
+  Passed TestSaveImageAsJpegSucceeds [259 ms]
+  Passed TestSaveImageAsBmpSucceeds [259 ms]
+  Passed TestSaveImageWithCustomQuality [289 ms]
+  Passed TestSaveToInvalidPathReturnsFalse [277 ms]
+  Passed TestSaveOverwritesExistingFile [271 ms]
+  Passed TestToBitmapSourceSucceeds [248 ms]
+  Passed TestFromBitmapSourceSucceeds [276 ms]
+  Passed TestBitmapRoundTripPreservesContent [276 ms]
+  Passed TestApplyPerspectiveCorrectionSucceeds [438 ms]
+  Passed TestApplyPerspectiveCorrectionWithSmallShift [23 s]
+  Passed TestLoadImageWithNullPathHandledGracefully [227 ms]
+  Passed TestSaveImageWithNullPathReturnsFalse [213 ms]
+  Passed TestSaveImageWithInvalidFileNameReturnsFalse [243 ms]
+  Passed TestInitialization_CreatesValidRecentProjectsCollection [2 ms]
+  Passed TestInitialization_RecentProjectsEmptyByDefault [32 ms]
+  Passed TestAddRecentProject_AddsProjectToCollection [24 ms]
+  Passed TestAddRecentProject_UpdatesExistingProjectWithSameId [3 ms]
+  Passed TestAddRecentProject_MultipleProjectsInOrder [3 ms]
+  Passed TestRemoveRecentProject_RemovesProjectById [3 ms]
+  Passed TestRemoveRecentProject_RemovingNonExistentProjectIsNoOp [6 ms]
+  Passed TestRemoveRecentProject_RemovesCorrectProjectWhenMultipleExist [7 ms]
+  Passed TestClearRecentProjects_ClearsAllProjects [4 ms]
+  Passed TestClearRecentProjects_ClearsEmptyCollectionIsNoOp [2 ms]
+  Passed TestGetAutosavePath_ReturnsValidPath [1 ms]
+  Passed TestGetAutosavePath_ConsistentAcrossMultipleCalls [1 ms]
+  Passed TestGetAutosavePath_PathIsInValidLocation [1 ms]
+  Passed TestAutosaveProject_SavesValidProjectPackage [54 ms]
+  Passed TestAutosaveProject_HandlesNullPackageGracefully [2 ms]
+  Passed TestLoadRecentProjectsAsync_LoadsEmptyWhenNothingExists [5 ms]
+  Passed TestLoadRecentProjectsAsync_PreservesCollectionBinding [7 ms]
+  Passed TestOperations_WithInvalidGuidString [2 ms]
+  Passed TestAddRecentProject_WithDuplicateNames [3 ms]
+  Passed TestAddRecentProject_WithNullPackagePath [2 ms]
+  Passed TestInitialization_CreatesValidService [< 1 ms]
+  Passed TestInitialization_ThrowsOnNullAppPaths [< 1 ms]
+  Failed TestCreateThumbnail_GeneratesThumbnailFile [21 ms]
+  Error Message:
+   Assert.IsFalse failed. 
+  Stack Trace:
+     at MagickCrop.Tests.Services.ThumbnailServiceTests.TestCreateThumbnail_GeneratesThumbnailFile() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\Services\ThumbnailServiceTests.cs:line 75
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+
+  Failed TestCreateThumbnail_ThumbnailHasCorrectWidth [7 ms]
+  Error Message:
+   Assert.IsFalse failed. 
+  Stack Trace:
+     at MagickCrop.Tests.Services.ThumbnailServiceTests.TestCreateThumbnail_ThumbnailHasCorrectWidth() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\Services\ThumbnailServiceTests.cs:line 92
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+
+  Failed TestCreateThumbnail_CustomThumbnailWidth [12 ms]
+  Error Message:
+   Assert.IsFalse failed. 
+  Stack Trace:
+     at MagickCrop.Tests.Services.ThumbnailServiceTests.TestCreateThumbnail_CustomThumbnailWidth() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\Services\ThumbnailServiceTests.cs:line 118
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+
+  Passed TestCreateThumbnail_NullImageReturnsEmpty [< 1 ms]
+  Passed TestCreateThumbnail_NullProjectIdReturnsEmpty [5 ms]
+  Passed TestCreateThumbnail_EmptyProjectIdReturnsEmpty [7 ms]
+  Failed TestCreateThumbnail_OverwritesExistingThumbnail [8 ms]
+  Error Message:
+   Test method MagickCrop.Tests.Services.ThumbnailServiceTests.TestCreateThumbnail_OverwritesExistingThumbnail threw exception: 
+System.ArgumentException: The path is empty. (Parameter 'path')
+  Stack Trace:
+      at System.IO.Path.GetFullPath(String path)
+   at System.IO.FileInfo..ctor(String originalPath, String fullPath, String fileName, Boolean isNormalized)
+   at MagickCrop.Tests.Services.ThumbnailServiceTests.TestCreateThumbnail_OverwritesExistingThumbnail() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\Services\ThumbnailServiceTests.cs:line 180
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+
+  Passed TestCreateThumbnail_MaintainsAspectRatio [14 ms]
+  Failed TestCreateThumbnail_VerySmallImage [1 ms]
+  Error Message:
+   Assert.IsFalse failed. 
+  Stack Trace:
+     at MagickCrop.Tests.Services.ThumbnailServiceTests.TestCreateThumbnail_VerySmallImage() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\Services\ThumbnailServiceTests.cs:line 230
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+
+  Failed TestCreateThumbnail_VeryLargeImage [539 ms]
+  Error Message:
+   Assert.IsFalse failed. 
+  Stack Trace:
+     at MagickCrop.Tests.Services.ThumbnailServiceTests.TestCreateThumbnail_VeryLargeImage() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\Services\ThumbnailServiceTests.cs:line 245
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+
+  Passed Constructor_InitializesWithDefaultValues [1 ms]
+  Passed PixelLength_CalculatesCorrectlyForHorizontalLine [1 ms]
+  Passed PixelLength_CalculatesCorrectlyForVerticalLine [< 1 ms]
+  Passed PixelLength_CalculatesCorrectlyForDiagonalLine [< 1 ms]
+  Passed PixelLength_CalculatesCorrectlyForZeroLength [< 1 ms]
+  Passed Angle_CalculatesCorrectlyForHorizontalLine [< 1 ms]
+  Passed Angle_CalculatesCorrectlyForVerticalLineUp [< 1 ms]
+  Passed Angle_CalculatesCorrectlyForVerticalLineDown [< 1 ms]
+  Passed Angle_CalculatesCorrectlyFor45DegreeAngle [< 1 ms]
+  Passed MidPoint_CalculatesCorrectly [< 1 ms]
+  Passed MidPoint_CalculatesCorrectlyWithNegativeCoordinates [< 1 ms]
+  Passed DisplayText_FormatsCorrectlyInPixels [1 ms]
+  Passed DisplayText_UpdatesWhenScaleFactorChanges [< 1 ms]
+  Passed PixelLength_UpdatesWhenStartPointChanges [< 1 ms]
+  Passed PixelLength_UpdatesWhenEndPointChanges [< 1 ms]
+  Passed ScaleFactorChangedMessage_UpdatesScaleFactorAndUnits [< 1 ms]
+  Passed ColorProperty_CanBeChanged [< 1 ms]
+  Passed StrokeThickness_CanBeChanged [< 1 ms]
+  Passed IsSelected_CanBeChanged [< 1 ms]
+  Passed Constructor_InitializesWithDefaultValues [< 1 ms]
+  Passed AngleDegrees_CalculatesCorrectly_RightAngle [< 1 ms]
+  Passed AngleDegrees_CalculatesCorrectly_StraightAngle [< 1 ms]
+  Passed AngleDegrees_CalculatesCorrectly_45DegreeAngle [< 1 ms]
+  Passed AngleDegrees_HandlesZeroVectorPoint1 [< 1 ms]
+  Passed AngleDegrees_HandlesZeroVectorPoint2 [< 1 ms]
+  Passed AngleDegrees_HandlesParallelVectorsWithOppositeDirections [< 1 ms]
+  Passed DisplayText_FormatsAngleCorrectly [< 1 ms]
+  Passed AngleDegrees_UpdatesWhenVertexChanges [< 1 ms]
+  Passed AngleDegrees_UpdatesWhenPoint1Changes [< 1 ms]
+  Passed AngleDegrees_IsAlwaysPositive [< 1 ms]
+  Passed ScaleFactorChangedMessage_DoesNotAffectAngleCalculation [< 1 ms]
+  Passed Constructor_InitializesWithDefaultValues [< 1 ms]
+  Passed Radius_CalculatesCorrectly [1 ms]
+  Passed Radius_CalculatesCorrectlyForDiagonalEdgePoint [< 1 ms]
+  Passed Radius_CalculatesCorrectlyForZeroRadius [< 1 ms]
+  Passed Diameter_IsDoubleTheRadius [< 1 ms]
+  Passed Circumference_CalculatesCorrectly [< 1 ms]
+  Passed Area_CalculatesCorrectly [< 1 ms]
+  Passed Area_IsZeroForZeroRadius [< 1 ms]
+  Passed CircleCanvasLeft_CalculatesCorrectly [< 1 ms]
+  Passed CircleCanvasTop_CalculatesCorrectly [< 1 ms]
+  Passed CanvasPositioning_PlacesCircleCorrectly [< 1 ms]
+  Passed DisplayText_IncludesAllMeasurements [< 1 ms]
+  Passed AllMeasurements_UpdateWhenCenterPointChanges [< 1 ms]
+  Passed AllMeasurements_UpdateWhenEdgePointChanges [< 1 ms]
+  Passed DisplayText_UpdatesWithScaleFactor [< 1 ms]
+  Passed Constructor_InitializesWithDefaultValues [< 1 ms]
+  Passed Width_CalculatesCorrectly [1 ms]
+  Passed Width_CalculatesCorrectlyWhenRectangleIsReverse [< 1 ms]
+  Passed Height_CalculatesCorrectly [< 1 ms]
+  Passed Height_CalculatesCorrectlyWhenRectangleIsReverse [< 1 ms]
+  Passed Perimeter_CalculatesCorrectly [< 1 ms]
+  Passed Area_CalculatesCorrectly [< 1 ms]
+  Passed Area_IsZeroForZeroWidthOrHeight [< 1 ms]
+  Passed Bounds_CalculatesCorrectly [< 1 ms]
+  Passed Bounds_HandlesReversedCorners [< 1 ms]
+  Passed DisplayText_IncludesWidthHeightAndArea [< 1 ms]
+  Passed DisplayText_UpdatesWhenDimensionsChange [< 1 ms]
+  Passed PerimeterAndArea_UpdateWhenTopLeftChanges [< 1 ms]
+  Passed PerimeterAndArea_UpdateWhenBottomRightChanges [< 1 ms]
+  Passed DisplayText_UpdatesWithScaleFactor [< 1 ms]
+  Passed AreaFormatting_UsesSquareUnits [< 1 ms]
+  Passed Constructor_InitializesWithEmptyVertices [1 ms]
+  Passed AddVertex_AddsVertexToCollection [1 ms]
+  Passed AddVertex_UpdatesVertexCount [< 1 ms]
+  Passed CanClose_IsFalseWithLessThanThreeVertices [< 1 ms]
+  Passed CanClose_IsTrueWithThreeOrMoreVertices [< 1 ms]
+  Passed CanClose_IsFalseWhenAlreadyClosed [< 1 ms]
+  Passed Close_SetsIsClosedToTrue [< 1 ms]
+  Passed Close_DoesNothingWithLessThanThreeVertices [< 1 ms]
+  Passed UpdateVertex_ChangesVertexAtIndex [< 1 ms]
+  Passed UpdateVertex_DoesNothingForInvalidIndex [< 1 ms]
+  Passed Perimeter_CalculatesCorrectlyForOpenPolygon [< 1 ms]
+  Passed Perimeter_CalculatesCorrectlyForClosedPolygon [< 1 ms]
+  Passed Area_IsZeroForOpenPolygon [< 1 ms]
+  Passed Area_CalculatesCorrectlyForClosedPolygon [< 1 ms]
+  Passed DisplayText_ShowsAddMorePointsWithLessThanTwoVertices [< 1 ms]
+  Passed DisplayText_ShowsPerimeterAndPointCountForOpenPolygon [< 1 ms]
+  Passed DisplayText_ShowsPerimeterAndAreaForClosedPolygon [< 1 ms]
+  Passed Perimeter_UpdatesWhenVertexIsAdded [< 1 ms]
+  Passed Perimeter_UpdatesWhenVertexIsModified [< 1 ms]
+  Passed Area_UpdatesWhenClosingPolygon [< 1 ms]
+  Passed DisplayText_UpdatesWithScaleFactor [< 1 ms]
+  Passed VertexCollectionChanged_TriggersRecalculation [< 1 ms]
+  Passed Triangle_CalculationIsCorrect [< 1 ms]
+  Passed Square_CalculationIsCorrect [< 1 ms]
+
+Test Run Failed.
+Total tests: 297
+     Passed: 291
+     Failed: 6
+ Total time: 35.9229 Seconds
+     1>Project "D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\MagickCrop.Tests.csproj" on node 1 (VSTest target(s)).
+     1>_VSTestConsole:
+         MSB4181: The "VSTestTask" task returned false but did not log an error.
+     1>Done Building Project "D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\MagickCrop.Tests.csproj" (VSTest target(s)) -- FAILED.
+
+Build FAILED.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:36.75

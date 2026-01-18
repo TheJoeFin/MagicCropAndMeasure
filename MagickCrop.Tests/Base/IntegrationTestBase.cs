@@ -34,7 +34,7 @@ namespace MagickCrop.Tests.Base
             Directory.CreateDirectory(testFolder);
             var appPaths = new MockAppPaths(testFolder);
             services.AddSingleton<IRecentProjectsService>(sp => 
-                new RecentProjectsManager(appPaths));
+                new RecentProjectsManager(appPaths, new MockThumbnailService()));
             services.AddSingleton<IImageProcessingService, ImageProcessingService>();
             
             // Register mock services

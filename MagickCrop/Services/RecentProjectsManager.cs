@@ -16,13 +16,15 @@ namespace MagickCrop.Services;
 public class RecentProjectsManager : IRecentProjectsService
 {
     private readonly IAppPaths _appPaths;
+    private readonly IThumbnailService _thumbnailService;
     private readonly int _maxRecentProjects = Defaults.MaxRecentProjects;
 
     public ObservableCollection<RecentProjectInfo> RecentProjects { get; private set; } = [];
 
-    public RecentProjectsManager(IAppPaths appPaths)
+    public RecentProjectsManager(IAppPaths appPaths, IThumbnailService thumbnailService)
     {
         _appPaths = appPaths ?? throw new ArgumentNullException(nameof(appPaths));
+        _thumbnailService = thumbnailService ?? throw new ArgumentNullException(nameof(thumbnailService));
         _appPaths.EnsureDirectoriesExist();
 
         if (RecentProjects.Count == 0)
@@ -91,37 +93,7 @@ public class RecentProjectsManager : IRecentProjectsService
     /// <returns>Path to the created thumbnail</returns>
     public string CreateThumbnail(BitmapSource imageSource, string projectId)
     {
-        if (imageSource == null || string.IsNullOrEmpty(projectId))
-            return string.Empty;
-
-        string thumbnailPath = _appPaths.GetThumbnailFilePath(projectId);
-
-        try
-        {
-            // Create a smaller version for the thumbnail
-            int thumbnailWidth = Defaults.ThumbnailWidth;
-            double scale = thumbnailWidth / imageSource.Width;
-            int thumbnailHeight = (int)(imageSource.Height * scale);
-
-            TransformedBitmap resizedImage = new(
-                imageSource,
-                new ScaleTransform(scale, scale)
-            );
-
-            JpegBitmapEncoder encoder = new();
-            encoder.Frames.Add(BitmapFrame.Create(resizedImage));
-
-            using (FileStream fileStream = new(thumbnailPath, FileMode.Create))
-            {
-                encoder.Save(fileStream);
-            }
-
-            return thumbnailPath;
-        }
-        catch
-        {
-            return string.Empty;
-        }
+        return _thumbnailService.CreateThumbnail(imageSource, projectId, Defaults.ThumbnailWidth);
     }
 
     /// <summary>

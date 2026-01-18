@@ -63,6 +63,7 @@ public partial class App : Application
         
         // Register Infrastructure Services
         services.AddSingleton<IAppPaths, AppPaths>();
+        services.AddSingleton<IThumbnailService, ThumbnailService>();
         
         // Register Service Interfaces
         services.AddSingleton<IRecentProjectsService, RecentProjectsManager>();
