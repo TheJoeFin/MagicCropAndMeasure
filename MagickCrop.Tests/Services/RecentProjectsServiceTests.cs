@@ -27,8 +27,8 @@ public class RecentProjectsServiceTests : ServiceTestBase
         // Create an isolated test folder for app data
         _testAppDataFolder = CreateTempDirectory();
         
-        // Create the service instance
-        _service = new RecentProjectsManager();
+        // Create the service instance with the isolated folder
+        _service = new RecentProjectsManager(_testAppDataFolder);
     }
 
     [TestCleanup]
@@ -117,11 +117,15 @@ public class RecentProjectsServiceTests : ServiceTestBase
     public async Task TestAddRecentProject_MultipleProjectsInOrder()
     {
         // Arrange
+        var guid1 = Guid.NewGuid().ToString();
+        var guid2 = Guid.NewGuid().ToString();
+        var guid3 = Guid.NewGuid().ToString();
+
         var projects = new[]
         {
-            new RecentProjectInfo { Id = "proj-1", Name = "Project 1", PackagePath = CreateTempFile(), LastModified = DateTime.Now },
-            new RecentProjectInfo { Id = "proj-2", Name = "Project 2", PackagePath = CreateTempFile(), LastModified = DateTime.Now.AddSeconds(1) },
-            new RecentProjectInfo { Id = "proj-3", Name = "Project 3", PackagePath = CreateTempFile(), LastModified = DateTime.Now.AddSeconds(2) }
+            new RecentProjectInfo { Id = guid1, Name = "Project 1", PackagePath = CreateTempFile(), LastModified = DateTime.Now },
+            new RecentProjectInfo { Id = guid2, Name = "Project 2", PackagePath = CreateTempFile(), LastModified = DateTime.Now.AddSeconds(1) },
+            new RecentProjectInfo { Id = guid3, Name = "Project 3", PackagePath = CreateTempFile(), LastModified = DateTime.Now.AddSeconds(2) }
         };
 
         // Act
@@ -130,11 +134,11 @@ public class RecentProjectsServiceTests : ServiceTestBase
             await _service!.AddRecentProjectAsync(project);
         }
 
-        // Assert
+        // Assert - Most recent projects appear first in the list
         Assert.AreEqual(3, _service!.RecentProjects.Count);
-        Assert.AreEqual("proj-1", _service.RecentProjects[0].Id);
-        Assert.AreEqual("proj-2", _service.RecentProjects[1].Id);
-        Assert.AreEqual("proj-3", _service.RecentProjects[2].Id);
+        Assert.AreEqual(guid3, _service.RecentProjects[0].Id);  // Most recent
+        Assert.AreEqual(guid2, _service.RecentProjects[1].Id);
+        Assert.AreEqual(guid1, _service.RecentProjects[2].Id);  // Oldest
     }
 
     #endregion
@@ -145,9 +149,10 @@ public class RecentProjectsServiceTests : ServiceTestBase
     public async Task TestRemoveRecentProject_RemovesProjectById()
     {
         // Arrange
+        var projectId = Guid.NewGuid().ToString();
         var project = new RecentProjectInfo
         {
-            Id = "test-proj-001",
+            Id = projectId,
             Name = "Test Project",
             PackagePath = CreateTempFile(),
             LastModified = DateTime.Now
@@ -190,11 +195,15 @@ public class RecentProjectsServiceTests : ServiceTestBase
     public async Task TestRemoveRecentProject_RemovesCorrectProjectWhenMultipleExist()
     {
         // Arrange
+        var guid1 = Guid.NewGuid().ToString();
+        var guid2 = Guid.NewGuid().ToString();
+        var guid3 = Guid.NewGuid().ToString();
+
         var projects = new[]
         {
-            new RecentProjectInfo { Id = "proj-1", Name = "Project 1", PackagePath = CreateTempFile(), LastModified = DateTime.Now },
-            new RecentProjectInfo { Id = "proj-2", Name = "Project 2", PackagePath = CreateTempFile(), LastModified = DateTime.Now.AddSeconds(1) },
-            new RecentProjectInfo { Id = "proj-3", Name = "Project 3", PackagePath = CreateTempFile(), LastModified = DateTime.Now.AddSeconds(2) }
+            new RecentProjectInfo { Id = guid1, Name = "Project 1", PackagePath = CreateTempFile(), LastModified = DateTime.Now },
+            new RecentProjectInfo { Id = guid2, Name = "Project 2", PackagePath = CreateTempFile(), LastModified = DateTime.Now.AddSeconds(1) },
+            new RecentProjectInfo { Id = guid3, Name = "Project 3", PackagePath = CreateTempFile(), LastModified = DateTime.Now.AddSeconds(2) }
         };
 
         foreach (var project in projects)
@@ -203,13 +212,13 @@ public class RecentProjectsServiceTests : ServiceTestBase
         }
 
         // Act
-        await _service!.RemoveRecentProjectAsync(Guid.Parse("proj-2"));
+        await _service!.RemoveRecentProjectAsync(Guid.Parse(guid2));
 
         // Assert
         Assert.AreEqual(2, _service.RecentProjects.Count);
-        Assert.IsFalse(_service.RecentProjects.Any(p => p.Id == "proj-2"));
-        Assert.IsTrue(_service.RecentProjects.Any(p => p.Id == "proj-1"));
-        Assert.IsTrue(_service.RecentProjects.Any(p => p.Id == "proj-3"));
+        Assert.IsFalse(_service.RecentProjects.Any(p => p.Id == guid2));
+        Assert.IsTrue(_service.RecentProjects.Any(p => p.Id == guid1));
+        Assert.IsTrue(_service.RecentProjects.Any(p => p.Id == guid3));
     }
 
     #endregion

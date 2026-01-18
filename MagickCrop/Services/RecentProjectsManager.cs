@@ -24,9 +24,11 @@ public class RecentProjectsManager : IRecentProjectsService
 
     public ObservableCollection<RecentProjectInfo> RecentProjects { get; private set; } = [];
 
-    public RecentProjectsManager()
+    public RecentProjectsManager() : this(null) { }
+
+    public RecentProjectsManager(string? customAppDataFolder)
     {
-        _appDataFolder = Path.Combine(
+        _appDataFolder = customAppDataFolder ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "MagickCrop");
 
