@@ -12,19 +12,19 @@ Create the MainWindowViewModel and extract application state management from Mai
 
 **Complete these sub-steps in order:**
 
-| Sub-Step | Description | Estimated Effort |
-|----------|-------------|-----------------|
-| **13a** | Create MainWindowViewModel.cs with basic constructor and service injection | 30 min |
-| **13b** | Add image state properties (CurrentImage, HasImage, ImageWidth, ImageHeight, OriginalImage) | 30 min |
-| **13c** | Add tool state properties (CurrentTool enum, SelectedTool, IsToolSelected) | 30 min |
-| **13d** | Add UI state properties (Zoom, StatusBarText, WindowTitle) | 20 min |
-| **13e** | Add project state properties (HasUnsavedChanges, ProjectFileName, IsProjectLoaded) | 30 min |
-| **13f** | Add tool selection commands (SelectToolCommand for each tool type) | 45 min |
-| **13g** | Add undo/redo state (UndoStack, CanUndo, CanRedo) - properties only | 30 min |
-| **13h** | Add UndoCommand and RedoCommand | 30 min |
-| **13i** | Wire MainWindowViewModel in App.xaml.cs DI registration | 20 min |
-| **13j** | Add DataContext binding in MainWindow.xaml.cs constructor | 20 min |
-| **13k** | Bind first set of properties in MainWindow.xaml (test with simple bindings) | 30 min |
+| Sub-Step | Description | Estimated Effort | Status |
+|----------|-------------|-----------------|--------|
+| **13a** ✅ | Create MainWindowViewModel.cs with basic constructor and service injection | 30 min | **DONE** |
+| **13b** ✅ | Add image state properties (CurrentImage, HasImage, ImageWidth, ImageHeight, OriginalImage) | 30 min | **DONE** |
+| **13c** ✅ | Add tool state properties (CurrentTool enum, SelectedTool, IsToolSelected) | 30 min | **DONE** |
+| **13d** ✅ | Add UI state properties (Zoom, StatusBarText, WindowTitle) | 20 min | **DONE** |
+| **13e** ✅ | Add project state properties (HasUnsavedChanges, ProjectFileName, IsProjectLoaded) | 30 min | **DONE** |
+| **13f** ✅ | Add tool selection commands (SelectToolCommand for each tool type) | 45 min | **DONE** |
+| **13g** | Add undo/redo state (UndoStack, CanUndo, CanRedo) - properties only | 30 min |  |
+| **13h** | Add UndoCommand and RedoCommand | 30 min |  |
+| **13i** | Wire MainWindowViewModel in App.xaml.cs DI registration | 20 min |  |
+| **13j** | Add DataContext binding in MainWindow.xaml.cs constructor | 20 min |  |
+| **13k** | Bind first set of properties in MainWindow.xaml (test with simple bindings) | 30 min |  |
 
 Each sub-step should be its own commit with a working build.
 
