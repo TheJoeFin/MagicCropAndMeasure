@@ -539,7 +539,7 @@
                                     </MenuItem>
                                     <MenuItem
                                         Name="CropImage"
-                                        Click="CropImage_Click"
+                                        Command="{Binding ShowCroppingCommand}"
                                         Header="Crop Image"
                                         ToolTip="Crop a portion of the image">
                                         <MenuItem.Icon>
@@ -548,7 +548,7 @@
                                     </MenuItem>
                                     <MenuItem
                                         Name="PerspectiveCorrectionMenuItem"
-                                        Click="PerspectiveCorrectionMenuItem_Click"
+                                        Command="{Binding ShowTransformCommand}"
                                         Header="Transform Image"
                                         ToolTip="Correct perspective using corner markers">
                                         <MenuItem.Icon>

@@ -262,3 +262,13 @@ public class CancelCropMessage { }
 /// Request to cancel the current transform operation.
 /// </summary>
 public class CancelTransformMessage { }
+
+/// <summary>
+/// Request to show the cropping controls.
+/// </summary>
+public class ShowCroppingControlsMessage { }
+
+/// <summary>
+/// Request to show the transform controls.
+/// </summary>
+public class ShowTransformControlsMessage { }

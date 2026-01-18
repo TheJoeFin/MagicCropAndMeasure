@@ -1501,6 +1501,24 @@ public partial class MainWindowViewModel : ViewModelBase
         Send(new CancelTransformMessage());
     }
 
+    /// <summary>
+    /// Shows the cropping controls.
+    /// </summary>
+    [RelayCommand]
+    private void ShowCropping()
+    {
+        Send(new ShowCroppingControlsMessage());
+    }
+
+    /// <summary>
+    /// Shows the transform controls.
+    /// </summary>
+    [RelayCommand]
+    private void ShowTransform()
+    {
+        Send(new ShowTransformControlsMessage());
+    }
+
     #endregion
 
     #region Measurement Serialization

@@ -213,6 +213,8 @@ public partial class MainWindow : FluentWindow
         WeakReferenceMessenger.Default.Register<ClearDrawingsMessage>(this, OnClearDrawingsRequested);
         WeakReferenceMessenger.Default.Register<CancelCropMessage>(this, OnCancelCropRequested);
         WeakReferenceMessenger.Default.Register<CancelTransformMessage>(this, OnCancelTransformRequested);
+        WeakReferenceMessenger.Default.Register<ShowCroppingControlsMessage>(this, OnShowCroppingControlsRequested);
+        WeakReferenceMessenger.Default.Register<ShowTransformControlsMessage>(this, OnShowTransformControlsRequested);
     }
 
     private void OnCloseMeasurementPanelRequested(object recipient, CloseMeasurementPanelMessage message)
@@ -252,6 +254,16 @@ public partial class MainWindow : FluentWindow
     private void OnCancelTransformRequested(object recipient, CancelTransformMessage message)
     {
         HideTransformControls();
+    }
+
+    private void OnShowCroppingControlsRequested(object recipient, ShowCroppingControlsMessage message)
+    {
+        ShowCroppingControls();
+    }
+
+    private void OnShowTransformControlsRequested(object recipient, ShowTransformControlsMessage message)
+    {
+        ShowTransformControls();
     }
 
     private void DrawPolyLine()
@@ -2258,11 +2270,6 @@ public partial class MainWindow : FluentWindow
         ShowResizeControls();
     }
 
-    private void CropImage_Click(object sender, RoutedEventArgs e)
-    {
-        ShowCroppingControls();
-    }
-
     private void ShowCroppingControls()
     {
         HideResizeControls();
@@ -2321,11 +2328,6 @@ public partial class MainWindow : FluentWindow
     {
         CropButtonPanel.Visibility = Visibility.Collapsed;
         CroppingRectangle.Visibility = Visibility.Collapsed;
-    }
-
-    private void PerspectiveCorrectionMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        ShowTransformControls();
     }
 
     private void ShowTransformControls()
