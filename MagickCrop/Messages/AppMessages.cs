@@ -228,3 +228,27 @@ public class UndoRedoStateChangedMessage
         CanRedo = canRedo;
     }
 }
+
+// ============================================
+// View/Viewport messages
+// ============================================
+
+/// <summary>
+/// Request to reset the view (zoom and pan) to default.
+/// </summary>
+public class ResetViewMessage { }
+
+/// <summary>
+/// Request to center and zoom the image to fit the viewport.
+/// </summary>
+public class CenterAndZoomToFitMessage { }
+
+/// <summary>
+/// Request to clear all drawings from the canvas.
+/// </summary>
+public class ClearDrawingsMessage { }
+
+/// <summary>
+/// Request to close the measurement panel and clear all measurements.
+/// </summary>
+public class CloseMeasurementPanelMessage { }

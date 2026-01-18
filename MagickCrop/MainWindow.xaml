@@ -18,6 +18,7 @@
     PreviewDragOver="FluentWindow_PreviewDragOver"
     PreviewDrop="FluentWindow_PreviewDrop"
     PreviewKeyDown="FluentWindow_PreviewKeyDown"
+    Loaded="FluentWindow_Loaded"
     mc:Ignorable="d">
     <Window.Resources>
         <!-- Converters -->
@@ -856,7 +857,7 @@
                                             x:Name="CloseMeasurementButton"
                                             HorizontalAlignment="Center"
                                             Appearance="Danger"
-                                            Click="CloseMeasurementButton_Click"
+                                            Command="{Binding CloseMeasurementPanelCommand}"
                                             Content="Clear all"
                                             Foreground="Red"
                                             ToolTip="Remove all measurements from the image">

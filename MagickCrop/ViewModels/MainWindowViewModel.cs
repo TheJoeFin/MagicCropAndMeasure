@@ -1445,6 +1445,46 @@ public partial class MainWindowViewModel : ViewModelBase
 
     #endregion
 
+    #region View/UI Commands
+
+    /// <summary>
+    /// Resets the view (zoom and pan) to default state.
+    /// </summary>
+    [RelayCommand]
+    private void ResetView()
+    {
+        Send(new ResetViewMessage());
+    }
+
+    /// <summary>
+    /// Centers and zooms the image to fit the viewport.
+    /// </summary>
+    [RelayCommand]
+    private void CenterAndZoomToFit()
+    {
+        Send(new CenterAndZoomToFitMessage());
+    }
+
+    /// <summary>
+    /// Clears all drawings from the canvas.
+    /// </summary>
+    [RelayCommand]
+    private void ClearDrawings()
+    {
+        Send(new ClearDrawingsMessage());
+    }
+
+    /// <summary>
+    /// Closes the measurement panel.
+    /// </summary>
+    [RelayCommand]
+    private void CloseMeasurementPanel()
+    {
+        Send(new CloseMeasurementPanelMessage());
+    }
+
+    #endregion
+
     #region Measurement Serialization
 
     /// <summary>

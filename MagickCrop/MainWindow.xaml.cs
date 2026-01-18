@@ -1,9 +1,11 @@
 ﻿using ImageMagick;
 using MagickCrop.Controls;
 using MagickCrop.Helpers;
+using MagickCrop.Messages;
 using MagickCrop.Models;
 using MagickCrop.Models.MeasurementControls;
 using MagickCrop.Services;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -200,6 +202,44 @@ public partial class MainWindow : FluentWindow
     {
         if (draggingMode == DraggingMode.Panning)
             draggingMode = DraggingMode.None;
+    }
+
+    private void FluentWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        // Register for view-related messages
+        WeakReferenceMessenger.Default.Register<CloseMeasurementPanelMessage>(this, OnCloseMeasurementPanelRequested);
+        WeakReferenceMessenger.Default.Register<ResetViewMessage>(this, OnResetViewRequested);
+        WeakReferenceMessenger.Default.Register<CenterAndZoomToFitMessage>(this, OnCenterAndZoomToFitRequested);
+        WeakReferenceMessenger.Default.Register<ClearDrawingsMessage>(this, OnClearDrawingsRequested);
+    }
+
+    private void OnCloseMeasurementPanelRequested(object recipient, CloseMeasurementPanelMessage message)
+    {
+        RemoveMeasurementControls();
+        ClearAllStrokesAndLengths();
+        isDrawingMode = false;
+        DrawingCanvas.IsEnabled = false;
+        DrawingOptionsPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private void OnResetViewRequested(object recipient, ResetViewMessage message)
+    {
+        canvasScale.ScaleX = 1;
+        canvasScale.ScaleY = 1;
+        canvasScale.CenterX = 0;
+        canvasScale.CenterY = 0;
+        canvasTranslate.X = 0;
+        canvasTranslate.Y = 0;
+    }
+
+    private void OnCenterAndZoomToFitRequested(object recipient, CenterAndZoomToFitMessage message)
+    {
+        CenterAndZoomToFit();
+    }
+
+    private void OnClearDrawingsRequested(object recipient, ClearDrawingsMessage message)
+    {
+        ClearAllStrokesAndLengths();
     }
 
     private void DrawPolyLine()
@@ -3083,15 +3123,6 @@ public partial class MainWindow : FluentWindow
         }
 
         strokeMeasurements = updatedMeasurements;
-    }
-
-    private void CloseMeasurementButton_Click(object sender, RoutedEventArgs e)
-    {
-        RemoveMeasurementControls();
-        ClearAllStrokesAndLengths();
-        isDrawingMode = false;
-        DrawingCanvas.IsEnabled = false;
-        DrawingOptionsPanel.Visibility = Visibility.Collapsed;
     }
 
     private void SaveMeasurementsPackageToFile()
