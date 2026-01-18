@@ -19,6 +19,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IFileDialogService _fileDialogService;
     private readonly IClipboardService _clipboardService;
     private readonly INavigationService _navigationService;
+    private readonly IImageProcessingService _imageProcessingService;
+    private string? _currentImagePath;
 
     #region Image State
 
@@ -146,6 +148,7 @@ public partial class MainWindowViewModel : ViewModelBase
         App.GetService<IRecentProjectsService>(),
         App.GetService<IFileDialogService>(),
         App.GetService<IClipboardService>(),
+        App.GetService<IImageProcessingService>(),
         App.GetService<INavigationService>())
     {
     }
@@ -156,16 +159,19 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <param name="recentProjectsService">Service for managing recent projects.</param>
     /// <param name="fileDialogService">Service for file dialog operations.</param>
     /// <param name="clipboardService">Service for clipboard operations.</param>
+    /// <param name="imageProcessingService">Service for image processing operations.</param>
     /// <param name="navigationService">Service for window navigation.</param>
     public MainWindowViewModel(
         IRecentProjectsService recentProjectsService,
         IFileDialogService fileDialogService,
         IClipboardService clipboardService,
+        IImageProcessingService imageProcessingService,
         INavigationService navigationService)
     {
         _recentProjectsService = recentProjectsService ?? throw new ArgumentNullException(nameof(recentProjectsService));
         _fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
         _clipboardService = clipboardService ?? throw new ArgumentNullException(nameof(clipboardService));
+        _imageProcessingService = imageProcessingService ?? throw new ArgumentNullException(nameof(imageProcessingService));
         _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
 
         Title = "Magic Crop & Measure";
@@ -342,6 +348,258 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsPlacingMeasurement = false;
             CurrentTool = DraggingMode.None;
+        }
+    }
+
+    #endregion
+
+    #region Image Operations
+
+    /// <summary>
+    /// Sets the current image and stores its file path.
+    /// </summary>
+    /// <param name="imagePath">The file path to the current image.</param>
+    /// <param name="bitmapSource">The BitmapSource representation of the image.</param>
+    public void SetCurrentImage(string imagePath, BitmapSource bitmapSource)
+    {
+        _currentImagePath = imagePath;
+        CurrentImage = bitmapSource;
+        ImageWidth = bitmapSource.PixelWidth;
+        ImageHeight = bitmapSource.PixelHeight;
+        HasImage = true;
+    }
+
+    /// <summary>
+    /// Loads an image from a file path and displays it.
+    /// </summary>
+    [RelayCommand]
+    private async Task LoadImage()
+    {
+        var filePath = _fileDialogService.ShowOpenFileDialog("Image Files|*.png;*.jpg;*.jpeg;*.bmp;*.heic|All files (*.*)|*.*");
+        if (string.IsNullOrEmpty(filePath))
+            return;
+
+        IsLoading = true;
+        try
+        {
+            var magickImage = await _imageProcessingService.LoadImageAsync(filePath);
+            if (magickImage != null)
+            {
+                _currentImagePath = filePath;
+                CurrentImage = _imageProcessingService.ToBitmapSource(magickImage);
+                ImageWidth = (int)magickImage.Width;
+                ImageHeight = (int)magickImage.Height;
+                HasImage = true;
+                IsDirty = false;
+                magickImage.Dispose();
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Pastes an image from the clipboard and displays it.
+    /// </summary>
+    [RelayCommand]
+    private async Task PasteFromClipboard()
+    {
+        var clipboardImage = _clipboardService.GetImage();
+        if (clipboardImage == null)
+            return;
+
+        IsLoading = true;
+        try
+        {
+            var magickImage = _imageProcessingService.FromBitmapSource(clipboardImage);
+            if (magickImage != null)
+            {
+                var tempPath = Path.GetTempFileName();
+                await _imageProcessingService.SaveImageAsync(magickImage, tempPath, ImageMagick.MagickFormat.Png);
+                
+                _currentImagePath = tempPath;
+                CurrentImage = _imageProcessingService.ToBitmapSource(magickImage);
+                ImageWidth = (int)magickImage.Width;
+                ImageHeight = (int)magickImage.Height;
+                HasImage = true;
+                IsDirty = false;
+                magickImage.Dispose();
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Rotates the current image 90 degrees clockwise.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanPerformImageOperations))]
+    private async Task RotateClockwise()
+    {
+        if (string.IsNullOrEmpty(_currentImagePath))
+            return;
+
+        IsLoading = true;
+        try
+        {
+            var magickImage = await _imageProcessingService.LoadImageAsync(_currentImagePath);
+            if (magickImage != null)
+            {
+                var rotated = _imageProcessingService.Rotate(magickImage, 90);
+                var tempPath = Path.GetTempFileName();
+                await _imageProcessingService.SaveImageAsync(rotated, tempPath, ImageMagick.MagickFormat.Png);
+                
+                _currentImagePath = tempPath;
+                CurrentImage = _imageProcessingService.ToBitmapSource(rotated);
+                ImageWidth = (int)rotated.Width;
+                ImageHeight = (int)rotated.Height;
+                IsDirty = true;
+                
+                magickImage.Dispose();
+                rotated.Dispose();
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Rotates the current image 90 degrees counter-clockwise.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanPerformImageOperations))]
+    private async Task RotateCounterClockwise()
+    {
+        if (string.IsNullOrEmpty(_currentImagePath))
+            return;
+
+        IsLoading = true;
+        try
+        {
+            var magickImage = await _imageProcessingService.LoadImageAsync(_currentImagePath);
+            if (magickImage != null)
+            {
+                var rotated = _imageProcessingService.Rotate(magickImage, -90);
+                var tempPath = Path.GetTempFileName();
+                await _imageProcessingService.SaveImageAsync(rotated, tempPath, ImageMagick.MagickFormat.Png);
+                
+                _currentImagePath = tempPath;
+                CurrentImage = _imageProcessingService.ToBitmapSource(rotated);
+                ImageWidth = (int)rotated.Width;
+                ImageHeight = (int)rotated.Height;
+                IsDirty = true;
+                
+                magickImage.Dispose();
+                rotated.Dispose();
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Flips the current image horizontally.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanPerformImageOperations))]
+    private async Task FlipHorizontal()
+    {
+        if (string.IsNullOrEmpty(_currentImagePath))
+            return;
+
+        IsLoading = true;
+        try
+        {
+            var magickImage = await _imageProcessingService.LoadImageAsync(_currentImagePath);
+            if (magickImage != null)
+            {
+                _imageProcessingService.FlipHorizontal(magickImage);
+                var tempPath = Path.GetTempFileName();
+                await _imageProcessingService.SaveImageAsync(magickImage, tempPath, ImageMagick.MagickFormat.Png);
+                
+                _currentImagePath = tempPath;
+                CurrentImage = _imageProcessingService.ToBitmapSource(magickImage);
+                IsDirty = true;
+                
+                magickImage.Dispose();
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Flips the current image vertically.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanPerformImageOperations))]
+    private async Task FlipVertical()
+    {
+        if (string.IsNullOrEmpty(_currentImagePath))
+            return;
+
+        IsLoading = true;
+        try
+        {
+            var magickImage = await _imageProcessingService.LoadImageAsync(_currentImagePath);
+            if (magickImage != null)
+            {
+                _imageProcessingService.FlipVertical(magickImage);
+                var tempPath = Path.GetTempFileName();
+                await _imageProcessingService.SaveImageAsync(magickImage, tempPath, ImageMagick.MagickFormat.Png);
+                
+                _currentImagePath = tempPath;
+                CurrentImage = _imageProcessingService.ToBitmapSource(magickImage);
+                IsDirty = true;
+                
+                magickImage.Dispose();
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Crops the current image to the specified region.
+    /// Call this method from code-behind when crop region is determined.
+    /// </summary>
+    public async Task CropImage(int x, int y, int width, int height)
+    {
+        if (string.IsNullOrEmpty(_currentImagePath))
+            return;
+
+        IsLoading = true;
+        try
+        {
+            var magickImage = await _imageProcessingService.LoadImageAsync(_currentImagePath);
+            if (magickImage != null)
+            {
+                var cropped = _imageProcessingService.Crop(magickImage, x, y, width, height);
+                var tempPath = Path.GetTempFileName();
+                await _imageProcessingService.SaveImageAsync(cropped, tempPath, ImageMagick.MagickFormat.Png);
+                
+                _currentImagePath = tempPath;
+                CurrentImage = _imageProcessingService.ToBitmapSource(cropped);
+                ImageWidth = (int)cropped.Width;
+                ImageHeight = (int)cropped.Height;
+                IsDirty = true;
+                
+                magickImage.Dispose();
+                cropped.Dispose();
+            }
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 
