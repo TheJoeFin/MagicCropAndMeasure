@@ -393,9 +393,80 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+
+    #endregion
+
+    #region Export Commands
+
+    /// <summary>
+    /// Exports the currently loaded image to a file in the selected format.
+    /// Supports JPEG, PNG, BMP, TIFF, and WebP formats.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(HasImage))]
+    private async Task ExportImage()
+    {
+        const string filter = "JPEG Image (*.jpg;*.jpeg)|*.jpg;*.jpeg|" +
+                              "PNG Image (*.png)|*.png|" +
+                              "BMP Image (*.bmp)|*.bmp|" +
+                              "TIFF Image (*.tiff;*.tif)|*.tiff;*.tif|" +
+                              "WebP Image (*.webp)|*.webp|" +
+                              "All Files (*.*)|*.*";
+
+        var filePath = _fileDialogService.ShowSaveFileDialog(filter, defaultFileName: "image.png");
+
+        if (string.IsNullOrEmpty(filePath))
+            return;
+
+        try
+        {
+            IsLoading = true;
+
+            // Determine format from file extension
+            var extension = Path.GetExtension(filePath).TrimStart('.').ToLower();
+            var format = extension switch
+            {
+                "jpg" or "jpeg" => MagickFormat.Jpg,
+                "png" => MagickFormat.Png,
+                "bmp" => MagickFormat.Bmp,
+                "tiff" or "tif" => MagickFormat.Tiff,
+                "webp" => MagickFormat.WebP,
+                _ => MagickFormat.Png
+            };
+
+            // Save the image
+            if (_magickImage != null)
+            {
+                var success = await _imageProcessingService.SaveImageAsync(_magickImage, filePath, format);
+
+                if (success)
+                {
+                    WeakReferenceMessenger.Default.Send(new ImageSavedMessage(filePath));
+                    _navigationService.ShowMessage(
+                        $"Image saved successfully to {Path.GetFileName(filePath)}",
+                        "Export Success",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Information);
+                }
+                else
+                {
+                    _navigationService.ShowError("Failed to save image. Please check the file path and try again.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _navigationService.ShowError($"Failed to export image: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
     #endregion
 
     #region Recent Projects
+
 
     /// <summary>
     /// Updates the recent projects list with the specified file path.
