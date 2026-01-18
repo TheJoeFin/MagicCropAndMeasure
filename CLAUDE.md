@@ -868,3 +868,74 @@ dotnet build MagickCrop.sln
 - ✅ Build succeeds: 42 pre-existing warnings, 0 new errors
 - ✅ All converters compile and register successfully
 - ✅ Ready for Step 18: Commands Cleanup
+
+## Step 18b - File Menu Commands - ✅ COMPLETE
+
+### Overview
+- Implemented OpenFolderCommand in MainWindowViewModel
+- Converted SavePackageButton and OpenFolderButton to command-based MVVM bindings
+- Removed 2 event handlers from MainWindow.xaml.cs code-behind
+
+### Changes Made
+
+**MainWindowViewModel.cs:**
+- Added `#region File Commands` section after Export Commands
+- Implemented `[RelayCommand(CanExecute = nameof(HasSavedPath))]` for OpenFolder()
+  - Opens the folder containing the currently saved project file
+  - Gets path from LastSavedPath property
+  - Handles null path cases gracefully
+  - Shows error dialog if explorer.exe fails to open
+- Added `HasSavedPath` property for command CanExecute validation
+  - Returns true when LastSavedPath is not null or empty
+  - Enables OpenFolderCommand only when a saved file exists
+
+**MainWindow.xaml:**
+- SavePackageButton: Changed `Click="SavePackageButton_Click"` → `Command="{Binding SaveProjectCommand}"`
+- OpenFolderButton: Changed `Click="OpenFolderButton_Click"` → `Command="{Binding OpenFolderCommand}"`
+- OpenFolderButton: Removed hardcoded `IsEnabled="False"` (now controlled by command CanExecute)
+
+**MainWindow.xaml.cs:**
+- Removed `OpenFolderButton_Click()` event handler (~9 lines)
+- Removed `SavePackageButton_Click()` event handler (~3 lines)
+- Note: SaveMeasurementsPackageToFile() method kept for now (future deprecation candidate)
+
+### Command Behavior
+- **SaveProjectCommand**: Already existed from Step 16, saves project to LastSavedPath or prompts for path
+- **OpenFolderCommand**: New command, opens Windows Explorer to folder containing saved project
+
+### Remaining Handlers Analysis (Steps 18c-18h)
+After reviewing remaining handlers, the following categories were identified:
+
+**Already Migrated/Not Needed (Steps 18c-18f):**
+- Copy/Paste (Edit menu) - PasteFromClipboardCommand already exists from Step 14g
+- LoadImage operations - LoadImageCommand already exists from Step 14g
+- Undo/Redo - UndoCommand and RedoCommand exist from Step 13h (handlers still call commands)
+
+**Recommended for Future Migration (High-Value, Relatively Simple):**
+- ViewReset (ResetMenuItem_Click) - Simple transform reset
+- CenterAndZoomToFit (CenterAndZoomToFitMenuItem_Click) - Single method call
+- StretchMode (StretchMenuItem_Click) - Simple property assignment
+
+**Recommended to Keep in Code-Behind (Complex UI State):**
+- Image effects (AutoContrast, WhiteBalance, Blur, Grayscale, Invert, AutoLevels, etc.) - Async + undo/redo + UI state
+- Cropping (CropImage_Click, ApplyCropButton_Click) - Complex visual rectangle + state machine
+- Resizing (ApplyResizeButton_Click) - Complex state + preview transforms
+- Rotation (ApplyRotationButton_Click, PreciseRotateMenuItem_Click) - Complex preview + adorner state
+- Measurement tools (MeasureDistanceMenuItem_Click, etc.) - Complex event wiring + canvas manipulation
+- Drawing (ClearDrawingsButton_Click) - Direct canvas manipulation
+- Perspective correction (PerspectiveCorrectionMenuItem_Click) - Complex UI state machine
+
+**Strategy for Steps 18c-18h:**
+- Step 18c: Skip (Paste/Copy already have commands)
+- Step 18d: Image effects - Recommend keeping in code-behind due to complexity
+- Step 18e: Toolbar commands - Convert simple ones (ViewReset, CenterAndZoom) if time permits
+- Step 18f: Context menus - Most involve complex operations, recommend keeping in code-behind
+- Step 18g: Special commands - Toggles if they're simple state management
+- Step 18h: Final cleanup - Remove obsolete methods after verification
+
+### Application Status
+- ✅ Build succeeds: 42 pre-existing warnings, 0 new errors
+- ✅ No new errors or warnings introduced
+- ✅ Removed 12+ lines of event handler code
+- ✅ MVVM command binding working for both buttons
+- ✅ Ready for Step 18c: Edit Menu Commands (or Step 18e if Edit commands deferred)

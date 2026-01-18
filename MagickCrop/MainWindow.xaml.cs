@@ -1072,16 +1072,6 @@ public partial class MainWindow : FluentWindow
         CenterAndZoomToFit();
     }
 
-    private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
-    {
-        string? folderPath = System.IO.Path.GetDirectoryName(savedPath);
-
-        if (folderPath is null || lines is null)
-            return;
-
-        Process.Start("explorer.exe", folderPath);
-    }
-
     private static object? GetPrivatePropertyValue(object obj, string propName)
     {
         ArgumentNullException.ThrowIfNull(obj);
@@ -3437,11 +3427,6 @@ public partial class MainWindow : FluentWindow
         WelcomeMessageModal.Visibility = Visibility.Collapsed;
 
         await LoadMeasurementPackageAsync(filePath);
-    }
-
-    private void SavePackageButton_Click(object sender, RoutedEventArgs e)
-    {
-        SaveMeasurementsPackageToFile();
     }
 
     private void InitializeProjectManager()

@@ -590,6 +590,38 @@ public partial class MainWindowViewModel : ViewModelBase
 
     #endregion
 
+    #region File Commands
+
+    /// <summary>
+    /// Opens the folder containing the currently saved project file.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(HasSavedPath))]
+    private void OpenFolder()
+    {
+        if (string.IsNullOrEmpty(LastSavedPath))
+            return;
+
+        var folderPath = Path.GetDirectoryName(LastSavedPath);
+        if (string.IsNullOrEmpty(folderPath))
+            return;
+
+        try
+        {
+            System.Diagnostics.Process.Start("explorer.exe", folderPath);
+        }
+        catch (Exception ex)
+        {
+            _navigationService.ShowError($"Failed to open folder: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Gets whether a saved path exists and can be opened.
+    /// </summary>
+    public bool HasSavedPath => !string.IsNullOrEmpty(LastSavedPath);
+
+    #endregion
+
     #region Recent Projects
 
 

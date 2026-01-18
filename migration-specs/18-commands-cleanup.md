@@ -37,10 +37,75 @@ Each sub-step should be its own commit with a working build.
 
 ## Current Command State
 
-The application has:
-1. `RelayCommand<T>` in `Models/RelayCommand.cs` (existing)
-2. `[RelayCommand]` attributes from CommunityToolkit.Mvvm (new)
-3. Various event handlers that should become commands
+### Existing [RelayCommand] Methods in MainWindowViewModel (26 total)
+
+**File Commands (3):**
+- `NewProject()` - Create new project
+- `OpenProject()` - Open existing project  
+- `LoadImage()` - Load image file
+
+**Undo/Redo Commands (2):**
+- `Undo()` - [CanExecute = nameof(CanUndo)]
+- `Redo()` - [CanExecute = nameof(CanRedo)]
+
+**Image Transformation Commands (4):**
+- `RotateClockwise()` - [CanExecute = nameof(CanPerformImageOperations)]
+- `RotateCounterClockwise()` - [CanExecute = nameof(CanPerformImageOperations)]
+- `FlipHorizontal()` - [CanExecute = nameof(CanPerformImageOperations)]
+- `FlipVertical()` - [CanExecute = nameof(CanPerformImageOperations)]
+
+**Measurement Placement Commands (5):**
+- `AdvancePlacementStep()` - [RelayCommand] - no CanExecute
+- `AddDistanceMeasurement()` - [CanExecute = nameof(CanPerformImageOperations)]
+- `AddAngleMeasurement()` - [CanExecute = nameof(CanPerformImageOperations)]
+- `AddRectangleMeasurement()` - [CanExecute = nameof(CanPerformImageOperations)]
+- `AddCircleMeasurement()` - [CanExecute = nameof(CanPerformImageOperations)]
+
+**Measurement Management Commands (3):**
+- `AddPolygonMeasurement()` - [CanExecute = nameof(CanPerformImageOperations)]
+- `AddHorizontalLine()` - [CanExecute = nameof(HasImage)]
+- `AddVerticalLine()` - [CanExecute = nameof(HasImage)]
+
+**Utility Commands (3):**
+- `ClearAllMeasurements()` - [RelayCommand] - no CanExecute
+- `PasteFromClipboard()` - [RelayCommand] - no CanExecute
+- `ExportImage()` - [CanExecute = nameof(HasImage)]
+
+**Other Commands (6):**
+- `SaveProject()` - [CanExecute = nameof(HasImage)]
+- `SaveProjectAs()` - [CanExecute = nameof(HasImage)]
+- `ShowSaveWindow()` - [CanExecute = nameof(HasImage)]
+- `UpdateRecentProjectsAsync()` - [CanExecute = nameof(HasImage)]
+- `SelectTool()` - [CanExecute = nameof(HasImage)]
+- `StartMeasurementPlacement()` - [CanExecute = nameof(IsPlacingMeasurement)]
+
+### Issues Identified
+
+1. **Multiple methods NOT decorated with [RelayCommand]** (23 identified):
+   - `SaveProjectToPathAsync()` - used internally, not exposed
+   - `SavePackageToFile()` - utility method, not exposed
+   - `SetupUndoRedoCallbacks()` - initialization only
+   - `UpdateUndoRedoState()` - state update only
+   - `ClearUndoHistory()` - internal cleanup
+   - `CancelPlacement()` - should have command binding
+   - `InitializeMeasurementCollections()` - initialization only
+   - `OnMeasurementCollectionChanged()` - event handler
+   - `UpdateMeasurementCount()` - state update only
+   - `OnRemoveMeasurementRequested()` - messenger handler
+   - `ClearAllMeasurementsInternal()` - internal cleanup
+
+2. **Commands without CanExecute validation (should have it):**
+   - `AdvancePlacementStep()` - should check IsPlacingMeasurement
+   - `ClearAllMeasurements()` - should check HasMeasurements
+   - `PasteFromClipboard()` - should check clipboard state
+
+3. **Event handlers in MainWindow.xaml.cs** (not yet audited in Step 18a):
+   - Need to audit MainWindow code-behind for remaining event handlers
+
+### Technology Stack
+1. `RelayCommand<T>` in `Models/RelayCommand.cs` (existing - to be marked obsolete)
+2. `[RelayCommand]` attributes from CommunityToolkit.Mvvm (current pattern)
+3. Various view-specific event handlers in MainWindow.xaml.cs (should remain)
 
 ## Changes Required
 

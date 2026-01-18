@@ -1193,7 +1193,7 @@
                         Width="180"
                         Margin="0,8,0,0"
                         HorizontalAlignment="Center"
-                        Click="SavePackageButton_Click"
+                        Command="{Binding SaveProjectCommand}"
                         Content="Save Package..."
                         ToolTip="Save image with measurements as a .mcm package">
                         <wpfui:Button.Icon>
@@ -1216,9 +1216,8 @@
                         x:Name="OpenFolderButton"
                         Width="180"
                         HorizontalAlignment="Center"
-                        Click="OpenFolderButton_Click"
+                        Command="{Binding OpenFolderCommand}"
                         Content="Open Folder"
-                        IsEnabled="False"
                         ToolTip="Open Folder Where File Was Saved">
                         <wpfui:Button.Icon>
                             <wpfui:SymbolIcon Symbol="FolderArrowRight24" />
