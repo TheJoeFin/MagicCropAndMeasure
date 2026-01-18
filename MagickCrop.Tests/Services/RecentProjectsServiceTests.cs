@@ -460,7 +460,7 @@ public class RecentProjectsServiceTests : ServiceTestBase
         {
             Id = "null-path",
             Name = "Null Path Project",
-            PackagePath = null,
+            PackagePath = null!,
             LastModified = DateTime.Now
         };
 
