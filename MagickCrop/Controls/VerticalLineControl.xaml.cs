@@ -115,7 +115,6 @@ public partial class VerticalLineControl : MeasurementControlBase
         if (Application.Current.MainWindow is not MainWindow mainWindow)
             return;
 
-        colorDialog.DialogHost = mainWindow.Presenter;
         ContentDialogResult result = await colorDialog.ShowAsync();
         if (result == ContentDialogResult.Primary)
         {
@@ -146,7 +145,6 @@ public partial class VerticalLineControl : MeasurementControlBase
 
         if (Application.Current.MainWindow is not MainWindow mainWindow)
             return;
-        thicknessDialog.DialogHost = mainWindow.Presenter;
 
         // Show dialog
         ContentDialogResult result = await thicknessDialog.ShowAsync();

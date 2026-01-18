@@ -20,7 +20,9 @@ public partial class AngleMeasurementControl : MeasurementControlBase
 
     // Backward compatibility events for MainWindow
     public new event MouseButtonEventHandler? MeasurementPointMouseDown;
+#pragma warning disable CS0067
     public event MouseEventHandler? MeasurementPointMouseMove;
+#pragma warning restore CS0067
     public delegate void RemoveControlRequestedEventHandler(object sender, EventArgs e);
     public event RemoveControlRequestedEventHandler? RemoveControlRequested;
 

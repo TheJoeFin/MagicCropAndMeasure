@@ -18,7 +18,9 @@ public partial class DistanceMeasurementControl : MeasurementControlBase
 
     // Backward compatibility events for MainWindow
     public new event MouseButtonEventHandler? MeasurementPointMouseDown;
-    public new event MouseEventHandler? MeasurementPointMouseMove;
+#pragma warning disable CS0067
+    public event MouseEventHandler? MeasurementPointMouseMove;
+#pragma warning restore CS0067
     public delegate void SetRealWorldLengthRequestedEventHandler(object sender, double pixelDistance);
     public new event SetRealWorldLengthRequestedEventHandler? SetRealWorldLengthRequested;
     public delegate void RemoveControlRequestedEventHandler(object sender, EventArgs e);

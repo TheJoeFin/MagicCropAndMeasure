@@ -76,8 +76,9 @@ public class MagickCropMeasurementPackage
                 Console.WriteLine($"Error saving package: {ex.Message}");
 #if DEBUG
                 throw;
-#endif
+#else
                 return false;
+#endif
             }
             finally
             {

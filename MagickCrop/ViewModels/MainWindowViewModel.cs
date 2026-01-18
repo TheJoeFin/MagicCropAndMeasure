@@ -444,7 +444,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 using var metadataStream = metadataEntry.Open();
                 using var reader = new StreamReader(metadataStream);
                 var json = reader.ReadToEnd();
-                package.Metadata = JsonSerializer.Deserialize<PackageMetadata>(json);
+                package.Metadata = JsonSerializer.Deserialize<PackageMetadata>(json) ?? new();
             }
 
             // Load measurements
@@ -454,7 +454,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 using var measurementsStream = measurementsEntry.Open();
                 using var reader = new StreamReader(measurementsStream);
                 var json = reader.ReadToEnd();
-                package.Measurements = JsonSerializer.Deserialize<MeasurementCollection>(json);
+                package.Measurements = JsonSerializer.Deserialize<MeasurementCollection>(json) ?? new();
             }
 
             return package;

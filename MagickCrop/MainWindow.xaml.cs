@@ -149,8 +149,33 @@ public partial class MainWindow : FluentWindow
     {
     }
 
-    public MainWindow(ViewModels.MainWindowViewModel viewModel) : this(Singleton<RecentProjectsManager>.Instance)
+    public MainWindow(ViewModels.MainWindowViewModel viewModel)
     {
+        _recentProjectsManager = Singleton<RecentProjectsManager>.Instance;
+        
+        ThemeService themeService = new();
+        themeService.SetTheme(ApplicationTheme.Dark);
+
+        Color teal = (Color)ColorConverter.ConvertFromString("#0066FF");
+        ApplicationAccentColorManager.Apply(teal);
+
+        InitializeComponent();
+        PreviewMouseWheel += ShapeCanvas_PreviewMouseWheel;
+
+        DrawPolyLine();
+        _polygonElements = [TopLeft, TopRight, BottomRight, BottomLeft];
+
+        foreach (UIElement element in _polygonElements)
+            element.Visibility = Visibility.Collapsed;
+
+        try
+        {
+            PackageVersion version = Package.Current.Id.Version;
+        }
+        catch
+        {
+        }
+
         DataContext = viewModel;
     }
 
@@ -170,7 +195,9 @@ public partial class MainWindow : FluentWindow
         PreviewMouseWheel += ShapeCanvas_PreviewMouseWheel;
 
         DrawPolyLine();
-        _polygonElements = [lines, TopLeft, TopRight, BottomRight, BottomLeft];
+        _polygonElements = lines is not null
+            ? [lines, TopLeft, TopRight, BottomRight, BottomLeft]
+            : [TopLeft, TopRight, BottomRight, BottomLeft];
 
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Collapsed;
@@ -3002,7 +3029,6 @@ public partial class MainWindow : FluentWindow
 
         // Show the dialog and handle the result
         ContentDialogService dialogService = new();
-        dialog.DialogHost = Presenter;
         dialog.Closing += (s, args) =>
         {
             // Check if the primary button was clicked and input is valid

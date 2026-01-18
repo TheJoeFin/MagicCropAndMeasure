@@ -113,8 +113,6 @@ public partial class HorizontalLineControl : MeasurementControlBase
         if (Application.Current.MainWindow is not MainWindow mainWindow)
             return;
 
-        colorDialog.DialogHost = mainWindow.Presenter;
-
         // Show dialog
         ContentDialogResult result = await colorDialog.ShowAsync();
         if (result == ContentDialogResult.Primary)
@@ -146,7 +144,6 @@ public partial class HorizontalLineControl : MeasurementControlBase
 
         if (Application.Current.MainWindow is not MainWindow mainWindow)
             return;
-        thicknessDialog.DialogHost = mainWindow.Presenter;
         // Show dialog
         ContentDialogResult result = await thicknessDialog.ShowAsync();
         if (result == ContentDialogResult.Primary && thicknessSlider.Value.HasValue && ViewModel is HorizontalLineViewModel vm)
