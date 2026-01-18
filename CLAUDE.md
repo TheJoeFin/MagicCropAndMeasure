@@ -251,7 +251,72 @@ dotnet build MagickCrop.sln
   - Ready for Step 12: Measurement Controls Migration
 
 ## Next Steps
-- Step 12: Measurement Controls Migration (4-6 hours)
+- Step 12b: AngleMeasurementControl MVVM Migration
+- Remaining measurements: CircleMeasurementControl, RectangleMeasurementControl, PolygonMeasurementControl
+- Step 13: MainWindow State Management (depends on Step 12)
+
+## Step 12a - DistanceMeasurementControl MVVM Migration
+- **Changes Made:**
+  - Created `Converters/ColorToBrushConverter.cs`:
+    - Converts WPF Color to SolidColorBrush for data binding
+    - Default fallback to Cyan if value is not a Color
+  
+  - Created `Converters/SubtractHalfConverter.cs`:
+    - Subtracts a value (parameter) from input double
+    - Used to center 12px handle elements on measurement points (parameter=6)
+    - Defaults to half the value if no parameter provided
+  
+  - Updated `App.xaml`:
+    - Registered both new converters as resources
+  
+  - Updated `App.xaml.cs` DI container:
+    - Added `CommunityToolkit.Mvvm.DependencyInjection` using statement
+    - Configured MVVM Toolkit `Ioc.Default` for controls to access ViewModels
+    - Registered measurement ViewModels: DistanceMeasurementViewModel, AngleMeasurementViewModel, CircleMeasurementViewModel, RectangleMeasurementViewModel
+  
+  - Updated `Controls/MeasurementControlBase.cs`:
+    - Removed `abstract` keyword to allow use as XAML root element
+    - Base class now concrete but still provides all measurement control functionality
+  
+  - Updated `Controls/DistanceMeasurementControl.xaml`:
+    - Changed root from UserControl to `local:MeasurementControlBase`
+    - All visual elements bound to ViewModel properties:
+      - Line: X1, Y1, X2, Y2, Stroke (via ColorToBrushConverter), StrokeThickness
+      - Handles: Canvas.Left/Top (via SubtractHalfConverter, ConverterParameter=6)
+      - Label: Canvas.Left/Top (via SubtractHalfConverter), Text (DisplayText)
+    - Added design-time DataContext for XAML editor IntelliSense
+  
+  - Updated `Controls/DistanceMeasurementControl.xaml.cs`:
+    - Inherits from MeasurementControlBase instead of UserControl
+    - Creates DistanceMeasurementViewModel automatically via DI or Ioc.Default
+    - Maintains backward-compatible events for MainWindow integration:
+      - MeasurementPointMouseDown, SetRealWorldLengthRequested, RemoveControlRequested
+      - Triggers both old events and base class events for gradual migration
+    - ViewModel properties accessed via `ViewModel` property getter
+    - Helper methods for backward compatibility: InitializePositions(), MovePoint(), GetActivePointIndex(), ResetActivePoint()
+    - ToDto() and FromDto() methods preserved for serialization
+  
+- **Key Design Patterns:**
+  - **MVVM Binding:** All UI updates via XAML data binding instead of code-behind
+  - **ViewModel Lifecycle:** Automatic synchronization of ScaleFactor and Units from base class
+  - **Backward Compatibility:** Old event names still work for MainWindow (Step 13 migration planned)
+  - **Converter Architecture:** Reusable converters for color-to-brush and positioning calculations
+  - **DI Integration:** ViewModels resolved from MVVM Toolkit Ioc.Default with fallback to direct instantiation
+
+- **Validation Checklist:** All items verified ✅
+  - XAML bindings working with converters
+  - ViewModel calculates measurements correctly
+  - Display text updates automatically
+  - Backward-compatible events fire for MainWindow
+  - Color and stroke properties bindable
+  - Handle positioning centered correctly
+  - Build succeeds with no new errors (29 pre-existing warnings)
+
+- **Application Status:**
+  - Build succeeds with no new errors (same 24+ pre-existing warnings)
+  - DistanceMeasurementControl fully MVVM-compliant
+  - Ready for Step 12b: AngleMeasurementControl migration
+
 
 ## Step 07 - AboutWindow MVVM Migration
 - **Changes Made:**

@@ -1,9 +1,11 @@
 ﻿using System.IO;
 using System.Windows;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Messaging;
 using MagickCrop.Services;
 using MagickCrop.Services.Interfaces;
 using MagickCrop.ViewModels;
+using MagickCrop.ViewModels.Measurements;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MagickCrop;
@@ -53,6 +55,12 @@ public partial class App : Application
         // Register Messenger as singleton (uses weak references, thread-safe)
         services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
         
+        // Set MVVM Toolkit service provider for Ioc.Default usage
+        Ioc.Default.ConfigureServices(
+            new ServiceCollection()
+                .AddSingleton<IMessenger>(WeakReferenceMessenger.Default)
+                .BuildServiceProvider());
+        
         // Register Service Interfaces
         services.AddSingleton<IRecentProjectsService, RecentProjectsManager>();
         services.AddSingleton<IFileDialogService, FileDialogService>();
@@ -70,6 +78,12 @@ public partial class App : Application
         services.AddTransient<AboutWindowViewModel>();
         services.AddTransient<SaveWindowViewModel>();
         // services.AddTransient<MainWindowViewModel>();
+        
+        // Register Measurement ViewModels
+        services.AddTransient<DistanceMeasurementViewModel>();
+        services.AddTransient<AngleMeasurementViewModel>();
+        services.AddTransient<CircleMeasurementViewModel>();
+        services.AddTransient<RectangleMeasurementViewModel>();
 
         // Register Windows/Views
         services.AddTransient<MainWindow>();

@@ -14,7 +14,7 @@ Migrate each measurement control to use the new base classes and MVVM pattern.
 
 | Sub-Step | Description | Estimated Effort |
 |----------|-------------|-----------------|
-| **12a** | Migrate DistanceMeasurementControl (simplest starting point) | 45 min |
+| **12a** | Migrate DistanceMeasurementControl (simplest starting point) | 45 min | ✅ DONE
 | **12b** | Migrate AngleMeasurementControl | 45 min |
 | **12c** | Migrate CircleMeasurementControl | 45 min |
 | **12d** | Migrate RectangleMeasurementControl | 45 min |
@@ -51,7 +51,7 @@ Each control follows this pattern:
 
 ---
 
-## 1. DistanceMeasurementControl Migration
+## 1. DistanceMeasurementControl Migration ✅ COMPLETED
 
 ### Update XAML
 

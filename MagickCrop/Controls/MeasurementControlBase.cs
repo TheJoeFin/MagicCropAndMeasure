@@ -8,7 +8,7 @@ namespace MagickCrop.Controls;
 /// <summary>
 /// Base class for measurement UserControls.
 /// </summary>
-public abstract class MeasurementControlBase : UserControl
+public class MeasurementControlBase : UserControl
 {
     #region Dependency Properties
 
