@@ -252,3 +252,13 @@ public class ClearDrawingsMessage { }
 /// Request to close the measurement panel and clear all measurements.
 /// </summary>
 public class CloseMeasurementPanelMessage { }
+
+/// <summary>
+/// Request to cancel the current crop operation.
+/// </summary>
+public class CancelCropMessage { }
+
+/// <summary>
+/// Request to cancel the current transform operation.
+/// </summary>
+public class CancelTransformMessage { }

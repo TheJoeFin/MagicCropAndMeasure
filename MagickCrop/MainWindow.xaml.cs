@@ -211,6 +211,8 @@ public partial class MainWindow : FluentWindow
         WeakReferenceMessenger.Default.Register<ResetViewMessage>(this, OnResetViewRequested);
         WeakReferenceMessenger.Default.Register<CenterAndZoomToFitMessage>(this, OnCenterAndZoomToFitRequested);
         WeakReferenceMessenger.Default.Register<ClearDrawingsMessage>(this, OnClearDrawingsRequested);
+        WeakReferenceMessenger.Default.Register<CancelCropMessage>(this, OnCancelCropRequested);
+        WeakReferenceMessenger.Default.Register<CancelTransformMessage>(this, OnCancelTransformRequested);
     }
 
     private void OnCloseMeasurementPanelRequested(object recipient, CloseMeasurementPanelMessage message)
@@ -240,6 +242,16 @@ public partial class MainWindow : FluentWindow
     private void OnClearDrawingsRequested(object recipient, ClearDrawingsMessage message)
     {
         ClearAllStrokesAndLengths();
+    }
+
+    private void OnCancelCropRequested(object recipient, CancelCropMessage message)
+    {
+        HideCroppingControls();
+    }
+
+    private void OnCancelTransformRequested(object recipient, CancelTransformMessage message)
+    {
+        HideTransformControls();
     }
 
     private void DrawPolyLine()
@@ -2305,11 +2317,6 @@ public partial class MainWindow : FluentWindow
         HideCroppingControls();
     }
 
-    private void CancelCrop_Click(object sender, RoutedEventArgs e)
-    {
-        HideCroppingControls();
-    }
-
     private void HideCroppingControls()
     {
         CropButtonPanel.Visibility = Visibility.Collapsed;
@@ -2319,11 +2326,6 @@ public partial class MainWindow : FluentWindow
     private void PerspectiveCorrectionMenuItem_Click(object sender, RoutedEventArgs e)
     {
         ShowTransformControls();
-    }
-
-    private void CancelTransformButton_Click(object sender, RoutedEventArgs e)
-    {
-        HideTransformControls();
     }
 
     private void ShowTransformControls()

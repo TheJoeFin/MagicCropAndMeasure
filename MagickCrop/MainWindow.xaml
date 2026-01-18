@@ -895,7 +895,7 @@
                         x:Name="CancelCropButton"
                         Width="180"
                         Appearance="Danger"
-                        Click="CancelCrop_Click"
+                        Command="{Binding CancelCropCommand}"
                         Content="Cancel"
                         ToolTip="Cancel cropping">
                         <wpfui:Button.Icon>
@@ -1029,7 +1029,7 @@
                         x:Name="CancelTransformButton"
                         Width="180"
                         Appearance="Danger"
-                        Click="CancelTransformButton_Click"
+                        Command="{Binding CancelTransformCommand}"
                         Content="Cancel"
                         ToolTip="Cancel transform">
                         <wpfui:Button.Icon>

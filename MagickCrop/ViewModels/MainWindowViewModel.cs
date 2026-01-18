@@ -1483,6 +1483,24 @@ public partial class MainWindowViewModel : ViewModelBase
         Send(new CloseMeasurementPanelMessage());
     }
 
+    /// <summary>
+    /// Cancels the current crop operation.
+    /// </summary>
+    [RelayCommand]
+    private void CancelCrop()
+    {
+        Send(new CancelCropMessage());
+    }
+
+    /// <summary>
+    /// Cancels the current transform operation.
+    /// </summary>
+    [RelayCommand]
+    private void CancelTransform()
+    {
+        Send(new CancelTransformMessage());
+    }
+
     #endregion
 
     #region Measurement Serialization
