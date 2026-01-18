@@ -238,4 +238,13 @@ If you encounter issues during migration:
 
 ---
 
+## Post-Migration Refactoring Progress (January 2026)
+
+### Issue #8: Memory Management for MagickImage ✅ FIXED
+**Commit**: 18fe9de - "Fix: Dispose MagickImage objects in OpenImagePath to prevent memory leaks"
+
+Fixed critical memory leak in `MainWindow.xaml.cs:OpenImagePath()` where MagickImage objects were created without proper disposal. Added `using` statements to ensure cleanup of ImageMagick unmanaged resources on every image load.
+
+---
+
 *This migration guide was generated to transform MagickCrop into a modern, maintainable, and testable WPF application following MVVM best practices.*

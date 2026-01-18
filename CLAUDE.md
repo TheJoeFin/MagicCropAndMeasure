@@ -1137,6 +1137,27 @@ After reviewing remaining handlers, the following categories were identified:
 - ✅ Build: 0 code errors, 5 warnings (all pre-existing NuGet/SDK)
 - ✅ Tests: 285/285 passing (100% pass rate)
 - ✅ Architecture: MVVM with full DI and messaging
+
+## Memory Leak Fix (January 18, 2026)
+
+### Issue #8: Memory Management for MagickImage in OpenImagePath
+**Status**: ✅ FIXED
+
+**Problem**: Two MagickImage objects created in `MainWindow.xaml.cs:OpenImagePath()` were not being disposed, causing memory leaks with ImageMagick unmanaged resources.
+
+**Location**: `MagickCrop/MainWindow.xaml.cs` lines 1315-1326
+
+**Fix Applied**:
+- Wrapped `bitmap` in `using` statement (line 1315)
+- Wrapped `bitmapImage` in `using` statement (line 1321)
+- Ensures proper disposal of ImageMagick unmanaged resources
+
+**Verification**:
+- ✅ Build succeeded with 0 code errors
+- ✅ All 285 tests pass
+- ✅ Commit: 18fe9de "Fix: Dispose MagickImage objects in OpenImagePath to prevent memory leaks"
+
+**Related**: Issue #8 from `.github/refactor-issues-plan.md`
 - ✅ Documentation: Comprehensive (ARCHITECTURE.md, TESTING_CHECKLIST.md)
 - ✅ Production Ready: All functionality preserved, quality improved
 
