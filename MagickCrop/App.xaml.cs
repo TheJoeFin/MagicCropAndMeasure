@@ -84,6 +84,9 @@ public partial class App : Application
         services.AddTransient<AngleMeasurementViewModel>();
         services.AddTransient<CircleMeasurementViewModel>();
         services.AddTransient<RectangleMeasurementViewModel>();
+        services.AddTransient<PolygonMeasurementViewModel>();
+        services.AddTransient<HorizontalLineViewModel>();
+        services.AddTransient<VerticalLineViewModel>();
 
         // Register Windows/Views
         services.AddTransient<MainWindow>();
