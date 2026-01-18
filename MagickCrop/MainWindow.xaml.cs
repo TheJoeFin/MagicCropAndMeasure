@@ -1312,13 +1312,13 @@ public partial class MainWindow : FluentWindow
         tempFileName = System.IO.Path.ChangeExtension(tempFileName, ".jpg");
         await Task.Run(async () =>
         {
-            MagickImage bitmap = new(imageFilePath);
+            using MagickImage bitmap = new(imageFilePath);
             bitmap.AutoOrient();
 
             await bitmap.WriteAsync(tempFileName, MagickFormat.Jpeg);
         });
 
-        MagickImage bitmapImage = new(tempFileName);
+        using MagickImage bitmapImage = new(tempFileName);
 
         imagePath = tempFileName;
         originalFilePath = imageFilePath;
