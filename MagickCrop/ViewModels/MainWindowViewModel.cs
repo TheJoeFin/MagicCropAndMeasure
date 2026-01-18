@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MagickCrop.Services.Interfaces;
@@ -52,6 +53,59 @@ public partial class MainWindowViewModel : ViewModelBase
 
     #endregion
 
+    #region UI State
+
+    /// <summary>
+    /// Gets or sets whether the measurement panel is visible.
+    /// </summary>
+    [ObservableProperty]
+    private bool _showMeasurementPanel = true;
+
+    /// <summary>
+    /// Gets or sets whether the toolbar is visible.
+    /// </summary>
+    [ObservableProperty]
+    private bool _showToolbar = true;
+
+    /// <summary>
+    /// Gets the window title with optional unsaved changes indicator.
+    /// </summary>
+    public string WindowTitle => IsDirty && !string.IsNullOrEmpty(CurrentFilePath)
+        ? $"Magic Crop & Measure - {Path.GetFileName(CurrentFilePath)}*"
+        : (!string.IsNullOrEmpty(CurrentFilePath) ? $"Magic Crop & Measure - {Path.GetFileName(CurrentFilePath)}" : "Magic Crop & Measure");
+
+    /// <summary>
+    /// Gets or sets the zoom level (1.0 = 100%).
+    /// </summary>
+    [ObservableProperty]
+    private double _zoomLevel = 1.0;
+
+    #endregion
+
+    #region Project State
+
+    /// <summary>
+    /// Gets or sets whether the current project has unsaved changes.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WindowTitle))]
+    private bool _isDirty;
+
+    /// <summary>
+    /// Gets or sets the path to the current file.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WindowTitle))]
+    private string? _currentFilePath;
+
+    /// <summary>
+    /// Gets or sets the unique identifier of the current project.
+    /// </summary>
+    [ObservableProperty]
+    private Guid _currentProjectId;
+
+    #endregion
+
     #region Tool State
 
     /// <summary>
@@ -79,6 +133,12 @@ public partial class MainWindowViewModel : ViewModelBase
     private int _placementStep;
 
     #endregion
+
+    #region Constructors
+
+    /// <summary>
+    /// Creates a new instance of MainWindowViewModel with services from the DI container.
+    /// </summary>
     public MainWindowViewModel() : this(
         App.GetService<IRecentProjectsService>(),
         App.GetService<IFileDialogService>(),
@@ -108,6 +168,10 @@ public partial class MainWindowViewModel : ViewModelBase
         Title = "Magic Crop & Measure";
     }
 
+    #endregion
+
+    #region Lifecycle
+
     /// <summary>
     /// Initializes the ViewModel asynchronously.
     /// </summary>
@@ -123,4 +187,6 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         base.Cleanup();
     }
+
+    #endregion
 }
