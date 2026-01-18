@@ -159,6 +159,80 @@ public partial class MainWindowViewModel : ViewModelBase
 
     #endregion
 
+    #region Save Commands
+
+    /// <summary>
+    /// Saves the current project to the last saved path or prompts for a new path if not previously saved.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(HasImage))]
+    private async Task SaveProject()
+    {
+        if (string.IsNullOrEmpty(LastSavedPath))
+        {
+            await SaveProjectAs();
+        }
+        else
+        {
+            await SaveProjectToPathAsync(LastSavedPath);
+        }
+    }
+
+    /// <summary>
+    /// Saves the current project to a user-selected path.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(HasImage))]
+    private async Task SaveProjectAs()
+    {
+        var result = _fileDialogService.ShowSaveFileDialog(
+            "Magic Crop Project Files (*.mcm)|*.mcm",
+            defaultFileName: "project.mcm");
+
+        if (!string.IsNullOrEmpty(result))
+        {
+            await SaveProjectToPathAsync(result);
+        }
+    }
+
+    /// <summary>
+    /// Core save logic that creates and saves the measurement package to the specified path.
+    /// </summary>
+    /// <param name="filePath">The full path where the project file should be saved.</param>
+    private async Task SaveProjectToPathAsync(string filePath)
+    {
+        try
+        {
+            IsSaving = true;
+
+            await Task.Run(() =>
+            {
+                // TODO: Implement CreateMeasurementPackage
+                // var package = CreateMeasurementPackage();
+
+                // TODO: Implement SavePackageToFile
+                // SavePackageToFile(filePath, package);
+            });
+
+            LastSavedPath = filePath;
+            CurrentFilePath = filePath;
+            IsDirty = false;
+
+            // TODO: Implement UpdateRecentProjectsAsync
+            // await UpdateRecentProjectsAsync();
+
+            WeakReferenceMessenger.Default.Send(new ProjectSavedMessage(filePath));
+        }
+        catch (Exception ex)
+        {
+            _navigationService.ShowError($"Failed to save project: {ex.Message}");
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    #endregion
+
     #region Constructors
 
     /// <summary>
