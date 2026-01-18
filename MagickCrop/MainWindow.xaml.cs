@@ -1,4 +1,4 @@
-﻿using ImageMagick;
+using ImageMagick;
 using MagickCrop.Controls;
 using MagickCrop.Helpers;
 using MagickCrop.Messages;
@@ -959,7 +959,7 @@ public partial class MainWindow : FluentWindow
         await image.WriteAsync(tempFileName);
         imagePath = tempFileName;
 
-        MainImage.Source = image.ToBitmapSource();
+        SetMainImageSource(image.ToBitmapSource());
 
         // Adjust cropping rectangle position if it was visible before distortion correction
         if (cropRectangleVisible)
@@ -1183,6 +1183,18 @@ public partial class MainWindow : FluentWindow
         autoSaveTimer?.Start();
     }
 
+    private void SetMainImageSource(BitmapSource? source)
+    {
+        if (Dispatcher.CheckAccess())
+        {
+            MainImage.Source = source;
+        }
+        else
+        {
+            Dispatcher.BeginInvoke(() => MainImage.Source = source);
+        }
+    }
+
     private async void OpenFileButton_Click(object sender, RoutedEventArgs e)
     {
         SetUiForLongTask();
@@ -1320,7 +1332,7 @@ public partial class MainWindow : FluentWindow
         imagePath = tempFileName;
         originalFilePath = imageFilePath;
         openedFileName = System.IO.Path.GetFileNameWithoutExtension(imageFilePath);
-        MainImage.Source = bitmapImage.ToBitmapSource();
+        SetMainImageSource(bitmapImage.ToBitmapSource());
 
         // Update original size after image is loaded (will be the default ImageWidthConst height calculated from aspect ratio)
         originalImageSize = new Size(bitmapImage.Width, bitmapImage.Height);
@@ -1885,7 +1897,7 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect current dimensions
         actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -1911,7 +1923,7 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect current dimensions
         actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2009,7 +2021,7 @@ public partial class MainWindow : FluentWindow
 
             imagePath = tempFileName;
 
-            MainImage.Source = magickImage.ToBitmapSource();
+            SetMainImageSource(magickImage.ToBitmapSource());
 
             // Update actualImageSize to reflect current dimensions
             actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2100,7 +2112,7 @@ public partial class MainWindow : FluentWindow
 
                 imagePath = tempFileName;
 
-                MainImage.Source = magickImage.ToBitmapSource();
+                SetMainImageSource(magickImage.ToBitmapSource());
 
                 // Update actualImageSize to reflect current dimensions
                 actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2143,7 +2155,7 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect current dimensions
         actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2169,7 +2181,7 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect current dimensions
         actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2195,7 +2207,7 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect current dimensions
         actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2221,7 +2233,7 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect current dimensions
         actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2247,7 +2259,7 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect current dimensions
         actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2273,7 +2285,7 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect current dimensions
         actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2299,7 +2311,7 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect current dimensions
         actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2325,7 +2337,7 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect current dimensions
         actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2351,7 +2363,7 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect current dimensions
         actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2377,7 +2389,7 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect current dimensions
         actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2403,7 +2415,7 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect current dimensions
         actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2429,7 +2441,7 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect current dimensions
         actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2487,7 +2499,7 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect the new cropped dimensions
         actualImageSize = new Size(magickImage.Width, magickImage.Height);
@@ -2699,8 +2711,8 @@ public partial class MainWindow : FluentWindow
 
         imagePath = tempFileName;
 
-        MainImage.Source = null;
-        MainImage.Source = magickImage.ToBitmapSource();
+        SetMainImageSource(null);
+        SetMainImageSource(magickImage.ToBitmapSource());
 
         // Update actualImageSize to reflect the new dimensions
         actualImageSize = new Size(targetWidth, targetHeight);
@@ -3755,7 +3767,7 @@ public partial class MainWindow : FluentWindow
         AutosaveCurrentState();
 
         // Clear the image
-        MainImage.Source = null;
+        SetMainImageSource(null);
         imagePath = null;
         openedFileName = string.Empty;
         openedPackage = null;
@@ -4449,7 +4461,7 @@ public partial class MainWindow : FluentWindow
             imagePath = tempFileName;
 
             using MagickImage newImage = new(imagePath);
-            MainImage.Source = newImage.ToBitmapSource();
+            SetMainImageSource(newImage.ToBitmapSource());
 
             // Update actualImageSize to reflect current dimensions
             actualImageSize = new Size(newImage.Width, newImage.Height);

@@ -181,3 +181,30 @@ When reporting new issues, please include:
 ---
 
 **Last Updated:** January 18, 2026
+
+### Issue: Failed to render (Critical Threading Issue) ✅ FIXED
+**Resolution Date:** January 18, 2026  
+**Commit:** (to be committed)
+
+**Problem:** Application crashed with `System.ArgumentException: Must create DependencySource on same Thread as the DependencyObject` when rendering images after async operations.
+
+**Root Cause:** Multiple issues in threading for UI updates:
+1. `MainImage.Source` (a DependencyProperty) was being set from background thread contexts
+2. `ToBitmapSource()` method in ImageProcessingService was using `using` statement that disposed the MemoryStream immediately, causing potential thread affinity issues with the BitmapImage
+
+**Solution Implemented:**
+1. **Modified ImageProcessingService.ToBitmapSource()**: Removed `using` statement that was prematurely disposing the MemoryStream. Changed to only dispose on error to prevent BitmapImage from losing its backing stream while still holding a reference.
+
+2. **Added SetMainImageSource() helper method**: Created a thread-safe wrapper that checks if we're on the UI thread using `Dispatcher.CheckAccess()` and marshals to the UI thread using `Dispatcher.BeginInvoke()` if needed.
+
+3. **Replaced all MainImage.Source assignments**: Updated all 23 instances where `MainImage.Source` was directly assigned to use the new `SetMainImageSource()` method instead. This ensures every UI update is properly marshalled to the UI thread.
+
+**Files Modified:**
+- `MagickCrop/Services/ImageProcessingService.cs`: Fixed ToBitmapSource method
+- `MagickCrop/MainWindow.xaml.cs`: Added SetMainImageSource helper method and replaced all 23 MainImage.Source assignments
+
+**Testing:** All 291 unit tests passing ✅
+
+**Status:** ✅ Fixed and tested
+
+

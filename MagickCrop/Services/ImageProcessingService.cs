@@ -79,18 +79,26 @@ public class ImageProcessingService : IImageProcessingService
 
     public BitmapSource ToBitmapSource(MagickImage image)
     {
-        using var memoryStream = new MemoryStream();
-        image.Write(memoryStream, MagickFormat.Png);
-        memoryStream.Position = 0;
+        var memoryStream = new MemoryStream();
+        try
+        {
+            image.Write(memoryStream, MagickFormat.Png);
+            memoryStream.Position = 0;
 
-        var bitmap = new BitmapImage();
-        bitmap.BeginInit();
-        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-        bitmap.StreamSource = memoryStream;
-        bitmap.EndInit();
-        bitmap.Freeze();
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.StreamSource = memoryStream;
+            bitmap.EndInit();
+            bitmap.Freeze();
 
-        return bitmap;
+            return bitmap;
+        }
+        catch
+        {
+            memoryStream?.Dispose();
+            throw;
+        }
     }
 
     public MagickImage FromBitmapSource(BitmapSource bitmapSource)
