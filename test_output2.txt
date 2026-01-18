@@ -1,0 +1,1383 @@
+Test run for D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\bin\Release\net10.0-windows10.0.20348.0\MagickCrop.Tests.dll (.NETCoreApp,Version=v10.0)
+VSTest version 18.0.1 (arm64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+  Failed Constructor_InitializesWithDefaultValues [13 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed PixelLength_CalculatesCorrectlyForHorizontalLine [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed PixelLength_CalculatesCorrectlyForVerticalLine [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed PixelLength_CalculatesCorrectlyForDiagonalLine [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed PixelLength_CalculatesCorrectlyForZeroLength [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Angle_CalculatesCorrectlyForHorizontalLine [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Angle_CalculatesCorrectlyForVerticalLineUp [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Angle_CalculatesCorrectlyForVerticalLineDown [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Angle_CalculatesCorrectlyFor45DegreeAngle [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed MidPoint_CalculatesCorrectly [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed MidPoint_CalculatesCorrectlyWithNegativeCoordinates [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed DisplayText_FormatsCorrectlyInPixels [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed DisplayText_UpdatesWhenScaleFactorChanges [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed PixelLength_UpdatesWhenStartPointChanges [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed PixelLength_UpdatesWhenEndPointChanges [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed ScaleFactorChangedMessage_UpdatesScaleFactorAndUnits [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed ColorProperty_CanBeChanged [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed StrokeThickness_CanBeChanged [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed IsSelected_CanBeChanged [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+DistanceMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|4_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.DistanceMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\DistanceMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 29
+   at InvokeStub_DistanceMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Constructor_InitializesWithDefaultValues [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+AngleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|0_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\AngleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.AngleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 240
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AngleDegrees_CalculatesCorrectly_RightAngle [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+AngleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|0_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\AngleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.AngleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 240
+   at InvokeStub_AngleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AngleDegrees_CalculatesCorrectly_StraightAngle [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+AngleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|0_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\AngleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.AngleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 240
+   at InvokeStub_AngleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AngleDegrees_CalculatesCorrectly_45DegreeAngle [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+AngleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|0_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\AngleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.AngleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 240
+   at InvokeStub_AngleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AngleDegrees_HandlesZeroVectorPoint1 [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+AngleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|0_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\AngleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.AngleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 240
+   at InvokeStub_AngleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AngleDegrees_HandlesZeroVectorPoint2 [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+AngleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|0_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\AngleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.AngleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 240
+   at InvokeStub_AngleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AngleDegrees_HandlesParallelVectorsWithOppositeDirections [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+AngleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|0_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\AngleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.AngleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 240
+   at InvokeStub_AngleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed DisplayText_FormatsAngleCorrectly [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+AngleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|0_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\AngleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.AngleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 240
+   at InvokeStub_AngleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AngleDegrees_UpdatesWhenVertexChanges [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+AngleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|0_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\AngleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.AngleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 240
+   at InvokeStub_AngleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AngleDegrees_UpdatesWhenPoint1Changes [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+AngleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|0_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\AngleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.AngleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 240
+   at InvokeStub_AngleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AngleDegrees_IsAlwaysPositive [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+AngleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|0_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\AngleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.AngleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 240
+   at InvokeStub_AngleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed ScaleFactorChangedMessage_DoesNotAffectAngleCalculation [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+AngleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|0_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.AngleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\AngleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.AngleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 240
+   at InvokeStub_AngleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Constructor_InitializesWithDefaultValues [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+CircleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|2_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\CircleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 389
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Radius_CalculatesCorrectly [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+CircleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|2_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\CircleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 389
+   at InvokeStub_CircleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Radius_CalculatesCorrectlyForDiagonalEdgePoint [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+CircleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|2_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\CircleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 389
+   at InvokeStub_CircleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Radius_CalculatesCorrectlyForZeroRadius [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+CircleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|2_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\CircleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 389
+   at InvokeStub_CircleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Diameter_IsDoubleTheRadius [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+CircleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|2_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\CircleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 389
+   at InvokeStub_CircleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Circumference_CalculatesCorrectly [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+CircleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|2_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\CircleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 389
+   at InvokeStub_CircleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Area_CalculatesCorrectly [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+CircleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|2_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\CircleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 389
+   at InvokeStub_CircleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Area_IsZeroForZeroRadius [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+CircleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|2_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\CircleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 389
+   at InvokeStub_CircleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed CircleCanvasLeft_CalculatesCorrectly [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+CircleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|2_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\CircleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 389
+   at InvokeStub_CircleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed CircleCanvasTop_CalculatesCorrectly [1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+CircleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|2_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\CircleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 389
+   at InvokeStub_CircleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed CanvasPositioning_PlacesCircleCorrectly [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+CircleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|2_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\CircleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 389
+   at InvokeStub_CircleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed DisplayText_IncludesAllMeasurements [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+CircleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|2_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\CircleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 389
+   at InvokeStub_CircleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AllMeasurements_UpdateWhenCenterPointChanges [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+CircleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|2_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\CircleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 389
+   at InvokeStub_CircleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AllMeasurements_UpdateWhenEdgePointChanges [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+CircleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|2_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\CircleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 389
+   at InvokeStub_CircleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed DisplayText_UpdatesWithScaleFactor [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+CircleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|2_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.CircleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\CircleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 389
+   at InvokeStub_CircleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Constructor_InitializesWithDefaultValues [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Width_CalculatesCorrectly [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at InvokeStub_RectangleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Width_CalculatesCorrectlyWhenRectangleIsReverse [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at InvokeStub_RectangleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Height_CalculatesCorrectly [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at InvokeStub_RectangleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Height_CalculatesCorrectlyWhenRectangleIsReverse [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at InvokeStub_RectangleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Perimeter_CalculatesCorrectly [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at InvokeStub_RectangleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Area_CalculatesCorrectly [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at InvokeStub_RectangleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Area_IsZeroForZeroWidthOrHeight [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at InvokeStub_RectangleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Bounds_CalculatesCorrectly [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at InvokeStub_RectangleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Bounds_HandlesReversedCorners [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at InvokeStub_RectangleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed DisplayText_IncludesWidthHeightAndArea [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at InvokeStub_RectangleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed DisplayText_UpdatesWhenDimensionsChange [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at InvokeStub_RectangleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed PerimeterAndArea_UpdateWhenTopLeftChanges [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at InvokeStub_RectangleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed PerimeterAndArea_UpdateWhenBottomRightChanges [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at InvokeStub_RectangleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed DisplayText_UpdatesWithScaleFactor [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at InvokeStub_RectangleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AreaFormatting_UsesSquareUnits [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+RectangleMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|12_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.RectangleMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\RectangleMeasurementViewModel.cs:line 13
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 566
+   at InvokeStub_RectangleMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Constructor_InitializesWithEmptyVertices [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AddVertex_AddsVertexToCollection [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AddVertex_UpdatesVertexCount [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed CanClose_IsFalseWithLessThanThreeVertices [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed CanClose_IsTrueWithThreeOrMoreVertices [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed CanClose_IsFalseWhenAlreadyClosed [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Close_SetsIsClosedToTrue [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Close_DoesNothingWithLessThanThreeVertices [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed UpdateVertex_ChangesVertexAtIndex [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed UpdateVertex_DoesNothingForInvalidIndex [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Perimeter_CalculatesCorrectlyForOpenPolygon [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Perimeter_CalculatesCorrectlyForClosedPolygon [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Area_IsZeroForOpenPolygon [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Area_CalculatesCorrectlyForClosedPolygon [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed DisplayText_ShowsAddMorePointsWithLessThanTwoVertices [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed DisplayText_ShowsPerimeterAndPointCountForOpenPolygon [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed DisplayText_ShowsPerimeterAndAreaForClosedPolygon [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Perimeter_UpdatesWhenVertexIsAdded [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Perimeter_UpdatesWhenVertexIsModified [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Area_UpdatesWhenClosingPolygon [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed DisplayText_UpdatesWithScaleFactor [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed VertexCollectionChanged_TriggersRecalculation [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Triangle_CalculationIsCorrect [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed Square_CalculationIsCorrect [< 1 ms]
+  Error Message:
+   Initialization method MagickCrop.Tests.ViewModels.MeasurementViewModelsTests+PolygonMeasurementViewModelTests.TestInitialize threw exception. System.InvalidOperationException: The target recipient has already subscribed to the target message..
+  Stack Trace:
+      at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.ThrowInvalidOperationExceptionForDuplicateRegistration()
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](Object recipient, TToken token, MessageHandlerDispatcher dispatcher)
+   at CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Register[TMessage,TToken](IRecipient`1 recipient, TToken token)
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.Register[TMessage](IMessenger messenger, IRecipient`1 recipient)
+   at CommunityToolkit.Mvvm.Messaging.__Internals.__IMessengerExtensions.<CreateAllMessagesRegistrator>g__RegisterAll|10_0(IMessenger messenger, Object obj) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\obj\Release\net10.0-windows10.0.20348.0\CommunityToolkit.Mvvm.SourceGenerators\CommunityToolkit.Mvvm.SourceGenerators.IMessengerRegisterAllGenerator\MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel.g.cs:line 20
+   at CommunityToolkit.Mvvm.Messaging.IMessengerExtensions.RegisterAll(IMessenger messenger, Object recipient)
+   at MagickCrop.ViewModels.Measurements.MeasurementViewModelBase..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\MeasurementViewModelBase.cs:line 56
+   at MagickCrop.ViewModels.Measurements.PolygonMeasurementViewModel..ctor(IMessenger messenger) in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop\ViewModels\Measurements\PolygonMeasurementViewModel.cs:line 41
+   at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.TestInitialize() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 755
+   at InvokeStub_PolygonMeasurementViewModelTests.TestInitialize(Object, Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+
+Failed!  - Failed:    86, Passed:     0, Skipped:     0, Total:    86, Duration: 80 ms - MagickCrop.Tests.dll (net10.0)

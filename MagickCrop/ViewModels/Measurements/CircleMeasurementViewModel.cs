@@ -8,6 +8,10 @@ namespace MagickCrop.ViewModels.Measurements;
 /// </summary>
 public partial class CircleMeasurementViewModel : MeasurementViewModelBase
 {
+    public CircleMeasurementViewModel() { }
+
+    public CircleMeasurementViewModel(CommunityToolkit.Mvvm.Messaging.IMessenger messenger) : base(messenger) { }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Radius))]
     [NotifyPropertyChangedFor(nameof(Diameter))]

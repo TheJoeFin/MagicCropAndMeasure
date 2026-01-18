@@ -8,6 +8,10 @@ namespace MagickCrop.ViewModels.Measurements;
 /// </summary>
 public partial class RectangleMeasurementViewModel : MeasurementViewModelBase
 {
+    public RectangleMeasurementViewModel() { }
+
+    public RectangleMeasurementViewModel(CommunityToolkit.Mvvm.Messaging.IMessenger messenger) : base(messenger) { }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Bounds))]
     [NotifyPropertyChangedFor(nameof(Width))]

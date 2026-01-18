@@ -33,6 +33,10 @@ public class TestServiceFixture : IDisposable
 
     public void BuildProvider()
     {
+        // Create a new messenger instance for each test (not the global singleton)
+        var messenger = new CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger();
+        _services.AddSingleton<CommunityToolkit.Mvvm.Messaging.IMessenger>(messenger);
+
         // Register concrete mocks
         _services.AddSingleton<IRecentProjectsService, MockRecentProjectsService>();
         _services.AddSingleton<IFileDialogService, MockFileDialogService>();

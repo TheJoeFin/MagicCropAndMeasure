@@ -45,15 +45,20 @@ public abstract partial class MeasurementViewModelBase : ViewModelBase,
     /// </summary>
     public abstract string MeasurementType { get; }
 
+    /// <summary>
+    /// Parameterless constructor - uses default messenger (calls base class).
+    /// The base ViewModelBase class handles RegisterAll() for IRecipient implementations.
+    /// </summary>
     protected MeasurementViewModelBase()
     {
-        // Use IRecipient pattern - RegisterAll handles all IRecipient<T> implementations
-        Messenger.RegisterAll(this);
     }
 
-    protected MeasurementViewModelBase(IMessenger messenger) : base(messenger)
+    /// <summary>
+    /// Constructor with messenger parameter for dependency injection (e.g., for testing).
+    /// The base ViewModelBase class handles RegisterAll() for IRecipient implementations.
+    /// </summary>
+    protected MeasurementViewModelBase(CommunityToolkit.Mvvm.Messaging.IMessenger messenger) : base(messenger)
     {
-        Messenger.RegisterAll(this);
     }
 
     /// <summary>

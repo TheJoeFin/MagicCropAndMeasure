@@ -1,0 +1,47 @@
+Test run for D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\bin\Release\net10.0-windows10.0.20348.0\MagickCrop.Tests.dll (.NETCoreApp,Version=v10.0)
+VSTest version 18.0.1 (arm64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+  Failed ScaleFactorChangedMessage_UpdatesScaleFactorAndUnits [7 ms]
+  Error Message:
+   Assert.AreEqual failed. Expected:<2.5>. Actual:<1>. 
+  Stack Trace:
+     at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.DistanceMeasurementViewModelTests.ScaleFactorChangedMessage_UpdatesScaleFactorAndUnits() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 193
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AngleDegrees_UpdatesWhenVertexChanges [< 1 ms]
+  Error Message:
+   Assert.AreEqual failed. Expected a difference no greater than <0.1> between expected value <90> and actual value <180>. 
+  Stack Trace:
+     at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.AngleMeasurementViewModelTests.AngleDegrees_UpdatesWhenVertexChanges() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 332
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed AllMeasurements_UpdateWhenCenterPointChanges [< 1 ms]
+  Error Message:
+   Assert.AreEqual failed. Expected a difference no greater than <0.001> between expected value <14.142135623730951> and actual value <7.0710678118654755>. 
+  Stack Trace:
+     at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.CircleMeasurementViewModelTests.AllMeasurements_UpdateWhenCenterPointChanges() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 521
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed PerimeterAndArea_UpdateWhenTopLeftChanges [< 1 ms]
+  Error Message:
+   Assert.AreEqual failed. Expected a difference no greater than <0.001> between expected value <40> and actual value <32>. 
+  Stack Trace:
+     at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.RectangleMeasurementViewModelTests.PerimeterAndArea_UpdateWhenTopLeftChanges() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 700
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+  Failed DisplayText_ShowsAddMorePointsWithLessThanTwoVertices [< 1 ms]
+  Error Message:
+   Assert.IsTrue failed. 
+  Stack Trace:
+     at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.DisplayText_ShowsAddMorePointsWithLessThanTwoVertices() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 912
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+
+Failed!  - Failed:     5, Passed:    81, Skipped:     0, Total:    86, Duration: 69 ms - MagickCrop.Tests.dll (net10.0)

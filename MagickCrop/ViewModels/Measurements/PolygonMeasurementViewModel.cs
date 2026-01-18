@@ -36,6 +36,13 @@ public partial class PolygonMeasurementViewModel : MeasurementViewModelBase
     public PolygonMeasurementViewModel()
     {
         Vertices.CollectionChanged += (_, _) => OnVerticesChanged();
+        UpdateDisplayText();
+    }
+
+    public PolygonMeasurementViewModel(CommunityToolkit.Mvvm.Messaging.IMessenger messenger) : base(messenger)
+    {
+        Vertices.CollectionChanged += (_, _) => OnVerticesChanged();
+        UpdateDisplayText();
     }
 
     /// <summary>

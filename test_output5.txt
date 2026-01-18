@@ -1,0 +1,15 @@
+Test run for D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\bin\Release\net10.0-windows10.0.20348.0\MagickCrop.Tests.dll (.NETCoreApp,Version=v10.0)
+VSTest version 18.0.1 (arm64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+  Failed DisplayText_ShowsAddMorePointsWithLessThanTwoVertices [34 ms]
+  Error Message:
+   Assert.IsTrue failed. 
+  Stack Trace:
+     at MagickCrop.Tests.ViewModels.MeasurementViewModelsTests.PolygonMeasurementViewModelTests.DisplayText_ShowsAddMorePointsWithLessThanTwoVertices() in D:\source\TheJoeFin\MagicCropAndMeasure\MagickCrop.Tests\ViewModels\MeasurementViewModelsTests.cs:line 919
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+
+Failed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 41 ms - MagickCrop.Tests.dll (net10.0)

@@ -8,6 +8,10 @@ namespace MagickCrop.ViewModels.Measurements;
 /// </summary>
 public partial class AngleMeasurementViewModel : MeasurementViewModelBase
 {
+    public AngleMeasurementViewModel() { }
+
+    public AngleMeasurementViewModel(CommunityToolkit.Mvvm.Messaging.IMessenger messenger) : base(messenger) { }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(AngleDegrees))]
     private Point _point1;

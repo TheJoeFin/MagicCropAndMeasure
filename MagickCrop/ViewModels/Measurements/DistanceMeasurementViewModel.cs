@@ -8,6 +8,10 @@ namespace MagickCrop.ViewModels.Measurements;
 /// </summary>
 public partial class DistanceMeasurementViewModel : MeasurementViewModelBase
 {
+    public DistanceMeasurementViewModel() { }
+
+    public DistanceMeasurementViewModel(CommunityToolkit.Mvvm.Messaging.IMessenger messenger) : base(messenger) { }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MidPoint))]
     [NotifyPropertyChangedFor(nameof(Angle))]
