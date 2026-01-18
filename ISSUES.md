@@ -6,6 +6,24 @@ This document tracks known issues, feature requests, and work items for MagickCr
 
 ## ✅ RESOLVED ISSUES
 
+### Refactoring: Extract Thumbnail Logic to ThumbnailService ✅ FIXED
+**Resolution Date:** January 18, 2026  
+**Commit:** 3742567 - "Refactor: Extract thumbnail logic to dedicated ThumbnailService"
+
+Extracted thumbnail generation logic from RecentProjectsManager into a dedicated ThumbnailService with proper dependency injection. This improves separation of concerns, testability, and follows SOLID principles.
+
+**Details:**
+- Created `IThumbnailService` interface and `ThumbnailService` implementation
+- Refactored `RecentProjectsManager` to depend on `IThumbnailService`
+- Added 6 comprehensive unit tests for ThumbnailService
+- Created `MockThumbnailService` for integration testing
+- Updated DI registration in App.xaml.cs
+- All 291 tests passing
+
+**Status:** ✅ Resolved and tested
+
+---
+
 ### Issue #1: Make Persistence Truly Async ✅ FIXED
 **Resolution Date:** January 18, 2026  
 **Commit:** 3bb7c1e - "Issue #1: Convert misleading Async methods to true async"
@@ -117,9 +135,10 @@ See `TESTING_CHECKLIST.md` for comprehensive manual testing procedures.
 ## 💬 NOTES
 
 - **MVVM Migration:** 100% complete as of January 18, 2026
+- **Post-Migration Refactoring:** ThumbnailService extraction completed January 18, 2026
 - **Build Status:** 0 errors, 4 non-critical warnings (pre-existing NuGet issues)
-- **Last Updated:** January 18, 2026
-- **Next Review:** Upon completion of first new feature/enhancement
+- **Last Updated:** January 18, 2026 (ThumbnailService refactoring)
+- **Next Review:** Upon completion of next feature/enhancement
 
 ---
 
