@@ -3292,7 +3292,7 @@ public partial class MainWindow : FluentWindow
         strokeMeasurements = updatedMeasurements;
     }
 
-    private void SaveMeasurementsPackageToFile()
+    private async Task SaveMeasurementsPackageToFile()
     {
         if (string.IsNullOrWhiteSpace(imagePath))
         {
@@ -3393,7 +3393,7 @@ public partial class MainWindow : FluentWindow
         try
         {
             // Save to the selected file
-            bool success = package.SaveToFileAsync(saveFileDialog.FileName);
+            bool success = await package.SaveToFileAsync(saveFileDialog.FileName);
 
             if (!success)
             {
@@ -3438,7 +3438,7 @@ public partial class MainWindow : FluentWindow
         MagickCropMeasurementPackage? package = null;
         try
         {
-            package = MagickCropMeasurementPackage.LoadFromFileAsync(fileName);
+            package = await MagickCropMeasurementPackage.LoadFromFileAsync(fileName);
             if (package is null
                 || string.IsNullOrEmpty(package.ImagePath)
                 || !File.Exists(package.ImagePath))
@@ -3656,7 +3656,7 @@ public partial class MainWindow : FluentWindow
         });
     }
 
-    private void AutosaveCurrentState()
+    private async void AutosaveCurrentState()
     {
         if (recentProjectsManager == null || MainImage.Source == null || string.IsNullOrEmpty(imagePath))
             return;
@@ -3710,7 +3710,7 @@ public partial class MainWindow : FluentWindow
                 package.Measurements.PolygonMeasurements.Add(control.ToDto());
             Debug.WriteLine($"AutoSave: Saved {polygonMeasurementTools.Count} polygon measurements");
 
-            recentProjectsManager.AutosaveProject(package, MainImage.Source as BitmapSource);
+            await recentProjectsManager.AutosaveProject(package, MainImage.Source as BitmapSource);
         }
         catch (Exception ex)
         {

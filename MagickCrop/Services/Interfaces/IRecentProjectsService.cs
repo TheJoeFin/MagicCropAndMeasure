@@ -43,7 +43,7 @@ public interface IRecentProjectsService
     /// <param name="package">The measurement package to save.</param>
     /// <param name="imageSource">The current image source for thumbnail generation.</param>
     /// <returns>The project info or null if save failed.</returns>
-    RecentProjectInfo? AutosaveProject(MagickCropMeasurementPackage package, BitmapSource? imageSource);
+    Task<RecentProjectInfo?> AutosaveProject(MagickCropMeasurementPackage package, BitmapSource? imageSource);
 
     /// <summary>
     /// Auto-saves the current project state asynchronously.

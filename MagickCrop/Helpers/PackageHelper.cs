@@ -52,9 +52,9 @@ public static class PackageHelper
     /// <param name="package">The package to save</param>
     /// <param name="outputPath">Path to save the .mcm file</param>
     /// <returns>True if successful, false otherwise</returns>
-    public static bool SavePackageToFile(MagickCropMeasurementPackage package, string outputPath)
+    public static async Task<bool> SavePackageToFile(MagickCropMeasurementPackage package, string outputPath)
     {
-        return package.SaveToFileAsync(outputPath);
+        return await package.SaveToFileAsync(outputPath);
     }
 
     /// <summary>
@@ -62,9 +62,9 @@ public static class PackageHelper
     /// </summary>
     /// <param name="packagePath">Path to the .mcm file</param>
     /// <returns>The loaded MagickCropMeasurementPackage, or null if loading fails</returns>
-    public static MagickCropMeasurementPackage? LoadPackageFromFile(string packagePath)
+    public static async Task<MagickCropMeasurementPackage?> LoadPackageFromFile(string packagePath)
     {
-        return MagickCropMeasurementPackage.LoadFromFileAsync(packagePath);
+        return await MagickCropMeasurementPackage.LoadFromFileAsync(packagePath);
     }
 
     /// <summary>

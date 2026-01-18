@@ -257,11 +257,8 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsSaving = true;
 
-            await Task.Run(() =>
-            {
-                var package = CreateMeasurementPackage();
-                SavePackageToFile(package, filePath);
-            });
+            var package = CreateMeasurementPackage();
+            await SavePackageToFile(package, filePath);
 
             LastSavedPath = filePath;
             CurrentFilePath = filePath;
@@ -312,9 +309,9 @@ public partial class MainWindowViewModel : ViewModelBase
     /// </summary>
     /// <param name="package">The package to save.</param>
     /// <param name="filePath">The full path where the package should be saved.</param>
-    private void SavePackageToFile(MagickCropMeasurementPackage package, string filePath)
+    private async Task SavePackageToFile(MagickCropMeasurementPackage package, string filePath)
     {
-        if (!package.SaveToFileAsync(filePath))
+        if (!await package.SaveToFileAsync(filePath))
         {
             throw new InvalidOperationException($"Failed to save package to {filePath}");
         }

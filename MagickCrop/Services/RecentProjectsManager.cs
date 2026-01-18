@@ -130,7 +130,7 @@ public class RecentProjectsManager : IRecentProjectsService
     /// <param name="package">The measurement package to save</param>
     /// <param name="imageSource">The current image source for thumbnail generation</param>
     /// <returns>The project info</returns>
-    public RecentProjectInfo? AutosaveProject(MagickCropMeasurementPackage package, BitmapSource? imageSource)
+    public async Task<RecentProjectInfo?> AutosaveProject(MagickCropMeasurementPackage package, BitmapSource? imageSource)
     {
         if (package is null || string.IsNullOrEmpty(package.ImagePath))
             return null;
@@ -155,7 +155,7 @@ public class RecentProjectsManager : IRecentProjectsService
             thumbnailPath = CreateThumbnail(imageSource, projectId);
 
         // Save the package
-        bool saveSuccess = package.SaveToFileAsync(packagePath);
+        bool saveSuccess = await package.SaveToFileAsync(packagePath);
         if (!saveSuccess)
             return null;
 
@@ -272,21 +272,18 @@ public class RecentProjectsManager : IRecentProjectsService
     /// </summary>
     public async Task AutosaveProjectAsync(MagickCropMeasurementPackage package, RecentProjectInfo projectInfo)
     {
-        await Task.Run(() =>
+        // Sync the projectInfo with the package
+        if (package is not null && package.Metadata is not null)
         {
-            // Sync the projectInfo with the package
-            if (package is not null && package.Metadata is not null)
-            {
-                package.Metadata.ProjectId = projectInfo.Id;
-                package.Metadata.LastModified = DateTime.Now;
+            package.Metadata.ProjectId = projectInfo.Id;
+            package.Metadata.LastModified = DateTime.Now;
 
-                // Save the package
-                package.SaveToFileAsync(projectInfo.PackagePath);
+            // Save the package
+            await package.SaveToFileAsync(projectInfo.PackagePath);
 
-                // Update the recent projects list
-                UpdateRecentProjectsList(projectInfo);
-            }
-        });
+            // Update the recent projects list
+            UpdateRecentProjectsList(projectInfo);
+        }
     }
 
     /// <summary>

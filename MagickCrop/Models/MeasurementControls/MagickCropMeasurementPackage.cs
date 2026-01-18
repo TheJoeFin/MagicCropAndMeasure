@@ -38,63 +38,66 @@ public class MagickCropMeasurementPackage
     /// </summary>
     /// <param name="packagePath">Path to save the package to</param>
     /// <returns>True if successful, false otherwise</returns>
-    public bool SaveToFileAsync(string packagePath)
+    public async Task<bool> SaveToFileAsync(string packagePath)
     {
         if (string.IsNullOrEmpty(ImagePath) || !File.Exists(ImagePath))
             return false;
 
         try
         {
-            // Create a temporary directory for package contents
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(Path.GetRandomFileName()));
-            Directory.CreateDirectory(tempDir);
-
-            try
+            return await Task.Run(() =>
             {
-                // Save metadata
-                string metadataPath = Path.Combine(tempDir, MetadataFileName);
-                string jsonString = JsonSerializer.Serialize(Metadata);
-                File.WriteAllText(metadataPath, jsonString);
+                // Create a temporary directory for package contents
+                string tempDir = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(Path.GetRandomFileName()));
+                Directory.CreateDirectory(tempDir);
 
-                // Save measurements
-                string measurementsPath = Path.Combine(tempDir, MeasurementsFileName);
-                Measurements.SaveToFile(measurementsPath);
-
-                // Copy image 
-                string imagePath = Path.Combine(tempDir, ImageFileName);
-                File.Copy(ImagePath, imagePath);
-
-                // Create zip archive
-                if (File.Exists(packagePath))
-                    File.Delete(packagePath);
-
-                ZipFile.CreateFromDirectory(tempDir, packagePath);
-                return true;
-            }
-            catch(Exception ex)
-            {
-                Console.WriteLine($"Error saving package: {ex.Message}");
-#if DEBUG
-                throw;
-#else
-                return false;
-#endif
-            }
-            finally
-            {
-                // Clean up temporary directory
-                if (Directory.Exists(tempDir))
+                try
                 {
-                    try
+                    // Save metadata
+                    string metadataPath = Path.Combine(tempDir, MetadataFileName);
+                    string jsonString = JsonSerializer.Serialize(Metadata);
+                    File.WriteAllText(metadataPath, jsonString);
+
+                    // Save measurements
+                    string measurementsPath = Path.Combine(tempDir, MeasurementsFileName);
+                    Measurements.SaveToFile(measurementsPath);
+
+                    // Copy image 
+                    string imagePath = Path.Combine(tempDir, ImageFileName);
+                    File.Copy(ImagePath, imagePath);
+
+                    // Create zip archive
+                    if (File.Exists(packagePath))
+                        File.Delete(packagePath);
+
+                    ZipFile.CreateFromDirectory(tempDir, packagePath);
+                    return true;
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine($"Error saving package: {ex.Message}");
+#if DEBUG
+                    throw;
+#else
+                    return false;
+#endif
+                }
+                finally
+                {
+                    // Clean up temporary directory
+                    if (Directory.Exists(tempDir))
                     {
-                        Directory.Delete(tempDir, true);
-                    }
-                    catch
-                    {
-                        // Silently ignore cleanup failures
+                        try
+                        {
+                            Directory.Delete(tempDir, true);
+                        }
+                        catch
+                        {
+                            // Silently ignore cleanup failures
+                        }
                     }
                 }
-            }
+            });
         }
         catch (Exception)
         {
@@ -107,66 +110,69 @@ public class MagickCropMeasurementPackage
     /// </summary>
     /// <param name="packagePath">Path to the .mcm package file</param>
     /// <returns>A MagickCropMeasurementPackage object or null if loading fails</returns>
-    public static MagickCropMeasurementPackage? LoadFromFileAsync(string packagePath)
+    public static async Task<MagickCropMeasurementPackage?> LoadFromFileAsync(string packagePath)
     {
         if (!File.Exists(packagePath))
             return null;
 
-        string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-        string tempImagePath = string.Empty;
-
-        try
+        return await Task.Run(() =>
         {
-            // Extract the archive
-            Directory.CreateDirectory(tempDir);
-            ZipFile.ExtractToDirectory(packagePath, tempDir, true);
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempImagePath = string.Empty;
 
-            // Create the package
-            MagickCropMeasurementPackage package = new();
-
-            // Load metadata if available
-            string metadataPath = Path.Combine(tempDir, MetadataFileName);
-            if (File.Exists(metadataPath))
+            try
             {
-                string metadataJson = File.ReadAllText(metadataPath);
-                package.Metadata = JsonSerializer.Deserialize<PackageMetadata>(metadataJson) ?? new PackageMetadata();
-            }
+                // Extract the archive
+                Directory.CreateDirectory(tempDir);
+                ZipFile.ExtractToDirectory(packagePath, tempDir, true);
 
-            // Load measurements
-            string measurementsPath = Path.Combine(tempDir, MeasurementsFileName);
-            if (File.Exists(measurementsPath))
-            {
-                package.Measurements = MeasurementCollection.LoadFromFile(measurementsPath) ?? new MeasurementCollection();
-            }
+                // Create the package
+                MagickCropMeasurementPackage package = new();
 
-            // Extract image to a separate temp file that will persist
-            string packageImagePath = Path.Combine(tempDir, ImageFileName);
-            if (File.Exists(packageImagePath))
-            {
-                tempImagePath = Path.GetTempFileName();
+                // Load metadata if available
+                string metadataPath = Path.Combine(tempDir, MetadataFileName);
+                if (File.Exists(metadataPath))
+                {
+                    string metadataJson = File.ReadAllText(metadataPath);
+                    package.Metadata = JsonSerializer.Deserialize<PackageMetadata>(metadataJson) ?? new PackageMetadata();
+                }
+
+                // Load measurements
+                string measurementsPath = Path.Combine(tempDir, MeasurementsFileName);
+                if (File.Exists(measurementsPath))
+                {
+                    package.Measurements = MeasurementCollection.LoadFromFile(measurementsPath) ?? new MeasurementCollection();
+                }
+
+                // Extract image to a separate temp file that will persist
+                string packageImagePath = Path.Combine(tempDir, ImageFileName);
+                if (File.Exists(packageImagePath))
+                {
+                    tempImagePath = Path.GetTempFileName();
                     tempImagePath = Path.ChangeExtension(tempImagePath, ".jpg");
-                File.Copy(packageImagePath, tempImagePath, true);
-                package.ImagePath = tempImagePath;
-            }
+                    File.Copy(packageImagePath, tempImagePath, true);
+                    package.ImagePath = tempImagePath;
+                }
 
-            return package;
-        }
-        catch (Exception)
-        {
-            // On failure, clean up any extracted image file
-            if (!string.IsNullOrEmpty(tempImagePath) && File.Exists(tempImagePath))
-            {
-                try { File.Delete(tempImagePath); } catch { /* ignore */ }
+                return package;
             }
-            return null;
-        }
-        finally
-        {
-            // Clean up temporary directory
-            if (Directory.Exists(tempDir))
+            catch (Exception)
             {
-                try { Directory.Delete(tempDir, true); } catch { /* ignore */ }
+                // On failure, clean up any extracted image file
+                if (!string.IsNullOrEmpty(tempImagePath) && File.Exists(tempImagePath))
+                {
+                    try { File.Delete(tempImagePath); } catch { /* ignore */ }
+                }
+                return null;
             }
-        }
+            finally
+            {
+                // Clean up temporary directory
+                if (Directory.Exists(tempDir))
+                {
+                    try { Directory.Delete(tempDir, true); } catch { /* ignore */ }
+                }
+            }
+        });
     }
 }

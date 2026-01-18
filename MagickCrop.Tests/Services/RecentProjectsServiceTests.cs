@@ -6,6 +6,7 @@ using MagickCrop.Models;
 using MagickCrop.Services;
 using MagickCrop.Services.Interfaces;
 using MagickCrop.Tests.Base;
+using MagickCrop.Tests.Mocks;
 
 namespace MagickCrop.Tests.Services;
 
@@ -28,7 +29,8 @@ public class RecentProjectsServiceTests : ServiceTestBase
         _testAppDataFolder = CreateTempDirectory();
         
         // Create the service instance with the isolated folder
-        _service = new RecentProjectsManager(_testAppDataFolder);
+        var mockAppPaths = new MockAppPaths(_testAppDataFolder);
+        _service = new RecentProjectsManager(mockAppPaths);
     }
 
     [TestCleanup]
@@ -53,7 +55,9 @@ public class RecentProjectsServiceTests : ServiceTestBase
     public void TestInitialization_RecentProjectsEmptyByDefault()
     {
         // Act & Assert - Fresh service instance should have empty collection initially
-        var newService = new RecentProjectsManager();
+        var testFolder = CreateTempDirectory();
+        var mockAppPaths = new MockAppPaths(testFolder);
+        var newService = new RecentProjectsManager(mockAppPaths);
         // Should either be empty or load from existing file
         Assert.IsNotNull(newService.RecentProjects);
     }
@@ -362,7 +366,9 @@ public class RecentProjectsServiceTests : ServiceTestBase
     public async Task TestLoadRecentProjectsAsync_LoadsEmptyWhenNothingExists()
     {
         // Act
-        var newService = new RecentProjectsManager();
+        var testFolder = CreateTempDirectory();
+        var mockAppPaths = new MockAppPaths(testFolder);
+        var newService = new RecentProjectsManager(mockAppPaths);
         await newService.LoadRecentProjectsAsync();
 
         // Assert

@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MagickCrop.Services;
 using MagickCrop.Services.Interfaces;
 using MagickCrop.Models.MeasurementControls;
+using MagickCrop.Tests.Mocks;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Media;
@@ -29,8 +30,11 @@ namespace MagickCrop.Tests.Base
             var services = new ServiceCollection();
             
             // Register real services
+            var testFolder = Path.Combine(Path.GetTempPath(), "MagickCropTests");
+            Directory.CreateDirectory(testFolder);
+            var appPaths = new MockAppPaths(testFolder);
             services.AddSingleton<IRecentProjectsService>(sp => 
-                new RecentProjectsManager(Path.Combine(Path.GetTempPath(), "MagickCropTests")));
+                new RecentProjectsManager(appPaths));
             services.AddSingleton<IImageProcessingService, ImageProcessingService>();
             
             // Register mock services

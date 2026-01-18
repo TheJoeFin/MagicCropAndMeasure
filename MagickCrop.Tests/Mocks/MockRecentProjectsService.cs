@@ -1,6 +1,7 @@
 using MagickCrop.Models;
 using MagickCrop.Models.MeasurementControls;
 using System.Collections.ObjectModel;
+using System.Windows.Media.Imaging;
 
 namespace MagickCrop.Tests.Mocks;
 
@@ -12,6 +13,11 @@ public class MockRecentProjectsService : IRecentProjectsService
     private readonly ObservableCollection<RecentProjectInfo> _projects = [];
 
     public ObservableCollection<RecentProjectInfo> RecentProjects => _projects;
+
+    public async Task<RecentProjectInfo?> AutosaveProject(MagickCropMeasurementPackage package, BitmapSource? imageSource)
+    {
+        return null;
+    }
 
     public Task LoadRecentProjectsAsync()
     {
