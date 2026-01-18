@@ -272,3 +272,108 @@ public class ShowCroppingControlsMessage { }
 /// Request to show the transform controls.
 /// </summary>
 public class ShowTransformControlsMessage { }
+
+/// <summary>
+/// Request to close the welcome modal.
+/// </summary>
+public class CloseWelcomeModalMessage { }
+
+/// <summary>
+/// Request to cancel the current resize operation.
+/// </summary>
+public class CancelResizeMessage { }
+
+// ============================================
+// Picker mode messages
+// ============================================
+
+/// <summary>
+/// Request to enable white point picker mode.
+/// </summary>
+public class EnableWhitePointPickerMessage { }
+
+/// <summary>
+/// Request to disable white point picker mode.
+/// </summary>
+public class DisableWhitePointPickerMessage { }
+
+/// <summary>
+/// Request to enable black point picker mode.
+/// </summary>
+public class EnableBlackPointPickerMessage { }
+
+/// <summary>
+/// Request to disable black point picker mode.
+/// </summary>
+public class DisableBlackPointPickerMessage { }
+
+// ============================================
+// Resize/Transform mode messages
+// ============================================
+
+/// <summary>
+/// Request to set resize mode to pixel-based.
+/// </summary>
+public class SetPixelModeMessage { }
+
+/// <summary>
+/// Request to set resize mode to percentage-based.
+/// </summary>
+public class SetPercentageModeMessage { }
+
+/// <summary>
+/// Request to lock the aspect ratio.
+/// </summary>
+public class LockAspectRatioMessage { }
+
+/// <summary>
+/// Request to unlock the aspect ratio.
+/// </summary>
+public class UnlockAspectRatioMessage { }
+
+// ============================================
+// Drawing mode messages
+// ============================================
+
+/// <summary>
+/// Request to enable drawing mode.
+/// </summary>
+public class EnableDrawingModeMessage { }
+
+/// <summary>
+/// Request to disable drawing mode.
+/// </summary>
+public class DisableDrawingModeMessage { }
+
+// ============================================
+// Rotation messages
+// ============================================
+
+/// <summary>
+/// Request to enable free rotate mode.
+/// </summary>
+public class EnableFreeRotateMessage { }
+
+/// <summary>
+/// Request to disable free rotate mode.
+/// </summary>
+public class DisableFreeRotateMessage { }
+
+/// <summary>
+/// Request to reset the rotation to 0 degrees.
+/// </summary>
+public class ResetRotationMessage { }
+
+/// <summary>
+/// Request to cancel the rotation operation.
+/// </summary>
+public class CancelRotationMessage { }
+
+// ============================================
+// File management messages
+// ============================================
+
+/// <summary>
+/// Request to close the currently opened file.
+/// </summary>
+public class CloseFileMessage { }

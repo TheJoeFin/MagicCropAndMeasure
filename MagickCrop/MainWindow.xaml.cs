@@ -215,6 +215,25 @@ public partial class MainWindow : FluentWindow
         WeakReferenceMessenger.Default.Register<CancelTransformMessage>(this, OnCancelTransformRequested);
         WeakReferenceMessenger.Default.Register<ShowCroppingControlsMessage>(this, OnShowCroppingControlsRequested);
         WeakReferenceMessenger.Default.Register<ShowTransformControlsMessage>(this, OnShowTransformControlsRequested);
+        
+        // Register for UI mode messages
+        WeakReferenceMessenger.Default.Register<CloseWelcomeModalMessage>(this, OnCloseWelcomeModalRequested);
+        WeakReferenceMessenger.Default.Register<CancelResizeMessage>(this, OnCancelResizeRequested);
+        WeakReferenceMessenger.Default.Register<EnableWhitePointPickerMessage>(this, OnEnableWhitePointPickerRequested);
+        WeakReferenceMessenger.Default.Register<DisableWhitePointPickerMessage>(this, OnDisableWhitePointPickerRequested);
+        WeakReferenceMessenger.Default.Register<EnableBlackPointPickerMessage>(this, OnEnableBlackPointPickerRequested);
+        WeakReferenceMessenger.Default.Register<DisableBlackPointPickerMessage>(this, OnDisableBlackPointPickerRequested);
+        WeakReferenceMessenger.Default.Register<SetPixelModeMessage>(this, OnSetPixelModeRequested);
+        WeakReferenceMessenger.Default.Register<SetPercentageModeMessage>(this, OnSetPercentageModeRequested);
+        WeakReferenceMessenger.Default.Register<LockAspectRatioMessage>(this, OnLockAspectRatioRequested);
+        WeakReferenceMessenger.Default.Register<UnlockAspectRatioMessage>(this, OnUnlockAspectRatioRequested);
+        WeakReferenceMessenger.Default.Register<EnableDrawingModeMessage>(this, OnEnableDrawingModeRequested);
+        WeakReferenceMessenger.Default.Register<DisableDrawingModeMessage>(this, OnDisableDrawingModeRequested);
+        WeakReferenceMessenger.Default.Register<EnableFreeRotateMessage>(this, OnEnableFreeRotateRequested);
+        WeakReferenceMessenger.Default.Register<DisableFreeRotateMessage>(this, OnDisableFreeRotateRequested);
+        WeakReferenceMessenger.Default.Register<ResetRotationMessage>(this, OnResetRotationRequested);
+        WeakReferenceMessenger.Default.Register<CancelRotationMessage>(this, OnCancelRotationRequested);
+        WeakReferenceMessenger.Default.Register<CloseFileMessage>(this, OnCloseFileRequested);
     }
 
     private void OnCloseMeasurementPanelRequested(object recipient, CloseMeasurementPanelMessage message)
@@ -264,6 +283,184 @@ public partial class MainWindow : FluentWindow
     private void OnShowTransformControlsRequested(object recipient, ShowTransformControlsMessage message)
     {
         ShowTransformControls();
+    }
+
+    private void OnCloseWelcomeModalRequested(object recipient, CloseWelcomeModalMessage message)
+    {
+        WelcomeMessageModal.Visibility = Visibility.Collapsed;
+        BottomBorder.Visibility = Visibility.Visible;
+        MainGrid.Background = new SolidColorBrush(Colors.Transparent);
+        Background = new SolidColorBrush(Colors.Transparent);
+        ShapeCanvas.Background = new SolidColorBrush(Color.FromArgb(10, 255, 255, 255));
+        Topmost = true;
+
+        MeasureTabItem.IsSelected = true;
+        TransformTabItem.IsEnabled = false;
+        EditImageTabItem.IsEnabled = false;
+
+        CropButtonPanel.Visibility = Visibility.Collapsed;
+        TransformButtonPanel.Visibility = Visibility.Collapsed;
+        ResizeButtonsPanel.Visibility = Visibility.Collapsed;
+        SaveAndOpenDestFolderPanel.Visibility = Visibility.Collapsed;
+        UndoRedoPanel.Visibility = Visibility.Collapsed;
+
+        autoSaveTimer?.Stop();
+
+        ImageIconOpenedName.Symbol = SymbolRegular.Ruler24;
+        ReOpenFileText.Text = "Overlay Mode";
+    }
+
+    private void OnCancelResizeRequested(object recipient, CancelResizeMessage message)
+    {
+        ImageGrid.Width = oldGridSize.Width;
+        ImageGrid.Height = oldGridSize.Height;
+        ImageGrid.InvalidateMeasure();
+
+        HideResizeControls();
+    }
+
+    private void OnEnableWhitePointPickerRequested(object recipient, EnableWhitePointPickerMessage message)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            WhitePointPickerToggle.IsChecked = false;
+            return;
+        }
+
+        isWhitePointPickerMode = true;
+        draggingMode = DraggingMode.WhitePointPicker;
+        Cursor = Cursors.Cross;
+    }
+
+    private void OnDisableWhitePointPickerRequested(object recipient, DisableWhitePointPickerMessage message)
+    {
+        isWhitePointPickerMode = false;
+        draggingMode = DraggingMode.None;
+        Cursor = null;
+    }
+
+    private void OnEnableBlackPointPickerRequested(object recipient, EnableBlackPointPickerMessage message)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            BlackPointPickerToggle.IsChecked = false;
+            return;
+        }
+
+        isBlackPointPickerMode = true;
+        draggingMode = DraggingMode.BlackPointPicker;
+        Cursor = Cursors.Cross;
+    }
+
+    private void OnDisableBlackPointPickerRequested(object recipient, DisableBlackPointPickerMessage message)
+    {
+        isBlackPointPickerMode = false;
+        draggingMode = DraggingMode.None;
+        Cursor = null;
+    }
+
+    private void OnSetPixelModeRequested(object recipient, SetPixelModeMessage message)
+    {
+        if (PercentageModeToggle != null)
+        {
+            PercentageModeToggle.IsChecked = false;
+            isPixelMode = true;
+            UpdateCurrentSizeDisplay();
+            UpdateSizeInputFields();
+        }
+    }
+
+    private void OnSetPercentageModeRequested(object recipient, SetPercentageModeMessage message)
+    {
+        if (PixelModeToggle is null)
+            return;
+
+        PixelModeToggle.IsChecked = false;
+        isPixelMode = false;
+        UpdateCurrentSizeDisplay();
+        UpdateSizeInputFields();
+    }
+
+    private void OnLockAspectRatioRequested(object recipient, LockAspectRatioMessage message)
+    {
+        isAspectRatioLocked = true;
+        MainImage.Stretch = Stretch.Uniform;
+        AspectRatioIcon?.Symbol = SymbolRegular.Link24;
+    }
+
+    private void OnUnlockAspectRatioRequested(object recipient, UnlockAspectRatioMessage message)
+    {
+        isAspectRatioLocked = false;
+        MainImage.Stretch = Stretch.Fill;
+        AspectRatioIcon?.Symbol = SymbolRegular.LinkDismiss24;
+    }
+
+    private void OnEnableDrawingModeRequested(object recipient, EnableDrawingModeMessage message)
+    {
+        isDrawingMode = true;
+        DrawingCanvas.IsEnabled = isDrawingMode;
+
+        DrawingOptionsPanel.Visibility = Visibility.Visible;
+        DrawingCanvas.IsHitTestVisible = true;
+    }
+
+    private void OnDisableDrawingModeRequested(object recipient, DisableDrawingModeMessage message)
+    {
+        isDrawingMode = false;
+        DrawingCanvas.IsEnabled = isDrawingMode;
+
+        DrawingOptionsPanel.Visibility = Visibility.Collapsed;
+        DrawingCanvas.IsHitTestVisible = false;
+    }
+
+    private void OnEnableFreeRotateRequested(object recipient, EnableFreeRotateMessage message)
+    {
+        if (!isRotateMode)
+        {
+            FreeRotateToggle.IsChecked = false;
+            return;
+        }
+
+        rotateAdornerLayer ??= AdornerLayer.GetAdornerLayer(ImageGrid);
+        if (rotateAdornerLayer != null && rotateAdorner == null)
+        {
+            rotateAdorner = new RotateAdorner(ImageGrid)
+            {
+                Angle = currentPreviewRotation
+            };
+            rotateAdorner.AngleChanging += RotateAdorner_AngleChanging;
+            rotateAdorner.AngleChangedFinal += RotateAdorner_AngleChangedFinal;
+            rotateAdornerLayer.Add(rotateAdorner);
+        }
+    }
+
+    private void OnDisableFreeRotateRequested(object recipient, DisableFreeRotateMessage message)
+    {
+        RemoveRotateAdorner();
+    }
+
+    private void OnResetRotationRequested(object recipient, ResetRotationMessage message)
+    {
+        isFreeRotatingDrag = false;
+        HideRotationOverlay();
+        currentPreviewRotation = 0;
+        UpdateRotationUiValues(0);
+        ApplyPreviewRotation();
+        UpdateRotationOverlay();
+    }
+
+    private void OnCancelRotationRequested(object recipient, CancelRotationMessage message)
+    {
+        isFreeRotatingDrag = false;
+        HideRotationOverlay();
+        ToggleRotateMode(false);
+    }
+
+    private void OnCloseFileRequested(object recipient, CloseFileMessage message)
+    {
+        AutosaveCurrentState();
+        WelcomeMessageModal.UpdateRecentProjects();
+        ResetApplicationState();
     }
 
     private void DrawPolyLine()
@@ -1054,27 +1251,8 @@ public partial class MainWindow : FluentWindow
 
     private void OverlayButton_Click(object sender, RoutedEventArgs e)
     {
-        WelcomeMessageModal.Visibility = Visibility.Collapsed;
-        BottomBorder.Visibility = Visibility.Visible;
-        MainGrid.Background = new SolidColorBrush(Colors.Transparent);
-        Background = new SolidColorBrush(Colors.Transparent);
-        ShapeCanvas.Background = new SolidColorBrush(Color.FromArgb(10, 255, 255, 255));
-        Topmost = true;
-
-        MeasureTabItem.IsSelected = true;
-        TransformTabItem.IsEnabled = false;
-        EditImageTabItem.IsEnabled = false;
-
-        CropButtonPanel.Visibility = Visibility.Collapsed;
-        TransformButtonPanel.Visibility = Visibility.Collapsed;
-        ResizeButtonsPanel.Visibility = Visibility.Collapsed;
-        SaveAndOpenDestFolderPanel.Visibility = Visibility.Collapsed;
-        UndoRedoPanel.Visibility = Visibility.Collapsed;
-
-        autoSaveTimer?.Stop();
-
-        ImageIconOpenedName.Symbol = SymbolRegular.Ruler24;
-        ReOpenFileText.Text = "Overlay Mode";
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.CloseWelcomeModalCommand.CanExecute(null))
+            vm.CloseWelcomeModalCommand.Execute(null);
     }
 
     //protected override void OnExtendsContentIntoTitleBarChanged(bool oldValue, bool newValue)
@@ -1594,14 +1772,8 @@ public partial class MainWindow : FluentWindow
 
     private void ResetMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        canvasScale.ScaleX = 1;
-        canvasScale.ScaleY = 1;
-
-        canvasScale.CenterX = 0;
-        canvasScale.CenterY = 0;
-
-        canvasTranslate.X = 0;
-        canvasTranslate.Y = 0;
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.ResetViewCommand.CanExecute(null))
+            vm.ResetViewCommand.Execute(null);
     }
 
     /// <summary>
@@ -1667,7 +1839,8 @@ public partial class MainWindow : FluentWindow
         /// </summary>
         private void CenterAndZoomToFitMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            CenterAndZoomToFit();
+            if (DataContext is ViewModels.MainWindowViewModel vm && vm.CenterAndZoomToFitCommand.CanExecute(null))
+                vm.CenterAndZoomToFitCommand.Execute(null);
         }
 
     private async void AutoContrastMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1724,50 +1897,26 @@ public partial class MainWindow : FluentWindow
 
     private void WhitePointPickerToggle_Checked(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(imagePath))
-        {
-            WhitePointPickerToggle.IsChecked = false;
-            return;
-        }
-
-        // Enable white point picker mode
-        isWhitePointPickerMode = true;
-        draggingMode = DraggingMode.WhitePointPicker;
-
-        // Change cursor to indicate picking mode
-        Cursor = Cursors.Cross;
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.EnableWhitePointPickerCommand.CanExecute(null))
+            vm.EnableWhitePointPickerCommand.Execute(null);
     }
 
     private void WhitePointPickerToggle_Unchecked(object sender, RoutedEventArgs e)
     {
-        // Disable white point picker mode
-        isWhitePointPickerMode = false;
-        draggingMode = DraggingMode.None;
-        Cursor = null;
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.DisableWhitePointPickerCommand.CanExecute(null))
+            vm.DisableWhitePointPickerCommand.Execute(null);
     }
 
     private void BlackPointPickerToggle_Checked(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(imagePath))
-        {
-            BlackPointPickerToggle.IsChecked = false;
-            return;
-        }
-
-        // Enable black point picker mode
-        isBlackPointPickerMode = true;
-        draggingMode = DraggingMode.BlackPointPicker;
-
-        // Change cursor to indicate picking mode
-        Cursor = Cursors.Cross;
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.EnableBlackPointPickerCommand.CanExecute(null))
+            vm.EnableBlackPointPickerCommand.Execute(null);
     }
 
     private void BlackPointPickerToggle_Unchecked(object sender, RoutedEventArgs e)
     {
-        // Disable black point picker mode
-        isBlackPointPickerMode = false;
-        draggingMode = DraggingMode.None;
-        Cursor = null;
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.DisableBlackPointPickerCommand.CanExecute(null))
+            vm.DisableBlackPointPickerCommand.Execute(null);
     }
 
     private async Task PickWhitePointColorAsync(Point imagePoint)
@@ -2266,8 +2415,8 @@ public partial class MainWindow : FluentWindow
 
     private void StretchMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        oldGridSize = new(ImageGrid.ActualWidth, ImageGrid.ActualHeight);
-        ShowResizeControls();
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.StartTransformCommand.CanExecute(null))
+            vm.StartTransformCommand.Execute(null);
     }
 
     private void ShowCroppingControls()
@@ -2538,11 +2687,8 @@ public partial class MainWindow : FluentWindow
 
     private void CancelResizeButton_Click(object sender, RoutedEventArgs e)
     {
-        ImageGrid.Width = oldGridSize.Width;
-        ImageGrid.Height = oldGridSize.Height;
-        ImageGrid.InvalidateMeasure();
-
-        HideResizeControls();
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.CancelResizeCommand.CanExecute(null))
+            vm.CancelResizeCommand.Execute(null);
     }
 
     private void HideResizeControls()
@@ -2677,13 +2823,8 @@ public partial class MainWindow : FluentWindow
 
     private void PixelModeToggle_Checked(object sender, RoutedEventArgs e)
     {
-        if (PercentageModeToggle != null)
-        {
-            PercentageModeToggle.IsChecked = false;
-            isPixelMode = true;
-            UpdateCurrentSizeDisplay();
-            UpdateSizeInputFields();
-        }
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.SetPixelModeCommand.CanExecute(null))
+            vm.SetPixelModeCommand.Execute(null);
     }
 
     private void PixelModeToggle_Unchecked(object sender, RoutedEventArgs e)
@@ -2696,13 +2837,8 @@ public partial class MainWindow : FluentWindow
 
     private void PercentageModeToggle_Checked(object sender, RoutedEventArgs e)
     {
-        if (PixelModeToggle is null)
-            return;
-
-        PixelModeToggle.IsChecked = false;
-        isPixelMode = false;
-        UpdateCurrentSizeDisplay();
-        UpdateSizeInputFields();
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.SetPercentageModeCommand.CanExecute(null))
+            vm.SetPercentageModeCommand.Execute(null);
     }
 
     private void PercentageModeToggle_Unchecked(object sender, RoutedEventArgs e)
@@ -2715,16 +2851,14 @@ public partial class MainWindow : FluentWindow
 
     private void AspectRatioLockToggle_Checked(object sender, RoutedEventArgs e)
     {
-        isAspectRatioLocked = true;
-        MainImage.Stretch = Stretch.Uniform;
-        AspectRatioIcon?.Symbol = SymbolRegular.Link24;
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.LockAspectRatioCommand.CanExecute(null))
+            vm.LockAspectRatioCommand.Execute(null);
     }
 
     private void AspectRatioLockToggle_Unchecked(object sender, RoutedEventArgs e)
     {
-        isAspectRatioLocked = false;
-        MainImage.Stretch = Stretch.Fill; // Allow stretching without maintaining aspect ratio
-        AspectRatioIcon?.Symbol = SymbolRegular.LinkDismiss24;
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.UnlockAspectRatioCommand.CanExecute(null))
+            vm.UnlockAspectRatioCommand.Execute(null);
     }
 
     private void UndoMenuItem_Click(object sender, RoutedEventArgs e)
@@ -3587,9 +3721,8 @@ public partial class MainWindow : FluentWindow
     private void CloseFileIcon_MouseDown(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
-        AutosaveCurrentState();
-        WelcomeMessageModal.UpdateRecentProjects();
-        ResetApplicationState();
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.CloseFileCommand.CanExecute(null))
+            vm.CloseFileCommand.Execute(null);
     }
 
     private void ResetApplicationState()
@@ -3777,7 +3910,8 @@ public partial class MainWindow : FluentWindow
 
     private void ClearDrawingsButton_Click(object sender, RoutedEventArgs e)
     {
-        ClearAllStrokesAndLengths();
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.ClearDrawingsCommand.CanExecute(null))
+            vm.ClearDrawingsCommand.Execute(null);
     }
 
     private void ClearAllStrokesAndLengths()
@@ -3905,11 +4039,8 @@ public partial class MainWindow : FluentWindow
 
     private void DrawingLinesRadio_Checked(object sender, RoutedEventArgs e)
     {
-        isDrawingMode = true;
-        DrawingCanvas.IsEnabled = isDrawingMode;
-
-        DrawingOptionsPanel.Visibility = Visibility.Visible;
-        DrawingCanvas.IsHitTestVisible = true;
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.EnableDrawingModeCommand.CanExecute(null))
+            vm.EnableDrawingModeCommand.Execute(null);
 
         if (sender is ToggleButton toggleButton)
             UncheckAllBut(toggleButton);
@@ -3917,11 +4048,8 @@ public partial class MainWindow : FluentWindow
 
     private void DrawingLinesRadio_Unchecked(object sender, RoutedEventArgs e)
     {
-        isDrawingMode = true;
-        DrawingCanvas.IsEnabled = isDrawingMode;
-
-        DrawingOptionsPanel.Visibility = Visibility.Collapsed;
-        DrawingCanvas.IsHitTestVisible = false;
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.DisableDrawingModeCommand.CanExecute(null))
+            vm.DisableDrawingModeCommand.Execute(null);
     }
 
     private void ToolSelector_Checked(object sender, RoutedEventArgs e)
@@ -4194,29 +4322,14 @@ public partial class MainWindow : FluentWindow
 
     private void FreeRotateToggle_Checked(object sender, RoutedEventArgs e)
     {
-        if (!isRotateMode)
-        {
-            FreeRotateToggle.IsChecked = false;
-            return;
-        }
-
-        // Add RotateAdorner to MainImage
-        rotateAdornerLayer ??= AdornerLayer.GetAdornerLayer(ImageGrid);
-        if (rotateAdornerLayer != null && rotateAdorner == null)
-        {
-            rotateAdorner = new RotateAdorner(ImageGrid)
-            {
-                Angle = currentPreviewRotation
-            };
-            rotateAdorner.AngleChanging += RotateAdorner_AngleChanging;
-            rotateAdorner.AngleChangedFinal += RotateAdorner_AngleChangedFinal;
-            rotateAdornerLayer.Add(rotateAdorner);
-        }
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.EnableFreeRotateCommand.CanExecute(null))
+            vm.EnableFreeRotateCommand.Execute(null);
     }
 
     private void FreeRotateToggle_Unchecked(object sender, RoutedEventArgs e)
     {
-        RemoveRotateAdorner();
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.DisableFreeRotateCommand.CanExecute(null))
+            vm.DisableFreeRotateCommand.Execute(null);
     }
 
     private void RotateAdorner_AngleChanging(object? sender, double angle)
@@ -4275,12 +4388,8 @@ public partial class MainWindow : FluentWindow
 
     private void ResetRotationButton_Click(object sender, RoutedEventArgs e)
     {
-        isFreeRotatingDrag = false;
-        HideRotationOverlay();
-        currentPreviewRotation = 0;
-        UpdateRotationUiValues(0);
-        ApplyPreviewRotation();
-        UpdateRotationOverlay();
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.ResetRotationCommand.CanExecute(null))
+            vm.ResetRotationCommand.Execute(null);
     }
 
     private async void ApplyRotationButton_Click(object sender, RoutedEventArgs e)
@@ -4362,9 +4471,8 @@ public partial class MainWindow : FluentWindow
 
     private void CancelRotationButton_Click(object sender, RoutedEventArgs e)
     {
-        isFreeRotatingDrag = false;
-        HideRotationOverlay();
-        ToggleRotateMode(false);
+        if (DataContext is ViewModels.MainWindowViewModel vm && vm.CancelRotationCommand.CanExecute(null))
+            vm.CancelRotationCommand.Execute(null);
     }
 
     private void PreciseRotateMenuItem_Click(object sender, RoutedEventArgs e)

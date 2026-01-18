@@ -214,8 +214,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>
     /// Creates a new project, prompting to save if there are unsaved changes.
+    /// Can only execute when not already loading.
     /// </summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanPerformImageOperations))]
     private async Task NewProject()
     {
         if (IsDirty && HasImage)
@@ -325,8 +326,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>
     /// Opens a file dialog and loads a project from the selected .mcm file.
+    /// Can only execute when not already loading.
     /// </summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanPerformImageOperations))]
     private async Task OpenProject()
     {
         var filter = "Magic Crop Project (*.mcm)|*.mcm|All Files (*.*)|*.*";
@@ -849,8 +851,9 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>
     /// Advances the measurement placement to the next step.
     /// Updates PlacementState based on the current tool and step count.
+    /// Can only execute when a measurement is being placed.
     /// </summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsPlacingMeasurement))]
     private void AdvancePlacementStep()
     {
         PlacementStep++;
@@ -891,8 +894,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>
     /// Loads an image from a file path and displays it.
+    /// Can only execute when not already loading an image.
     /// </summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanPerformImageOperations))]
     private async Task LoadImage()
     {
         var filePath = _fileDialogService.ShowOpenFileDialog("Image Files|*.png;*.jpg;*.jpeg;*.bmp;*.heic|All files (*.*)|*.*");
@@ -922,8 +926,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>
     /// Pastes an image from the clipboard and displays it.
+    /// Can only execute when not already loading an image.
     /// </summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanPerformImageOperations))]
     private async Task PasteFromClipboard()
     {
         var clipboardImage = _clipboardService.GetImage();
@@ -1433,8 +1438,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>
     /// Clears all measurements after confirming with the user.
+    /// Can only execute when there are measurements to clear.
     /// </summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasMeasurements))]
     private void ClearAllMeasurements()
     {
         if (!_navigationService.ShowConfirmation("Clear all measurements?"))
@@ -1484,6 +1490,15 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// Closes the welcome modal and prepares for overlay mode.
+    /// </summary>
+    [RelayCommand]
+    private void CloseWelcomeModal()
+    {
+        Send(new CloseWelcomeModalMessage());
+    }
+
+    /// <summary>
     /// Cancels the current crop operation.
     /// </summary>
     [RelayCommand]
@@ -1493,12 +1508,30 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// Cancels the current resize operation.
+    /// </summary>
+    [RelayCommand]
+    private void CancelResize()
+    {
+        Send(new CancelResizeMessage());
+    }
+
+    /// <summary>
     /// Cancels the current transform operation.
     /// </summary>
     [RelayCommand]
     private void CancelTransform()
     {
         Send(new CancelTransformMessage());
+    }
+
+    /// <summary>
+    /// Starts the stretch/transform operation.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(HasImage))]
+    private void StartTransform()
+    {
+        Send(new ShowTransformControlsMessage());
     }
 
     /// <summary>
@@ -1517,6 +1550,145 @@ public partial class MainWindowViewModel : ViewModelBase
     private void ShowTransform()
     {
         Send(new ShowTransformControlsMessage());
+    }
+
+    /// <summary>
+    /// Closes the currently opened file.
+    /// </summary>
+    [RelayCommand]
+    private void CloseFile()
+    {
+        Send(new CloseFileMessage());
+    }
+
+    #endregion
+
+    #region UI State Toggle Commands
+
+    /// <summary>
+    /// Enables white point picker mode.
+    /// </summary>
+    [RelayCommand]
+    private void EnableWhitePointPicker()
+    {
+        Send(new EnableWhitePointPickerMessage());
+    }
+
+    /// <summary>
+    /// Disables white point picker mode.
+    /// </summary>
+    [RelayCommand]
+    private void DisableWhitePointPicker()
+    {
+        Send(new DisableWhitePointPickerMessage());
+    }
+
+    /// <summary>
+    /// Enables black point picker mode.
+    /// </summary>
+    [RelayCommand]
+    private void EnableBlackPointPicker()
+    {
+        Send(new EnableBlackPointPickerMessage());
+    }
+
+    /// <summary>
+    /// Disables black point picker mode.
+    /// </summary>
+    [RelayCommand]
+    private void DisableBlackPointPicker()
+    {
+        Send(new DisableBlackPointPickerMessage());
+    }
+
+    /// <summary>
+    /// Sets the resize mode to pixel-based.
+    /// </summary>
+    [RelayCommand]
+    private void SetPixelMode()
+    {
+        Send(new SetPixelModeMessage());
+    }
+
+    /// <summary>
+    /// Sets the resize mode to percentage-based.
+    /// </summary>
+    [RelayCommand]
+    private void SetPercentageMode()
+    {
+        Send(new SetPercentageModeMessage());
+    }
+
+    /// <summary>
+    /// Locks the aspect ratio for resizing.
+    /// </summary>
+    [RelayCommand]
+    private void LockAspectRatio()
+    {
+        Send(new LockAspectRatioMessage());
+    }
+
+    /// <summary>
+    /// Unlocks the aspect ratio for resizing.
+    /// </summary>
+    [RelayCommand]
+    private void UnlockAspectRatio()
+    {
+        Send(new UnlockAspectRatioMessage());
+    }
+
+    /// <summary>
+    /// Enables drawing mode.
+    /// </summary>
+    [RelayCommand]
+    private void EnableDrawingMode()
+    {
+        Send(new EnableDrawingModeMessage());
+    }
+
+    /// <summary>
+    /// Disables drawing mode.
+    /// </summary>
+    [RelayCommand]
+    private void DisableDrawingMode()
+    {
+        Send(new DisableDrawingModeMessage());
+    }
+
+    /// <summary>
+    /// Enables free rotate mode.
+    /// </summary>
+    [RelayCommand]
+    private void EnableFreeRotate()
+    {
+        Send(new EnableFreeRotateMessage());
+    }
+
+    /// <summary>
+    /// Disables free rotate mode.
+    /// </summary>
+    [RelayCommand]
+    private void DisableFreeRotate()
+    {
+        Send(new DisableFreeRotateMessage());
+    }
+
+    /// <summary>
+    /// Resets the rotation to 0 degrees.
+    /// </summary>
+    [RelayCommand]
+    private void ResetRotation()
+    {
+        Send(new ResetRotationMessage());
+    }
+
+    /// <summary>
+    /// Cancels the rotation operation.
+    /// </summary>
+    [RelayCommand]
+    private void CancelRotation()
+    {
+        Send(new CancelRotationMessage());
     }
 
     #endregion
