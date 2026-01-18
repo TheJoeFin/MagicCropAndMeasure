@@ -560,3 +560,87 @@ dotnet build MagickCrop.sln
 - ✅ No regressions from MVVM migration
 - ✅ All measurement features preserved and working
 - ✅ Ready for Step 13: MainWindow State Management
+
+## Step 13 - MainWindow ViewModel - State Management - ✅ COMPLETE
+
+### All 11 Sub-Steps Completed (13a-13k)
+- **13a**: Create MainWindowViewModel.cs with basic constructor and service injection ✅
+- **13b**: Add image state properties (CurrentImage, HasImage, ImageWidth, ImageHeight) ✅
+- **13c**: Add tool state properties (CurrentTool enum, SelectedTool, IsPlacingMeasurement) ✅
+- **13d**: Add UI state properties (Zoom, ShowMeasurementPanel, WindowTitle) ✅
+- **13e**: Add project state properties (IsDirty, CurrentFilePath, CurrentProjectId) ✅
+- **13f**: Add tool selection commands (SelectToolCommand, StartMeasurementPlacementCommand, CancelPlacementCommand) ✅
+- **13g**: Add undo/redo state (CanUndo, CanRedo properties with UndoRedo manager) ✅
+- **13h**: Add UndoCommand and RedoCommand (both with CanExecute conditions) ✅
+- **13i**: Wire MainWindowViewModel in App.xaml.cs DI registration ✅
+- **13j**: Add DataContext binding in MainWindow.xaml.cs constructor with ViewModel injection ✅
+- **13k**: Bind first set of properties in MainWindow.xaml (Title, Undo/Redo, Welcome visibility) ✅
+
+### MainWindowViewModel Structure
+- **Observable Properties** (using `[ObservableProperty]`):
+  - Image State: CurrentImage, HasImage, ImageWidth, ImageHeight, ZoomLevel, IsRotating, RotationAngle
+  - Tool State: CurrentTool, IsPlacingMeasurement, PlacementState, PlacementStep
+  - Scale/Units: GlobalScaleFactor, GlobalUnits (with message notifications)
+  - Undo/Redo: CanUndo, CanRedo (with `UndoRedo` internal manager)
+  - UI State: ShowMeasurementPanel, ShowToolbar, SelectedAspectRatio, AspectRatios (ObservableCollection)
+  - Project State: IsDirty, CurrentFilePath, CurrentProjectId, IsWelcomeVisible
+  
+- **Relay Commands** (using `[RelayCommand]`):
+  - Tool Management: SelectTool(ToolMode), StartMeasurementPlacement(string), CancelPlacement()
+  - Undo/Redo: Undo(), Redo() (with CanExecute conditions)
+  - UI: ToggleMeasurementPanel(), ResetView(), ShowAbout()
+  - Scale: SetScale(scaleFactor, units), SetScaleFromMeasurement(pixelLength)
+  - Placement: AdvancePlacementStep()
+  
+- **Service Dependencies** (injected via constructor):
+  - IRecentProjectsService
+  - IFileDialogService
+  - IClipboardService
+  - INavigationService
+  
+- **Message Handling** (in InitializeAsync):
+  - ImageLoadedMessage → OnImageLoaded() - Sets HasImage, updates dimensions, clears welcome
+  - ProjectOpenedMessage → OnProjectOpened() - Sets CurrentProjectId and file path
+  - ImageModifiedMessage → OnImageModified() - Marks document as dirty
+
+### MainWindow Integration Changes
+- **Constructor Update**:
+  ```csharp
+  public MainWindow() : this(App.GetService<ViewModels.MainWindowViewModel>())
+  public MainWindow(ViewModels.MainWindowViewModel viewModel) : this(Singleton<RecentProjectsManager>.Instance)
+  {
+      DataContext = viewModel;
+  }
+  ```
+  - Sets ViewModel as DataContext for MVVM binding
+  - Preserves backward compatibility with existing code-behind
+  - Calls existing initialization chain
+
+- **XAML Bindings** (in MainWindow.xaml):
+  - Title: `{Binding WindowTitle, FallbackValue='Magick Crop &amp; Measure'}`
+  - Undo Button: `Command="{Binding UndoCommand}"`
+  - Redo Button: `Command="{Binding RedoCommand}"`
+  - Welcome Message: `Visibility="{Binding HasImage, Converter={StaticResource InverseBoolToVisibility}}"`
+
+### DI Registration (App.xaml.cs)
+- Added: `services.AddTransient<MainWindowViewModel>();`
+- MainWindow registered with ViewModel factory injection: `services.AddTransient<MainWindow>();`
+- Proper service ordering: Messenger → Services → ViewModels → Windows
+
+### Key Architecture Decisions
+- **Dual Mode During Transition**: ViewModel exists alongside existing code-behind (not removed yet)
+- **Property Delegation**: Code-behind methods can use `ViewModel.HasImage` instead of local fields
+- **Command-Based Tool Selection**: All tools selected via commands for future testability
+- **Messaging for Scale Changes**: GlobalScaleFactor/GlobalUnits trigger ScaleFactorChangedMessage
+- **Undo/Redo Management**: Internal UndoRedo manager handles state, CanUndo/CanRedo properties notify UI
+- **Enums Defined**: ToolMode (13 values) and PlacementState (4 values) for type-safe tool management
+
+### Build & Integration Status
+- ✅ Build succeeds: 38 pre-existing warnings, 0 new errors
+- ✅ MagickCrop.dll generated successfully
+- ✅ All MVVM bindings working
+- ✅ Title updates when document marked dirty (*asterisk in title)
+- ✅ Undo/Redo buttons properly enabled/disabled
+- ✅ Welcome message visibility toggles based on HasImage
+- ✅ No regressions in existing functionality
+- ✅ Ready for Step 14: MainWindow Image Operations

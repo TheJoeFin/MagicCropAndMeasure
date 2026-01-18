@@ -173,6 +173,72 @@ public partial class MainWindowViewModel : ViewModelBase
 
     #endregion
 
+    #region Undo/Redo
+
+    /// <summary>
+    /// Gets or sets the undo/redo manager for the application.
+    /// </summary>
+    private UndoRedo? _undoRedo;
+
+    /// <summary>
+    /// Gets whether undo operations are available.
+    /// </summary>
+    [ObservableProperty]
+    private bool _canUndo;
+
+    /// <summary>
+    /// Gets whether redo operations are available.
+    /// </summary>
+    [ObservableProperty]
+    private bool _canRedo;
+
+    /// <summary>
+    /// Executes an undo operation if available.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanUndo))]
+    private void Undo()
+    {
+        _undoRedo?.Undo();
+        UpdateUndoRedoState();
+    }
+
+    /// <summary>
+    /// Executes a redo operation if available.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanRedo))]
+    private void Redo()
+    {
+        _undoRedo?.Redo();
+        UpdateUndoRedoState();
+    }
+
+    /// <summary>
+    /// Sets up callbacks for undo/redo state changes.
+    /// </summary>
+    private void SetupUndoRedoCallbacks()
+    {
+        if (_undoRedo != null)
+        {
+            UpdateUndoRedoState();
+        }
+    }
+
+    /// <summary>
+    /// Updates the CanUndo and CanRedo properties based on current undo/redo state.
+    /// </summary>
+    private void UpdateUndoRedoState()
+    {
+        if (_undoRedo != null)
+        {
+            CanUndo = _undoRedo.CanUndo;
+            CanRedo = _undoRedo.CanRedo;
+            UndoCommand.NotifyCanExecuteChanged();
+            RedoCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    #endregion
+
     #region Lifecycle
 
     /// <summary>
@@ -181,6 +247,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public override async Task InitializeAsync()
     {
         await base.InitializeAsync();
+        _undoRedo = new UndoRedo();
+        SetupUndoRedoCallbacks();
     }
 
     /// <summary>

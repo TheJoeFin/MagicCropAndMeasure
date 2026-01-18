@@ -143,10 +143,16 @@ public partial class MainWindow : FluentWindow
     // Hover highlight polygon for quadrilateral selector
     private Polygon? hoverHighlightPolygon;
 
-    public MainWindow() : this(Singleton<RecentProjectsManager>.Instance)
+    public MainWindow() : this(App.GetService<ViewModels.MainWindowViewModel>())
     {
     }
 
+    public MainWindow(ViewModels.MainWindowViewModel viewModel) : this(Singleton<RecentProjectsManager>.Instance)
+    {
+        DataContext = viewModel;
+    }
+
+    [System.Obsolete("Use constructor with MainWindowViewModel instead")]
     public MainWindow(RecentProjectsManager recentProjectsManager)
     {
         _recentProjectsManager = recentProjectsManager;

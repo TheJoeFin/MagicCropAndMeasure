@@ -4,22 +4,25 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:behaviors="clr-namespace:MagickCrop.Behaviors"
     xmlns:c="clr-namespace:MagickCrop.Controls"
+    xmlns:converters="clr-namespace:MagickCrop.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:MagickCrop"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="clr-namespace:MagickCrop.Models"
     xmlns:wpfui="http://schemas.lepo.co/wpfui/2022/xaml"
-    Title="Magick Crop &amp; Measure"
+    Title="{Binding WindowTitle, FallbackValue='Magick Crop &amp; Measure'}"
     Width="1000"
     Height="800"
     AllowDrop="True"
-    DataContext="{Binding RelativeSource={RelativeSource Self}}"
     MouseMove="TopLeft_MouseMove"
     PreviewDragOver="FluentWindow_PreviewDragOver"
     PreviewDrop="FluentWindow_PreviewDrop"
     PreviewKeyDown="FluentWindow_PreviewKeyDown"
     mc:Ignorable="d">
     <Window.Resources>
+        <!-- Converters -->
+        <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisibility" />
+        
         <Style TargetType="Ellipse">
             <Setter Property="Height" Value="12" />
             <Setter Property="Width" Value="12" />
@@ -220,7 +223,8 @@
 
         <c:WelcomeMessage
             x:Name="WelcomeMessageModal"
-            Grid.Row="1" />
+            Grid.Row="1"
+            Visibility="{Binding HasImage, Converter={StaticResource InverseBoolToVisibility}}" />
 
         <Border
             x:Name="BottomBorder"
@@ -271,26 +275,27 @@
                             x:Name="UndoRedoPanel"
                             HorizontalAlignment="Center"
                             Orientation="Horizontal">
-                            <MenuItem
-                                x:Name="UndoMenuItem"
-                                Click="UndoMenuItem_Click"
-                                Header="Undo"
-                                IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type wpfui:FluentWindow}}, Path=undoRedo.CanUndo, Mode=OneWay}"
+                            <wpfui:Button
+                                x:Name="UndoButton"
+                                Width="100"
+                                Command="{Binding UndoCommand}"
                                 ToolTip="Undo last action">
-                                <MenuItem.Icon>
-                                    <wpfui:SymbolIcon Symbol="ArrowUndo24" />
-                                </MenuItem.Icon>
-                            </MenuItem>
-                            <MenuItem
-                                x:Name="RedoMenuItem"
-                                Click="RedoMenuItem_Click"
-                                Header=""
-                                IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type wpfui:FluentWindow}}, Path=undoRedo.CanRedo, Mode=OneWay}"
+                                <StackPanel Orientation="Horizontal">
+                                    <wpfui:SymbolIcon Margin="0,0,6,0" Symbol="ArrowUndo24" />
+                                    <TextBlock VerticalAlignment="Center" Text="Undo" />
+                                </StackPanel>
+                            </wpfui:Button>
+                            <wpfui:Button
+                                x:Name="RedoButton"
+                                Width="100"
+                                Margin="8,0,0,0"
+                                Command="{Binding RedoCommand}"
                                 ToolTip="Redo last undone action">
-                                <MenuItem.Icon>
-                                    <wpfui:SymbolIcon Symbol="ArrowRedo24" />
-                                </MenuItem.Icon>
-                            </MenuItem>
+                                <StackPanel Orientation="Horizontal">
+                                    <wpfui:SymbolIcon Margin="0,0,6,0" Symbol="ArrowRedo24" />
+                                    <TextBlock VerticalAlignment="Center" Text="Redo" />
+                                </StackPanel>
+                            </wpfui:Button>
                         </StackPanel>
                         <TextBlock Text="Tools" />
                         <TabControl ItemContainerStyle="{StaticResource NarrowTabHeaderStyle}">

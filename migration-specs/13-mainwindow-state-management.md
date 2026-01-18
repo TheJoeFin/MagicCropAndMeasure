@@ -20,11 +20,11 @@ Create the MainWindowViewModel and extract application state management from Mai
 | **13d** ✅ | Add UI state properties (Zoom, StatusBarText, WindowTitle) | 20 min | **DONE** |
 | **13e** ✅ | Add project state properties (HasUnsavedChanges, ProjectFileName, IsProjectLoaded) | 30 min | **DONE** |
 | **13f** ✅ | Add tool selection commands (SelectToolCommand for each tool type) | 45 min | **DONE** |
-| **13g** | Add undo/redo state (UndoStack, CanUndo, CanRedo) - properties only | 30 min |  |
-| **13h** | Add UndoCommand and RedoCommand | 30 min |  |
-| **13i** | Wire MainWindowViewModel in App.xaml.cs DI registration | 20 min |  |
-| **13j** | Add DataContext binding in MainWindow.xaml.cs constructor | 20 min |  |
-| **13k** | Bind first set of properties in MainWindow.xaml (test with simple bindings) | 30 min |  |
+| **13g** ✅ | Add undo/redo state (UndoStack, CanUndo, CanRedo) - properties only | 30 min | **DONE** |
+| **13h** ✅ | Add UndoCommand and RedoCommand | 30 min | **DONE** |
+| **13i** ✅ | Wire MainWindowViewModel in App.xaml.cs DI registration | 20 min | **DONE** |
+| **13j** ✅ | Add DataContext binding in MainWindow.xaml.cs constructor | 20 min | **DONE** |
+| **13k** ✅ | Bind first set of properties in MainWindow.xaml (test with simple bindings) | 30 min | **DONE** |
 
 Each sub-step should be its own commit with a working build.
 

@@ -30,7 +30,7 @@ Look for the "Sub-Steps" table at the top of each spec file to see the breakdown
 | ✅ 10 | [10-recentprojectitem-migration.md](10-recentprojectitem-migration.md) | Migrate RecentProjectItem control | 1-2 hours | - | ✅ **DONE** |
 | ✅ 11 | [11-measurement-controls-base.md](11-measurement-controls-base.md) | Create measurement base classes | 3-4 hours | **10 sub-steps (11a-11j)** | ✅ **DONE** |
 | 12 | [12-measurement-controls-migration.md](12-measurement-controls-migration.md) | Migrate individual measurement controls | 4-6 hours | **9 sub-steps (12a-12i)** | ✅ **DONE** |
-| 13 | [13-mainwindow-state-management.md](13-mainwindow-state-management.md) | Extract state management to ViewModel | 4-5 hours | **11 sub-steps (13a-13k)** | 🔶 IN PROGRESS (6/11 - commands added) |
+| ✅ 13 | [13-mainwindow-state-management.md](13-mainwindow-state-management.md) | Extract state management to ViewModel | 4-5 hours | **11 sub-steps (13a-13k)** | ✅ **DONE** |
 | 14 | [14-mainwindow-image-operations.md](14-mainwindow-image-operations.md) | Extract image operations | 4-5 hours | **13 sub-steps (14a-14m)** | - |
 | 15 | [15-mainwindow-measurement-management.md](15-mainwindow-measurement-management.md) | Extract measurement collection management | 4-5 hours | **13 sub-steps (15a-15m)** | - |
 | 16 | [16-mainwindow-file-operations.md](16-mainwindow-file-operations.md) | Extract file save/load operations | 4-5 hours | **13 sub-steps (16a-16m)** | - |

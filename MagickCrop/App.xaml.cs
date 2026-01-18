@@ -74,10 +74,10 @@ public partial class App : Application
             (RecentProjectsManager)sp.GetRequiredService<IRecentProjectsService>());
         
         // Register ViewModels
+        services.AddTransient<MainWindowViewModel>();
         services.AddTransient<WelcomeViewModel>();
         services.AddTransient<AboutWindowViewModel>();
         services.AddTransient<SaveWindowViewModel>();
-        // services.AddTransient<MainWindowViewModel>();
         
         // Register Measurement ViewModels
         services.AddTransient<DistanceMeasurementViewModel>();
