@@ -3301,7 +3301,7 @@ public partial class MainWindow : FluentWindow
                 Title = "Error",
                 Content = "No image loaded. Please open an image first.",
             };
-            uiMessageBox.ShowDialogAsync();
+            _ = uiMessageBox.ShowDialogAsync();
             return;
         }
 
@@ -3402,7 +3402,7 @@ public partial class MainWindow : FluentWindow
                     Title = "Error",
                     Content = "Failed to save the measurement package.",
                 };
-                uiMessageBox.ShowDialogAsync();
+                _ = uiMessageBox.ShowDialogAsync();
             }
         }
         finally
