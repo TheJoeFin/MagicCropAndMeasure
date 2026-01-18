@@ -65,8 +65,8 @@ public partial class App : Application
         services.AddSingleton<IRecentProjectsService, RecentProjectsManager>();
         services.AddSingleton<IFileDialogService, FileDialogService>();
         services.AddSingleton<IClipboardService, ClipboardService>();
+        services.AddSingleton<IImageProcessingService, ImageProcessingService>();
         services.AddSingleton<INavigationService, NavigationService>();
-        // services.AddSingleton<IImageProcessingService, ImageProcessingService>(); // To be implemented in Step 14
         // services.AddSingleton<IThemeService, ThemeService>(); // To be implemented in future step
 
         // Keep backward compatibility during migration
