@@ -11,6 +11,7 @@
     <Canvas x:Name="MeasurementCanvas">
         <Path
             x:Name="PolygonPath"
+            Data="{Binding Converter={StaticResource PolygonPathConverter}}"
             Stroke="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
             StrokeDashArray="4,2"
             StrokeThickness="{Binding StrokeThickness}"

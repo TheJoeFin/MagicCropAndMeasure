@@ -143,7 +143,7 @@ public partial class PolygonMeasurementControl : MeasurementControlBase
         // Reset first vertex appearance back to normal
         ResetFirstVertexAppearance();
 
-        UpdatePolygonPath();
+        PositionMeasurementText();
 
         System.Diagnostics.Debug.WriteLine("ClosePolygon: Polygon successfully closed");
     }
@@ -182,28 +182,6 @@ public partial class PolygonMeasurementControl : MeasurementControlBase
 
     private void UpdatePolygonPath()
     {
-        if (ViewModel is null || ViewModel.VertexCount == 0)
-        {
-            PolygonPath.Data = null;
-            return;
-        }
-
-        var geometry = new PathGeometry();
-        var figure = new PathFigure { StartPoint = ViewModel.Vertices[0] };
-
-        for (int i = 1; i < ViewModel.VertexCount; i++)
-        {
-            figure.Segments.Add(new LineSegment(ViewModel.Vertices[i], true));
-        }
-
-        if (ViewModel.IsClosed && ViewModel.VertexCount >= 3)
-        {
-            figure.IsClosed = true;
-        }
-
-        geometry.Figures.Add(figure);
-        PolygonPath.Data = geometry;
-
         PositionMeasurementText();
     }
 
@@ -229,7 +207,7 @@ public partial class PolygonMeasurementControl : MeasurementControlBase
             return;
 
         ViewModel.UpdateVertex(pointIndex, newPosition);
-        UpdatePolygonPath();
+        PositionMeasurementText();
     }
 
     /// <summary>
@@ -290,7 +268,7 @@ public partial class PolygonMeasurementControl : MeasurementControlBase
             PolygonPath.IsHitTestVisible = true;
         }
 
-        UpdatePolygonPath();
+        PositionMeasurementText();
 
         System.Diagnostics.Debug.WriteLine($"FromDto: Polygon restoration complete");
     }
