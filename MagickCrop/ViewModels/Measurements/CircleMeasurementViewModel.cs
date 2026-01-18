@@ -13,6 +13,8 @@ public partial class CircleMeasurementViewModel : MeasurementViewModelBase
     [NotifyPropertyChangedFor(nameof(Diameter))]
     [NotifyPropertyChangedFor(nameof(Circumference))]
     [NotifyPropertyChangedFor(nameof(Area))]
+    [NotifyPropertyChangedFor(nameof(CircleCanvasLeft))]
+    [NotifyPropertyChangedFor(nameof(CircleCanvasTop))]
     private Point _centerPoint;
 
     [ObservableProperty]
@@ -20,6 +22,8 @@ public partial class CircleMeasurementViewModel : MeasurementViewModelBase
     [NotifyPropertyChangedFor(nameof(Diameter))]
     [NotifyPropertyChangedFor(nameof(Circumference))]
     [NotifyPropertyChangedFor(nameof(Area))]
+    [NotifyPropertyChangedFor(nameof(CircleCanvasLeft))]
+    [NotifyPropertyChangedFor(nameof(CircleCanvasTop))]
     private Point _edgePoint;
 
     [ObservableProperty]
@@ -35,6 +39,16 @@ public partial class CircleMeasurementViewModel : MeasurementViewModelBase
     private double _area;
 
     public override string MeasurementType => "Circle";
+
+    /// <summary>
+    /// Gets the left position for the circle's canvas element (center - radius).
+    /// </summary>
+    public double CircleCanvasLeft => CenterPoint.X - Radius;
+
+    /// <summary>
+    /// Gets the top position for the circle's canvas element (center - radius).
+    /// </summary>
+    public double CircleCanvasTop => CenterPoint.Y - Radius;
 
     partial void OnCenterPointChanged(Point value) => CalculateMeasurements();
     partial void OnEdgePointChanged(Point value) => CalculateMeasurements();

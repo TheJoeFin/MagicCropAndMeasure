@@ -250,9 +250,38 @@ dotnet build MagickCrop.sln
   - All measurement ViewModels compile and ready for use
   - Ready for Step 12: Measurement Controls Migration
 
+## Step 12b - AngleMeasurementControl MVVM Migration
+- **Changes Made:**
+  - Created `Converters/AngleArcPathConverter.cs`:
+    - Converts `AngleMeasurementViewModel` to `PathGeometry` for the angle arc
+    - Calculates vectors from vertex to points, normalizes, scales to arc radius (25)
+    - Creates path geometry with line and arc segments
+    - Automatically recalculates when Point1, Vertex, Point2, or AngleDegrees changes
+  
+  - Updated `Controls/AngleMeasurementControl.xaml`:
+    - Changed Path.Data binding to: `Data="{Binding Converter={StaticResource AngleArcPathConverter}}"`
+    - Arc now updates via binding instead of manual method calls
+  
+  - Updated `Controls/AngleMeasurementControl.xaml.cs`:
+    - Removed `UpdateAngleArc()` method (~60 lines) - no longer needed
+    - Removed `UpdateAngleArc()` calls from constructor, InitializePositions(), MovePoint()
+    - Kept all backward compatibility events and methods for MainWindow integration
+  
+  - Updated `App.xaml`:
+    - Registered `AngleArcPathConverter` in resources
+  
+- **Key Design Patterns:**
+  - **Binding-Driven Geometry:** PathGeometry calculated by converter via binding instead of code-behind
+  - **Automatic Recalculation:** Arc updates when any measurement point changes
+  - **Backward Compatibility:** All public methods and events preserved
+  
+- **Application Status:**
+  - Build succeeds with 36 pre-existing warnings (same as before)
+  - Ready for Step 12c: CircleMeasurementControl migration
+
 ## Next Steps
-- Step 12b: AngleMeasurementControl MVVM Migration
-- Remaining measurements: CircleMeasurementControl, RectangleMeasurementControl, PolygonMeasurementControl
+- Step 12c: CircleMeasurementControl MVVM Migration
+- Remaining measurements: RectangleMeasurementControl, PolygonMeasurementControl
 - Step 13: MainWindow State Management (depends on Step 12)
 
 ## Step 12a - DistanceMeasurementControl MVVM Migration

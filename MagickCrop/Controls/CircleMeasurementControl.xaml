@@ -1,25 +1,34 @@
-<UserControl
+<local:MeasurementControlBase
     x:Class="MagickCrop.Controls.CircleMeasurementControl"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:MagickCrop.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    xmlns:vm="clr-namespace:MagickCrop.ViewModels.Measurements"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type=vm:CircleMeasurementViewModel}">
     <Canvas x:Name="MeasurementCanvas">
         <Ellipse
             x:Name="MeasurementCircle"
+            Width="{Binding Diameter}"
+            Height="{Binding Diameter}"
+            Canvas.Left="{Binding CircleCanvasLeft}"
+            Canvas.Top="{Binding CircleCanvasTop}"
             Fill="#200066FF"
             Opacity="0.4"
-            Stroke="#0066FF"
+            Stroke="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
             StrokeDashArray="4,2"
-            StrokeThickness="2"
+            StrokeThickness="{Binding StrokeThickness}"
             ToolTip="Measured circle" />
         <Ellipse
             x:Name="CenterPoint"
             Width="12"
             Height="12"
+            Canvas.Left="{Binding CenterPoint.X, Converter={StaticResource SubtractHalfConverter}, ConverterParameter=6}"
+            Canvas.Top="{Binding CenterPoint.Y, Converter={StaticResource SubtractHalfConverter}, ConverterParameter=6}"
             Cursor="SizeAll"
-            Fill="#0066FF"
+            Fill="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
             MouseDown="MeasurementPoint_MouseDown"
             Opacity="0.8"
             Stroke="White"
@@ -30,8 +39,10 @@
             x:Name="EdgePoint"
             Width="12"
             Height="12"
+            Canvas.Left="{Binding EdgePoint.X, Converter={StaticResource SubtractHalfConverter}, ConverterParameter=6}"
+            Canvas.Top="{Binding EdgePoint.Y, Converter={StaticResource SubtractHalfConverter}, ConverterParameter=6}"
             Cursor="SizeAll"
-            Fill="#0066FF"
+            Fill="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
             MouseDown="MeasurementPoint_MouseDown"
             Opacity="0.8"
             Stroke="White"
@@ -40,6 +51,8 @@
             ToolTip="Drag to set radius" />
         <Border
             x:Name="MeasurementText"
+            Canvas.Left="{Binding CenterPoint.X, Converter={StaticResource SubtractHalfConverter}, ConverterParameter=40}"
+            Canvas.Top="{Binding CenterPoint.Y, Converter={StaticResource SubtractHalfConverter}, ConverterParameter=60}"
             Padding="5,2"
             Background="#7F000000"
             CornerRadius="3"
@@ -60,8 +73,9 @@
                 <TextBlock
                     x:Name="CircleTextBlock"
                     FontWeight="Bold"
-                    Foreground="White" />
+                    Foreground="White"
+                    Text="{Binding DisplayText}" />
             </Button>
         </Border>
     </Canvas>
-</UserControl>
+</local:MeasurementControlBase>

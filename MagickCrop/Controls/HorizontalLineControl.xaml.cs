@@ -3,11 +3,13 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using CommunityToolkit.Mvvm.DependencyInjection;
+using MagickCrop.ViewModels.Measurements;
 using Wpf.Ui.Controls;
 
 namespace MagickCrop.Controls;
 
-public partial class HorizontalLineControl : UserControl
+public partial class HorizontalLineControl : MeasurementControlBase
 {
     private bool isDragging = false;
     private Point initialMousePosition;
@@ -15,23 +17,44 @@ public partial class HorizontalLineControl : UserControl
     public delegate void RemoveControlRequestedEventHandler(object sender, EventArgs e);
     public event RemoveControlRequestedEventHandler? RemoveControlRequested;
 
+    /// <summary>
+    /// Gets the ViewModel for this control.
+    /// </summary>
+    public HorizontalLineViewModel? ViewModel => DataContext as HorizontalLineViewModel;
+
     public HorizontalLineControl()
     {
         InitializeComponent();
+
+        // Create or use injected ViewModel
+        if (DataContext is not HorizontalLineViewModel)
+        {
+            try
+            {
+                DataContext = Ioc.Default.GetService<HorizontalLineViewModel>() ?? new HorizontalLineViewModel();
+            }
+            catch
+            {
+                DataContext = new HorizontalLineViewModel();
+            }
+        }
     }
 
     public void Initialize(double canvasWidth, double canvasHeight, double yPosition = 40)
     {
-        // Set line points
-        HorizontalLine.X1 = 0;
-        HorizontalLine.Y1 = yPosition;
-        HorizontalLine.X2 = canvasWidth;
-        HorizontalLine.Y2 = yPosition;
+        if (ViewModel is HorizontalLineViewModel vm)
+        {
+            vm.Position = yPosition;
+            vm.CanvasSize = canvasWidth;
+        }
     }
 
     public void Resize(double canvasWidth)
     {
-        HorizontalLine.X2 = canvasWidth;
+        if (ViewModel is HorizontalLineViewModel vm)
+        {
+            vm.CanvasSize = canvasWidth;
+        }
     }
 
     private void HorizontalLine_MouseDown(object sender, MouseButtonEventArgs e)
@@ -51,13 +74,12 @@ public partial class HorizontalLineControl : UserControl
 
     private void HorizontalLine_MouseMove(object sender, MouseEventArgs e)
     {
-        if (isDragging)
+        if (isDragging && ViewModel is HorizontalLineViewModel vm)
         {
             Point currentMousePosition = e.GetPosition(LineCanvas);
             double deltaY = currentMousePosition.Y - initialMousePosition.Y;
 
-            HorizontalLine.Y1 += deltaY;
-            HorizontalLine.Y2 += deltaY;
+            vm.Position += deltaY;
 
             initialMousePosition = currentMousePosition;
             e.Handled = true;
@@ -113,7 +135,7 @@ public partial class HorizontalLineControl : UserControl
 
         NumberBox thicknessSlider = new()
         {
-            Value = HorizontalLine.StrokeThickness,
+            Value = ViewModel?.StrokeThickness ?? 2.0,
             Minimum = 0.5,
             Maximum = 5.0,
             SmallChange = 0.5,
@@ -127,9 +149,9 @@ public partial class HorizontalLineControl : UserControl
         thicknessDialog.DialogHost = mainWindow.Presenter;
         // Show dialog
         ContentDialogResult result = await thicknessDialog.ShowAsync();
-        if (result == ContentDialogResult.Primary && thicknessSlider.Value.HasValue)
+        if (result == ContentDialogResult.Primary && thicknessSlider.Value.HasValue && ViewModel is HorizontalLineViewModel vm)
         {
-            HorizontalLine.StrokeThickness = thicknessSlider.Value.Value;
+            vm.StrokeThickness = thicknessSlider.Value.Value;
         }
     }
 
@@ -142,32 +164,34 @@ public partial class HorizontalLineControl : UserControl
     {
         return new HorizontalLineControlDto
         {
-            Position = HorizontalLine.Y1,
-            StrokeColor = (HorizontalLine.Stroke as SolidColorBrush)?.Color.ToString() ?? "#800080",
-            StrokeThickness = HorizontalLine.StrokeThickness
+            Position = ViewModel?.Position ?? 0,
+            StrokeColor = ViewModel?.Color.ToString() ?? "#800080",
+            StrokeThickness = ViewModel?.StrokeThickness ?? 2.0
         };
     }
 
     public void FromDto(HorizontalLineControlDto dto)
     {
-        HorizontalLine.Y1 = dto.Position;
-        HorizontalLine.Y2 = dto.Position;
-
-        // Parse color from stored string
-        if (dto.StrokeColor != null)
+        if (ViewModel is HorizontalLineViewModel vm)
         {
-            try
-            {
-                Color color = (Color)ColorConverter.ConvertFromString(dto.StrokeColor);
-                HorizontalLine.Stroke = new SolidColorBrush(color);
-            }
-            catch
-            {
-                // Fallback to default color if parsing fails
-                HorizontalLine.Stroke = Brushes.Purple;
-            }
-        }
+            vm.Position = dto.Position;
 
-        HorizontalLine.StrokeThickness = dto.StrokeThickness;
+            // Parse color from stored string
+            if (dto.StrokeColor != null)
+            {
+                try
+                {
+                    Color color = (Color)ColorConverter.ConvertFromString(dto.StrokeColor);
+                    vm.Color = color;
+                }
+                catch
+                {
+                    // Fallback to default color if parsing fails
+                    vm.Color = Colors.Purple;
+                }
+            }
+
+            vm.StrokeThickness = dto.StrokeThickness;
+        }
     }
 }

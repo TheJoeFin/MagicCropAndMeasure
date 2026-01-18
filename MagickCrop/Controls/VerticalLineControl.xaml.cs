@@ -3,11 +3,13 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using CommunityToolkit.Mvvm.DependencyInjection;
+using MagickCrop.ViewModels.Measurements;
 using Wpf.Ui.Controls;
 
 namespace MagickCrop.Controls;
 
-public partial class VerticalLineControl : UserControl
+public partial class VerticalLineControl : MeasurementControlBase
 {
     private bool isDragging = false;
     private Point initialMousePosition;
@@ -15,23 +17,44 @@ public partial class VerticalLineControl : UserControl
     public delegate void RemoveControlRequestedEventHandler(object sender, EventArgs e);
     public event RemoveControlRequestedEventHandler? RemoveControlRequested;
 
+    /// <summary>
+    /// Gets the ViewModel for this control.
+    /// </summary>
+    public VerticalLineViewModel? ViewModel => DataContext as VerticalLineViewModel;
+
     public VerticalLineControl()
     {
         InitializeComponent();
+
+        // Create or use injected ViewModel
+        if (DataContext is not VerticalLineViewModel)
+        {
+            try
+            {
+                DataContext = Ioc.Default.GetService<VerticalLineViewModel>() ?? new VerticalLineViewModel();
+            }
+            catch
+            {
+                DataContext = new VerticalLineViewModel();
+            }
+        }
     }
 
     public void Initialize(double canvasWidth, double canvasHeight, double xPosition = 40)
     {
-        // Set line points
-        VerticalLine.X1 = xPosition;
-        VerticalLine.Y1 = 0;
-        VerticalLine.X2 = xPosition;
-        VerticalLine.Y2 = canvasHeight;
+        if (ViewModel is VerticalLineViewModel vm)
+        {
+            vm.Position = xPosition;
+            vm.CanvasSize = canvasHeight;
+        }
     }
 
     public void Resize(double canvasHeight)
     {
-        VerticalLine.Y2 = canvasHeight;
+        if (ViewModel is VerticalLineViewModel vm)
+        {
+            vm.CanvasSize = canvasHeight;
+        }
     }
 
     private void VerticalLine_MouseDown(object sender, MouseButtonEventArgs e)
@@ -51,13 +74,12 @@ public partial class VerticalLineControl : UserControl
 
     private void VerticalLine_MouseMove(object sender, MouseEventArgs e)
     {
-        if (isDragging)
+        if (isDragging && ViewModel is VerticalLineViewModel vm)
         {
             Point currentMousePosition = e.GetPosition(LineCanvas);
             double deltaX = currentMousePosition.X - initialMousePosition.X;
 
-            VerticalLine.X1 += deltaX;
-            VerticalLine.X2 += deltaX;
+            vm.Position += deltaX;
 
             initialMousePosition = currentMousePosition;
             e.Handled = true;
@@ -113,7 +135,7 @@ public partial class VerticalLineControl : UserControl
 
         NumberBox thicknessSlider = new()
         {
-            Value = VerticalLine.StrokeThickness,
+            Value = ViewModel?.StrokeThickness ?? 2.0,
             Minimum = 0.5,
             Maximum = 5.0,
             SmallChange = 0.5,
@@ -128,9 +150,9 @@ public partial class VerticalLineControl : UserControl
 
         // Show dialog
         ContentDialogResult result = await thicknessDialog.ShowAsync();
-        if (result == ContentDialogResult.Primary && thicknessSlider.Value.HasValue)
+        if (result == ContentDialogResult.Primary && thicknessSlider.Value.HasValue && ViewModel is VerticalLineViewModel vm)
         {
-            VerticalLine.StrokeThickness = thicknessSlider.Value.Value;
+            vm.StrokeThickness = thicknessSlider.Value.Value;
         }
     }
 
@@ -143,32 +165,34 @@ public partial class VerticalLineControl : UserControl
     {
         return new VerticalLineControlDto
         {
-            Position = VerticalLine.X1,
-            StrokeColor = (VerticalLine.Stroke as SolidColorBrush)?.Color.ToString() ?? "#800080",
-            StrokeThickness = VerticalLine.StrokeThickness
+            Position = ViewModel?.Position ?? 0,
+            StrokeColor = ViewModel?.Color.ToString() ?? "#800080",
+            StrokeThickness = ViewModel?.StrokeThickness ?? 2.0
         };
     }
 
     public void FromDto(VerticalLineControlDto dto)
     {
-        VerticalLine.X1 = dto.Position;
-        VerticalLine.X2 = dto.Position;
-
-        // Parse color from stored string
-        if (dto.StrokeColor != null)
+        if (ViewModel is VerticalLineViewModel vm)
         {
-            try
-            {
-                Color color = (Color)ColorConverter.ConvertFromString(dto.StrokeColor);
-                VerticalLine.Stroke = new SolidColorBrush(color);
-            }
-            catch
-            {
-                // Fallback to default color if parsing fails
-                VerticalLine.Stroke = Brushes.Purple;
-            }
-        }
+            vm.Position = dto.Position;
 
-        VerticalLine.StrokeThickness = dto.StrokeThickness;
+            // Parse color from stored string
+            if (dto.StrokeColor != null)
+            {
+                try
+                {
+                    Color color = (Color)ColorConverter.ConvertFromString(dto.StrokeColor);
+                    vm.Color = color;
+                }
+                catch
+                {
+                    // Fallback to default color if parsing fails
+                    vm.Color = Colors.Purple;
+                }
+            }
+
+            vm.StrokeThickness = dto.StrokeThickness;
+        }
     }
 }

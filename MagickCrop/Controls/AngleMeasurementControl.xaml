@@ -1,45 +1,59 @@
-<UserControl
+<local:MeasurementControlBase
     x:Class="MagickCrop.Controls.AngleMeasurementControl"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:MagickCrop.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    xmlns:vm="clr-namespace:MagickCrop.ViewModels.Measurements"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type=vm:AngleMeasurementViewModel}">
     <Canvas x:Name="MeasurementCanvas">
         <Line
             x:Name="Line1"
+            X1="{Binding Point1.X}"
+            Y1="{Binding Point1.Y}"
+            X2="{Binding Vertex.X}"
+            Y2="{Binding Vertex.Y}"
             IsHitTestVisible="False"
             Opacity="0.8"
-            Stroke="#0066FF"
+            Stroke="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
             StrokeDashArray="4,2"
-            StrokeThickness="2"
+            StrokeThickness="{Binding StrokeThickness}"
             ToolTip="Angle leg" />
 
         <Line
             x:Name="Line2"
+            X1="{Binding Vertex.X}"
+            Y1="{Binding Vertex.Y}"
+            X2="{Binding Point2.X}"
+            Y2="{Binding Point2.Y}"
             IsHitTestVisible="False"
             Opacity="0.8"
-            Stroke="#0066FF"
+            Stroke="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
             StrokeDashArray="4,2"
-            StrokeThickness="2"
+            StrokeThickness="{Binding StrokeThickness}"
             ToolTip="Angle leg" />
 
         <Path
             x:Name="AngleArc"
+            Data="{Binding Converter={StaticResource AngleArcPathConverter}}"
             Fill="#200066FF"
             IsHitTestVisible="False"
             Opacity="0.8"
-            Stroke="#0066FF"
+            Stroke="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
             StrokeLineJoin="Round"
-            StrokeThickness="2"
+            StrokeThickness="{Binding StrokeThickness}"
             ToolTip="Angle arc" />
 
         <Ellipse
             x:Name="Point1"
             Width="12"
             Height="12"
+            Canvas.Left="{Binding Point1.X, Converter={StaticResource SubtractHalfConverter}, ConverterParameter=6}"
+            Canvas.Top="{Binding Point1.Y, Converter={StaticResource SubtractHalfConverter}, ConverterParameter=6}"
             Cursor="SizeAll"
-            Fill="#0066FF"
+            Fill="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
             MouseDown="MeasurementPoint_MouseDown"
             Opacity="0.8"
             Stroke="White"
@@ -51,8 +65,10 @@
             x:Name="VertexPoint"
             Width="12"
             Height="12"
+            Canvas.Left="{Binding Vertex.X, Converter={StaticResource SubtractHalfConverter}, ConverterParameter=6}"
+            Canvas.Top="{Binding Vertex.Y, Converter={StaticResource SubtractHalfConverter}, ConverterParameter=6}"
             Cursor="SizeAll"
-            Fill="#0066FF"
+            Fill="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
             MouseDown="MeasurementPoint_MouseDown"
             Opacity="0.8"
             Stroke="White"
@@ -64,8 +80,10 @@
             x:Name="Point3"
             Width="12"
             Height="12"
+            Canvas.Left="{Binding Point2.X, Converter={StaticResource SubtractHalfConverter}, ConverterParameter=6}"
+            Canvas.Top="{Binding Point2.Y, Converter={StaticResource SubtractHalfConverter}, ConverterParameter=6}"
             Cursor="SizeAll"
-            Fill="#0066FF"
+            Fill="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
             MouseDown="MeasurementPoint_MouseDown"
             Opacity="0.8"
             Stroke="White"
@@ -75,6 +93,8 @@
 
         <Border
             x:Name="MeasurementText"
+            Canvas.Left="{Binding Vertex.X, Converter={StaticResource SubtractHalfConverter}, ConverterParameter=40}"
+            Canvas.Top="{Binding Vertex.Y, Converter={StaticResource SubtractHalfConverter}, ConverterParameter=20}"
             Padding="5,2"
             Background="#7F000000"
             CornerRadius="3"
@@ -95,8 +115,9 @@
                 <TextBlock
                     x:Name="AngleTextBlock"
                     FontWeight="Bold"
-                    Foreground="White" />
+                    Foreground="White"
+                    Text="{Binding DisplayText}" />
             </Button>
         </Border>
     </Canvas>
-</UserControl>
+</local:MeasurementControlBase>
