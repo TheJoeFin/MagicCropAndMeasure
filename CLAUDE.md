@@ -65,6 +65,45 @@ The MVVM migration of MagickCrop has been successfully completed across all 20 s
 
 ---
 
+### Issue #1: Make Persistence Truly Async (COMPLETE ✅) - January 18, 2026
+
+**Problem Addressed:**
+- Methods like `SaveToFileAsync` and `LoadFromFileAsync` had misleading names - they returned `bool` and `MagickCropMeasurementPackage?` synchronously instead of being truly async
+- This violated async naming conventions and hindered clarity in the codebase
+
+**What was done:**
+- Converted `SaveToFileAsync(string packagePath)` from `bool` to `async Task<bool>`
+- Converted `LoadFromFileAsync(string packagePath)` from `MagickCropMeasurementPackage?` to `async Task<MagickCropMeasurementPackage?>`
+- Updated all file I/O operations to use `await Task.Run()` to properly offload I/O operations
+- Updated all 5+ call sites to properly `await` async operations:
+  - `PackageHelper.cs` - Both save/load method wrappers
+  - `MainWindow.xaml.cs` - SaveMeasurementsPackageToFile() and LoadMeasurementPackageAsync()
+  - `MainWindowViewModel.cs` - SaveProjectToPathAsync()
+  - `RecentProjectsManager.cs` - AutosaveProject() and AutosaveProjectAsync()
+  - `IRecentProjectsService.cs` - Updated interface signatures
+
+**Benefits:**
+- ✅ Eliminates misleading async naming that didn't actually use async/await
+- ✅ Better responsiveness - file I/O no longer blocks UI thread
+- ✅ Proper async patterns enable future improvements (CancellationToken support, better error handling)
+- ✅ Consistent with .NET async naming conventions
+- ✅ Foundation for implementing debounced autosave (Issue #22)
+
+**Files Modified:**
+- Modified: `Models/MeasurementControls/MagickCropMeasurementPackage.cs` - Convert methods to async
+- Modified: `Helpers/PackageHelper.cs` - Await async operations
+- Modified: `MainWindow.xaml.cs` - Await async operations (2 call sites)
+- Modified: `Services/RecentProjectsManager.cs` - Await async operations (2 call sites)
+- Modified: `ViewModels/MainWindowViewModel.cs` - Await async operations
+- Modified: `Services/Interfaces/IRecentProjectsService.cs` - Updated method signatures
+- Created: `MagickCrop.Tests/Mocks/MockAppPaths.cs` - Test infrastructure for IAppPaths dependency
+- Modified: `MagickCrop.Tests/Services/RecentProjectsServiceTests.cs` - Updated to use MockAppPaths
+- Modified: `MagickCrop.Tests/Base/IntegrationTestBase.cs` - Updated to use MockAppPaths
+
+**Test Status:** ✅ All 285 tests passing (100% pass rate maintained)
+
+---
+
 ### Step 20 - Unit Testing Framework (COMPLETE ✅)
 
 #### **20a - Create Test Project and Configure MSTest** (COMPLETE ✅)

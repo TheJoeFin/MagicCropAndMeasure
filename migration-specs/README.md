@@ -240,6 +240,16 @@ If you encounter issues during migration:
 
 ## Post-Migration Refactoring Progress (January 2026)
 
+### Issue #1: Make Persistence Truly Async ✅ FIXED
+**Commit**: 3bb7c1e - "Issue #1: Convert misleading Async methods to true async"
+
+Converted `SaveToFileAsync()` and `LoadFromFileAsync()` methods from synchronous operations with misleading async names to true async methods using `async Task`. Updated all 5+ call sites to properly `await` async operations. Created `MockAppPaths` test infrastructure to support IAppPaths dependency injection in tests.
+
+### Issue #4: Centralize Path & Folder Logic ✅ FIXED  
+**Commit**: 9568078 - "Issue #4: Centralize path & folder logic with IAppPaths service"
+
+Created `IAppPaths` interface and `AppPaths` implementation to centralize application path building logic. Refactored `RecentProjectsManager` to depend on `IAppPaths` instead of duplicating path-building logic. This eliminates hardcoded strings and provides a single source of truth for all file paths.
+
 ### Issue #8: Memory Management for MagickImage ✅ FIXED
 **Commit**: 18fe9de - "Fix: Dispose MagickImage objects in OpenImagePath to prevent memory leaks"
 
