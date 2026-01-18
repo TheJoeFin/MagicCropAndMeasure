@@ -1,11 +1,15 @@
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.IO;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MagickCrop.Messages;
+using MagickCrop.Models.MeasurementControls;
 using MagickCrop.Services.Interfaces;
 using MagickCrop.ViewModels.Base;
+using MagickCrop.ViewModels.Measurements;
 
 namespace MagickCrop.ViewModels;
 
@@ -255,6 +259,7 @@ public partial class MainWindowViewModel : ViewModelBase
         await base.InitializeAsync();
         _undoRedo = new UndoRedo();
         SetupUndoRedoCallbacks();
+        InitializeMeasurementCollections();
     }
 
     /// <summary>
@@ -604,4 +609,528 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     #endregion
+
+    #region Measurement Collections
+
+    /// <summary>
+    /// Gets or sets the global scale factor for all measurements.
+    /// </summary>
+    [ObservableProperty]
+    private double _globalScaleFactor = 1.0;
+
+    /// <summary>
+    /// Gets or sets the global unit of measurement for all measurements.
+    /// </summary>
+    [ObservableProperty]
+    private string _globalUnits = "px";
+
+    /// <summary>
+    /// Collection of distance measurements.
+    /// </summary>
+    public ObservableCollection<DistanceMeasurementViewModel> DistanceMeasurements { get; } = [];
+
+    /// <summary>
+    /// Collection of angle measurements.
+    /// </summary>
+    public ObservableCollection<AngleMeasurementViewModel> AngleMeasurements { get; } = [];
+
+    /// <summary>
+    /// Collection of rectangle measurements.
+    /// </summary>
+    public ObservableCollection<RectangleMeasurementViewModel> RectangleMeasurements { get; } = [];
+
+    /// <summary>
+    /// Collection of circle measurements.
+    /// </summary>
+    public ObservableCollection<CircleMeasurementViewModel> CircleMeasurements { get; } = [];
+
+    /// <summary>
+    /// Collection of polygon measurements.
+    /// </summary>
+    public ObservableCollection<PolygonMeasurementViewModel> PolygonMeasurements { get; } = [];
+
+    /// <summary>
+    /// Collection of horizontal line guides.
+    /// </summary>
+    public ObservableCollection<HorizontalLineViewModel> HorizontalLines { get; } = [];
+
+    /// <summary>
+    /// Collection of vertical line guides.
+    /// </summary>
+    public ObservableCollection<VerticalLineViewModel> VerticalLines { get; } = [];
+
+    /// <summary>
+    /// Gets the total count of all measurements.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasMeasurements))]
+    private int _totalMeasurementCount;
+
+    /// <summary>
+    /// Gets whether there are any measurements.
+    /// </summary>
+    public bool HasMeasurements => TotalMeasurementCount > 0;
+
+    #endregion
+
+    #region Measurement Collection Initialization
+
+    /// <summary>
+    /// Initializes measurement collection event handlers and message subscriptions.
+    /// </summary>
+    private void InitializeMeasurementCollections()
+    {
+        // Subscribe to collection changes
+        DistanceMeasurements.CollectionChanged += OnMeasurementCollectionChanged;
+        AngleMeasurements.CollectionChanged += OnMeasurementCollectionChanged;
+        RectangleMeasurements.CollectionChanged += OnMeasurementCollectionChanged;
+        CircleMeasurements.CollectionChanged += OnMeasurementCollectionChanged;
+        PolygonMeasurements.CollectionChanged += OnMeasurementCollectionChanged;
+        HorizontalLines.CollectionChanged += OnMeasurementCollectionChanged;
+        VerticalLines.CollectionChanged += OnMeasurementCollectionChanged;
+
+        // Register for remove requests
+        Register<RemoveMeasurementRequestMessage>(OnRemoveMeasurementRequested);
+    }
+
+    /// <summary>
+    /// Handles collection changes by updating the total measurement count and marking as dirty.
+    /// </summary>
+    private void OnMeasurementCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        UpdateMeasurementCount();
+        IsDirty = true;
+    }
+
+    /// <summary>
+    /// Updates the total measurement count based on all collections.
+    /// </summary>
+    private void UpdateMeasurementCount()
+    {
+        TotalMeasurementCount =
+            DistanceMeasurements.Count +
+            AngleMeasurements.Count +
+            RectangleMeasurements.Count +
+            CircleMeasurements.Count +
+            PolygonMeasurements.Count +
+            HorizontalLines.Count +
+            VerticalLines.Count;
+    }
+
+    #endregion
+
+    #region Add Measurement Commands
+
+    /// <summary>
+    /// Adds a distance measurement to the collection.
+    /// </summary>
+    /// <param name="points">Array containing start and end points.</param>
+    [RelayCommand(CanExecute = nameof(HasImage))]
+    private void AddDistanceMeasurement(System.Windows.Point[] points)
+    {
+        if (points.Length < 2) return;
+
+        var vm = new DistanceMeasurementViewModel
+        {
+            StartPoint = points[0],
+            EndPoint = points[1],
+            ScaleFactor = GlobalScaleFactor,
+            Units = GlobalUnits
+        };
+
+        DistanceMeasurements.Add(vm);
+        Send(new MeasurementAddedMessage("Distance", vm.Id));
+    }
+
+    /// <summary>
+    /// Adds an angle measurement to the collection.
+    /// </summary>
+    /// <param name="points">Array containing three points: two rays and the vertex.</param>
+    [RelayCommand(CanExecute = nameof(HasImage))]
+    private void AddAngleMeasurement(System.Windows.Point[] points)
+    {
+        if (points.Length < 3) return;
+
+        var vm = new AngleMeasurementViewModel
+        {
+            Point1 = points[0],
+            Vertex = points[1],
+            Point2 = points[2],
+            ScaleFactor = GlobalScaleFactor,
+            Units = GlobalUnits
+        };
+
+        AngleMeasurements.Add(vm);
+        Send(new MeasurementAddedMessage("Angle", vm.Id));
+    }
+
+    /// <summary>
+    /// Adds a rectangle measurement to the collection.
+    /// </summary>
+    /// <param name="points">Array containing top-left and bottom-right corners.</param>
+    [RelayCommand(CanExecute = nameof(HasImage))]
+    private void AddRectangleMeasurement(System.Windows.Point[] points)
+    {
+        if (points.Length < 2) return;
+
+        var vm = new RectangleMeasurementViewModel
+        {
+            TopLeft = points[0],
+            BottomRight = points[1],
+            ScaleFactor = GlobalScaleFactor,
+            Units = GlobalUnits
+        };
+
+        RectangleMeasurements.Add(vm);
+        Send(new MeasurementAddedMessage("Rectangle", vm.Id));
+    }
+
+    /// <summary>
+    /// Adds a circle measurement to the collection.
+    /// </summary>
+    /// <param name="points">Array containing center and edge point.</param>
+    [RelayCommand(CanExecute = nameof(HasImage))]
+    private void AddCircleMeasurement(System.Windows.Point[] points)
+    {
+        if (points.Length < 2) return;
+
+        var vm = new CircleMeasurementViewModel
+        {
+            CenterPoint = points[0],
+            EdgePoint = points[1],
+            ScaleFactor = GlobalScaleFactor,
+            Units = GlobalUnits
+        };
+
+        CircleMeasurements.Add(vm);
+        Send(new MeasurementAddedMessage("Circle", vm.Id));
+    }
+
+    /// <summary>
+    /// Adds a polygon measurement to the collection.
+    /// </summary>
+    /// <param name="points">Array of all vertices for the polygon.</param>
+    [RelayCommand(CanExecute = nameof(HasImage))]
+    private void AddPolygonMeasurement(System.Windows.Point[] points)
+    {
+        var vm = new PolygonMeasurementViewModel
+        {
+            ScaleFactor = GlobalScaleFactor,
+            Units = GlobalUnits
+        };
+
+        foreach (var point in points)
+        {
+            vm.AddVertex(point);
+        }
+
+        PolygonMeasurements.Add(vm);
+        Send(new MeasurementAddedMessage("Polygon", vm.Id));
+    }
+
+    /// <summary>
+    /// Adds a horizontal line guide.
+    /// </summary>
+    /// <param name="y">The Y-coordinate of the line.</param>
+    [RelayCommand(CanExecute = nameof(HasImage))]
+    private void AddHorizontalLine(double y)
+    {
+        var vm = new HorizontalLineViewModel
+        {
+            Position = y,
+            CanvasSize = ImageHeight
+        };
+
+        HorizontalLines.Add(vm);
+        Send(new MeasurementAddedMessage("HorizontalLine", vm.Id));
+    }
+
+    /// <summary>
+    /// Adds a vertical line guide.
+    /// </summary>
+    /// <param name="x">The X-coordinate of the line.</param>
+    [RelayCommand(CanExecute = nameof(HasImage))]
+    private void AddVerticalLine(double x)
+    {
+        var vm = new VerticalLineViewModel
+        {
+            Position = x,
+            CanvasSize = ImageWidth
+        };
+
+        VerticalLines.Add(vm);
+        Send(new MeasurementAddedMessage("VerticalLine", vm.Id));
+    }
+
+    #endregion
+
+    #region Remove Measurements
+
+    /// <summary>
+    /// Handles remove measurement request messages.
+    /// </summary>
+    private void OnRemoveMeasurementRequested(RemoveMeasurementRequestMessage message)
+    {
+        RemoveMeasurementById(message.MeasurementId, message.MeasurementType);
+    }
+
+    /// <summary>
+    /// Removes a measurement by its ID and type.
+    /// </summary>
+    /// <param name="id">The unique identifier of the measurement.</param>
+    /// <param name="type">The type of measurement (e.g., "Distance", "Angle").</param>
+    public void RemoveMeasurementById(Guid id, string type)
+    {
+        switch (type)
+        {
+            case "Distance":
+                var distance = DistanceMeasurements.FirstOrDefault(m => m.Id == id);
+                if (distance != null) DistanceMeasurements.Remove(distance);
+                break;
+            case "Angle":
+                var angle = AngleMeasurements.FirstOrDefault(m => m.Id == id);
+                if (angle != null) AngleMeasurements.Remove(angle);
+                break;
+            case "Rectangle":
+                var rect = RectangleMeasurements.FirstOrDefault(m => m.Id == id);
+                if (rect != null) RectangleMeasurements.Remove(rect);
+                break;
+            case "Circle":
+                var circle = CircleMeasurements.FirstOrDefault(m => m.Id == id);
+                if (circle != null) CircleMeasurements.Remove(circle);
+                break;
+            case "Polygon":
+                var polygon = PolygonMeasurements.FirstOrDefault(m => m.Id == id);
+                if (polygon != null) PolygonMeasurements.Remove(polygon);
+                break;
+            case "HorizontalLine":
+                var hLine = HorizontalLines.FirstOrDefault(m => m.Id == id);
+                if (hLine != null) HorizontalLines.Remove(hLine);
+                break;
+            case "VerticalLine":
+                var vLine = VerticalLines.FirstOrDefault(m => m.Id == id);
+                if (vLine != null) VerticalLines.Remove(vLine);
+                break;
+        }
+
+        Send(new MeasurementRemovedMessage(id));
+    }
+
+    /// <summary>
+    /// Clears all measurements after confirming with the user.
+    /// </summary>
+    [RelayCommand]
+    private void ClearAllMeasurements()
+    {
+        if (!_navigationService.ShowConfirmation("Clear all measurements?"))
+            return;
+
+        ClearAllMeasurementsInternal();
+    }
+
+    #endregion
+
+    #region Measurement Serialization
+
+    /// <summary>
+    /// Creates a MeasurementCollection from current ViewModels for serialization.
+    /// </summary>
+    /// <returns>A MeasurementCollection containing all current measurements as DTOs.</returns>
+    public MeasurementCollection ToMeasurementCollection()
+    {
+        var collection = new MeasurementCollection
+        {
+            GlobalScaleFactor = GlobalScaleFactor,
+            GlobalUnits = GlobalUnits
+        };
+
+        // Convert Distance measurements
+        foreach (var vm in DistanceMeasurements)
+        {
+            collection.DistanceMeasurements.Add(new DistanceMeasurementControlDto
+            {
+                StartPosition = vm.StartPoint,
+                EndPosition = vm.EndPoint,
+                ScaleFactor = vm.ScaleFactor,
+                Units = vm.Units
+            });
+        }
+
+        // Convert Angle measurements
+        foreach (var vm in AngleMeasurements)
+        {
+            collection.AngleMeasurements.Add(new AngleMeasurementControlDto
+            {
+                Point1Position = vm.Point1,
+                VertexPosition = vm.Vertex,
+                Point3Position = vm.Point2
+            });
+        }
+
+        // Convert Rectangle measurements
+        foreach (var vm in RectangleMeasurements)
+        {
+            collection.RectangleMeasurements.Add(new RectangleMeasurementControlDto
+            {
+                TopLeft = vm.TopLeft,
+                BottomRight = vm.BottomRight,
+                ScaleFactor = vm.ScaleFactor,
+                Units = vm.Units
+            });
+        }
+
+        // Convert Circle measurements
+        foreach (var vm in CircleMeasurements)
+        {
+            collection.CircleMeasurements.Add(new CircleMeasurementControlDto
+            {
+                Center = vm.CenterPoint,
+                EdgePoint = vm.EdgePoint,
+                ScaleFactor = vm.ScaleFactor,
+                Units = vm.Units
+            });
+        }
+
+        // Convert Polygon measurements
+        foreach (var vm in PolygonMeasurements)
+        {
+            var dto = new PolygonMeasurementControlDto
+            {
+                IsClosed = vm.IsClosed,
+                ScaleFactor = vm.ScaleFactor,
+                Units = vm.Units
+            };
+            foreach (var vertex in vm.Vertices)
+            {
+                dto.Vertices.Add(vertex);
+            }
+            collection.PolygonMeasurements.Add(dto);
+        }
+
+        // Convert line guides
+        foreach (var vm in HorizontalLines)
+        {
+            collection.HorizontalLines.Add(new HorizontalLineControlDto
+            {
+                Position = vm.Position
+            });
+        }
+
+        foreach (var vm in VerticalLines)
+        {
+            collection.VerticalLines.Add(new VerticalLineControlDto
+            {
+                Position = vm.Position
+            });
+        }
+
+        return collection;
+    }
+
+    /// <summary>
+    /// Loads measurements from a MeasurementCollection after clearing existing measurements.
+    /// </summary>
+    /// <param name="collection">The collection containing measurement DTOs to load.</param>
+    public void LoadMeasurementCollection(MeasurementCollection collection)
+    {
+        ClearAllMeasurementsInternal();
+
+        GlobalScaleFactor = collection.GlobalScaleFactor;
+        GlobalUnits = collection.GlobalUnits;
+
+        // Load Distance measurements
+        foreach (var dto in collection.DistanceMeasurements)
+        {
+            var vm = new DistanceMeasurementViewModel
+            {
+                StartPoint = dto.StartPosition,
+                EndPoint = dto.EndPosition,
+                ScaleFactor = dto.ScaleFactor,
+                Units = dto.Units
+            };
+            DistanceMeasurements.Add(vm);
+        }
+
+        // Load Angle measurements
+        foreach (var dto in collection.AngleMeasurements)
+        {
+            var vm = new AngleMeasurementViewModel
+            {
+                Point1 = dto.Point1Position,
+                Vertex = dto.VertexPosition,
+                Point2 = dto.Point3Position
+            };
+            AngleMeasurements.Add(vm);
+        }
+
+        // Load Rectangle measurements
+        foreach (var dto in collection.RectangleMeasurements)
+        {
+            var vm = new RectangleMeasurementViewModel
+            {
+                TopLeft = dto.TopLeft,
+                BottomRight = dto.BottomRight,
+                ScaleFactor = dto.ScaleFactor,
+                Units = dto.Units
+            };
+            RectangleMeasurements.Add(vm);
+        }
+
+        // Load Circle measurements
+        foreach (var dto in collection.CircleMeasurements)
+        {
+            var vm = new CircleMeasurementViewModel
+            {
+                CenterPoint = dto.Center,
+                EdgePoint = dto.EdgePoint,
+                ScaleFactor = dto.ScaleFactor,
+                Units = dto.Units
+            };
+            CircleMeasurements.Add(vm);
+        }
+
+        // Load Polygon measurements
+        foreach (var dto in collection.PolygonMeasurements)
+        {
+            var vm = new PolygonMeasurementViewModel
+            {
+                ScaleFactor = dto.ScaleFactor,
+                Units = dto.Units
+            };
+            foreach (var point in dto.Vertices)
+            {
+                vm.AddVertex(point);
+            }
+            if (dto.IsClosed) vm.Close();
+            PolygonMeasurements.Add(vm);
+        }
+
+        // Load line guides
+        foreach (var dto in collection.HorizontalLines)
+        {
+            HorizontalLines.Add(new HorizontalLineViewModel { Position = dto.Position });
+        }
+
+        foreach (var dto in collection.VerticalLines)
+        {
+            VerticalLines.Add(new VerticalLineViewModel { Position = dto.Position });
+        }
+    }
+
+    /// <summary>
+    /// Clears all measurements without user confirmation.
+    /// </summary>
+    private void ClearAllMeasurementsInternal()
+    {
+        DistanceMeasurements.Clear();
+        AngleMeasurements.Clear();
+        RectangleMeasurements.Clear();
+        CircleMeasurements.Clear();
+        PolygonMeasurements.Clear();
+        HorizontalLines.Clear();
+        VerticalLines.Clear();
+    }
+
+    #endregion
 }
+
