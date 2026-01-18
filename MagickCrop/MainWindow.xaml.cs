@@ -87,12 +87,10 @@ public partial class MainWindow : FluentWindow
         new FormatItem { Name = "PNG Image", Format = MagickFormat.Png, Extension = ".png", SupportsQuality = false },
         new FormatItem { Name = "BMP Image", Format = MagickFormat.Bmp, Extension = ".bmp", SupportsQuality = false },
         new FormatItem { Name = "TIFF Image", Format = MagickFormat.Tiff, Extension = ".tiff", SupportsQuality = false },
-        new FormatItem { Name = "WebP Image", Format = MagickFormat.WebP, Extension = ".webp", SupportsQuality = true },
-        // new FormatItem { Name = "HEIC Image", Format = MagickFormat.Heic, Extension = ".heic", SupportsQuality = true }
+        new FormatItem { Name = "WebP Image", Format = MagickFormat.WebP, Extension = ".webp", SupportsQuality = true }
     ];
 
-    private readonly ObservableCollection<Line> verticalLines = [];
-    private readonly ObservableCollection<Line> horizontalLines = [];
+
 
     private bool isDrawingMode = false;
     private Dictionary<Stroke, StrokeInfo> strokeMeasurements = [];
@@ -144,6 +142,8 @@ public partial class MainWindow : FluentWindow
 
     // Hover highlight polygon for quadrilateral selector
     private Polygon? hoverHighlightPolygon;
+
+
 
     public MainWindow() : this(App.GetService<ViewModels.MainWindowViewModel>())
     {
