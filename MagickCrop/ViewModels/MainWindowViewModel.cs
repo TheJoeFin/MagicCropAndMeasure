@@ -52,9 +52,33 @@ public partial class MainWindowViewModel : ViewModelBase
 
     #endregion
 
+    #region Tool State
+
     /// <summary>
-    /// Creates a new instance of MainWindowViewModel with services from the DI container.
+    /// Gets or sets the current tool/mode the application is in.
     /// </summary>
+    [ObservableProperty]
+    private DraggingMode _currentTool = DraggingMode.None;
+
+    /// <summary>
+    /// Gets or sets whether a measurement is currently being placed.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isPlacingMeasurement;
+
+    /// <summary>
+    /// Gets or sets the current state of measurement placement.
+    /// </summary>
+    [ObservableProperty]
+    private PlacementState _placementState = PlacementState.NotPlacing;
+
+    /// <summary>
+    /// Gets or sets the current step in the measurement placement process.
+    /// </summary>
+    [ObservableProperty]
+    private int _placementStep;
+
+    #endregion
     public MainWindowViewModel() : this(
         App.GetService<IRecentProjectsService>(),
         App.GetService<IFileDialogService>(),
