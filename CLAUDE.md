@@ -33,6 +33,38 @@ The MVVM migration of MagickCrop has been successfully completed across all 20 s
 
 ## Key Learnings
 
+### Issue #4: Centralize Path & Folder Logic (COMPLETE ✅) - January 18, 2026
+
+**What was done:**
+- Created `IAppPaths` interface to centralize application path logic (eliminates duplicated Path.Combine calls)
+- Implemented `AppPaths` service that manages:
+  - App data root directory (`%LocalApplicationData%/MagickCrop`)
+  - Projects folder, Thumbnails folder, Project index file paths
+  - Methods: `GetPackageFilePath(projectId)`, `GetThumbnailFilePath(projectId)`, `EnsureDirectoriesExist()`
+- Refactored `RecentProjectsManager` to depend on `IAppPaths` instead of duplicate path-building logic
+- Updated dependency injection in `App.xaml.cs` to register `IAppPaths` as a singleton
+- Updated `MainWindow` to inject `IRecentProjectsService` through constructor instead of using Singleton pattern
+- Updated `IRecentProjectsService` interface to match implementation (added `AutosaveProject` method signature)
+
+**Benefits:**
+- ✅ Single source of truth for all file paths (eliminates hardcoded strings)
+- ✅ Easier to test path logic in isolation  
+- ✅ Improved maintainability - change path structure once and it updates everywhere
+- ✅ Better adherence to SOLID principles (Dependency Inversion)
+- ✅ Foundation for future services (Issue #5 ThumbnailService, etc.)
+
+**Files Modified:**
+- Created: `Services/Interfaces/IAppPaths.cs` (40 lines)
+- Created: `Services/AppPaths.cs` (48 lines)  
+- Modified: `Services/RecentProjectsManager.cs` - refactored to use IAppPaths
+- Modified: `Services/Interfaces/IRecentProjectsService.cs` - added AutosaveProject signature
+- Modified: `App.xaml.cs` - registered IAppPaths as singleton
+- Modified: `MainWindow.xaml.cs` - updated to inject IRecentProjectsService
+
+**Test Status:** ✅ All 285 tests passing (100% pass rate maintained)
+
+---
+
 ### Step 20 - Unit Testing Framework (COMPLETE ✅)
 
 #### **20a - Create Test Project and Configure MSTest** (COMPLETE ✅)

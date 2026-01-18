@@ -5,6 +5,7 @@ using MagickCrop.Messages;
 using MagickCrop.Models;
 using MagickCrop.Models.MeasurementControls;
 using MagickCrop.Services;
+using MagickCrop.Services.Interfaces;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
@@ -60,7 +61,7 @@ public partial class MainWindow : FluentWindow
     private readonly List<UIElement> _polygonElements;
 
     private readonly UndoRedo undoRedo = new();
-    private readonly RecentProjectsManager _recentProjectsManager;
+    private readonly IRecentProjectsService _recentProjectsManager;
     private AspectRatioItem? selectedAspectRatio;
     private readonly ObservableCollection<DistanceMeasurementControl> measurementTools = [];
     private DistanceMeasurementControl? activeMeasureControl;
@@ -76,7 +77,7 @@ public partial class MainWindow : FluentWindow
     private readonly ObservableCollection<VerticalLineControl> verticalLineControls = [];
     private readonly ObservableCollection<HorizontalLineControl> horizontalLineControls = [];
 
-    private Services.RecentProjectsManager? recentProjectsManager;
+    private IRecentProjectsService? recentProjectsManager;
     private string? currentProjectId;
     private System.Timers.Timer? autoSaveTimer;
     private readonly int AutoSaveIntervalMs = (int)TimeSpan.FromSeconds(5).TotalMilliseconds;
@@ -145,13 +146,15 @@ public partial class MainWindow : FluentWindow
 
 
 
-    public MainWindow() : this(App.GetService<ViewModels.MainWindowViewModel>())
+    public MainWindow() : this(
+        App.GetService<ViewModels.MainWindowViewModel>(),
+        App.GetService<IRecentProjectsService>())
     {
     }
 
-    public MainWindow(ViewModels.MainWindowViewModel viewModel)
+    public MainWindow(ViewModels.MainWindowViewModel viewModel, IRecentProjectsService recentProjectsManager)
     {
-        _recentProjectsManager = Singleton<RecentProjectsManager>.Instance;
+        _recentProjectsManager = recentProjectsManager ?? throw new ArgumentNullException(nameof(recentProjectsManager));
         
         ThemeService themeService = new();
         themeService.SetTheme(ApplicationTheme.Dark);

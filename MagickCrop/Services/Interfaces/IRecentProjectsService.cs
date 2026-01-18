@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows.Media.Imaging;
 using MagickCrop.Models;
 using MagickCrop.Models.MeasurementControls;
 
@@ -37,10 +38,16 @@ public interface IRecentProjectsService
     string GetAutosavePath();
 
     /// <summary>
-    /// Auto-saves the current project state.
+    /// Auto-saves the current project state and returns the project info.
     /// </summary>
     /// <param name="package">The measurement package to save.</param>
-    /// <param name="projectInfo">The project info.</param>
+    /// <param name="imageSource">The current image source for thumbnail generation.</param>
+    /// <returns>The project info or null if save failed.</returns>
+    RecentProjectInfo? AutosaveProject(MagickCropMeasurementPackage package, BitmapSource? imageSource);
+
+    /// <summary>
+    /// Auto-saves the current project state asynchronously.
+    /// </summary>
     Task AutosaveProjectAsync(MagickCropMeasurementPackage package, RecentProjectInfo projectInfo);
 
     /// <summary>

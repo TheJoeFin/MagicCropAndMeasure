@@ -15,29 +15,15 @@ namespace MagickCrop.Services;
 /// </summary>
 public class RecentProjectsManager : IRecentProjectsService
 {
-    private const string ProjectIndexFileName = "project_index.json";
-    private const string ThumbnailsFolder = "Thumbnails";
-    private readonly string _appDataFolder;
-    private readonly string _projectsFolder;
-    private readonly string _thumbnailsFolder;
+    private readonly IAppPaths _appPaths;
     private readonly int _maxRecentProjects = Defaults.MaxRecentProjects;
 
     public ObservableCollection<RecentProjectInfo> RecentProjects { get; private set; } = [];
 
-    public RecentProjectsManager() : this(null) { }
-
-    public RecentProjectsManager(string? customAppDataFolder)
+    public RecentProjectsManager(IAppPaths appPaths)
     {
-        _appDataFolder = customAppDataFolder ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "MagickCrop");
-
-        _projectsFolder = Path.Combine(_appDataFolder, "Projects");
-        _thumbnailsFolder = Path.Combine(_appDataFolder, ThumbnailsFolder);
-
-        Directory.CreateDirectory(_appDataFolder);
-        Directory.CreateDirectory(_projectsFolder);
-        Directory.CreateDirectory(_thumbnailsFolder);
+        _appPaths = appPaths ?? throw new ArgumentNullException(nameof(appPaths));
+        _appPaths.EnsureDirectoriesExist();
 
         if (RecentProjects.Count == 0)
             LoadRecentProjects();
@@ -48,15 +34,14 @@ public class RecentProjectsManager : IRecentProjectsService
     /// </summary>
     private void LoadRecentProjects()
     {
-        string indexPath = Path.Combine(_appDataFolder, ProjectIndexFileName);
-        if (!File.Exists(indexPath))
+        if (!File.Exists(_appPaths.ProjectIndexFile))
             return;
 
         RecentProjects.Clear();
 
         try
         {
-            string json = File.ReadAllText(indexPath);
+            string json = File.ReadAllText(_appPaths.ProjectIndexFile);
             List<RecentProjectInfo>? projects = JsonSerializer.Deserialize<List<RecentProjectInfo>>(json);
 
             if (projects is null)
@@ -87,12 +72,10 @@ public class RecentProjectsManager : IRecentProjectsService
     /// </summary>
     private void SaveRecentProjectsList()
     {
-        string indexPath = Path.Combine(_appDataFolder, ProjectIndexFileName);
-
         try
         {
             string json = JsonSerializer.Serialize(RecentProjects.ToList());
-            File.WriteAllText(indexPath, json);
+            File.WriteAllText(_appPaths.ProjectIndexFile, json);
         }
         catch (Exception)
         {
@@ -111,7 +94,7 @@ public class RecentProjectsManager : IRecentProjectsService
         if (imageSource == null || string.IsNullOrEmpty(projectId))
             return string.Empty;
 
-        string thumbnailPath = Path.Combine(_thumbnailsFolder, $"{projectId}_thumb.jpg");
+        string thumbnailPath = _appPaths.GetThumbnailFilePath(projectId);
 
         try
         {
@@ -164,7 +147,7 @@ public class RecentProjectsManager : IRecentProjectsService
             : package.Metadata.OriginalFilename;
 
         // Create project path
-        string packagePath = Path.Combine(_projectsFolder, $"{projectId}.mcm");
+        string packagePath = _appPaths.GetPackageFilePath(projectId);
 
         // Create thumbnail
         string thumbnailPath = string.Empty;
@@ -281,7 +264,7 @@ public class RecentProjectsManager : IRecentProjectsService
     /// </summary>
     public string GetAutosavePath()
     {
-        return _projectsFolder;
+        return _appPaths.ProjectsFolder;
     }
 
     /// <summary>

@@ -61,6 +61,9 @@ public partial class App : Application
                 .AddSingleton<IMessenger>(WeakReferenceMessenger.Default)
                 .BuildServiceProvider());
         
+        // Register Infrastructure Services
+        services.AddSingleton<IAppPaths, AppPaths>();
+        
         // Register Service Interfaces
         services.AddSingleton<IRecentProjectsService, RecentProjectsManager>();
         services.AddSingleton<IFileDialogService, FileDialogService>();
@@ -68,10 +71,6 @@ public partial class App : Application
         services.AddSingleton<IImageProcessingService, ImageProcessingService>();
         services.AddSingleton<INavigationService, NavigationService>();
         // services.AddSingleton<IThemeService, ThemeService>(); // To be implemented in future step
-
-        // Keep backward compatibility during migration
-        services.AddSingleton<RecentProjectsManager>(sp => 
-            (RecentProjectsManager)sp.GetRequiredService<IRecentProjectsService>());
         
         // Register ViewModels
         services.AddTransient<MainWindowViewModel>();
@@ -89,7 +88,10 @@ public partial class App : Application
         services.AddTransient<VerticalLineViewModel>();
 
         // Register Windows/Views
-        services.AddTransient<MainWindow>();
+        services.AddTransient<MainWindow>(sp =>
+            new MainWindow(
+                sp.GetRequiredService<MainWindowViewModel>(),
+                sp.GetRequiredService<IRecentProjectsService>()));
         services.AddTransient<Windows.AboutWindow>();
         services.AddTransient<SaveWindow>();
 
