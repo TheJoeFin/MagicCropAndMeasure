@@ -832,3 +832,39 @@ dotnet build MagickCrop.sln
 - ✅ 6 RelayCommands + 1 public method added to ViewModel
 - ✅ All image operations accessible via commands from MainWindow
 - ✅ Ready for Step 14l-14m: MainWindow.xaml binding updates and drag-drop
+
+## Step 17 - Value Converters - ✅ COMPLETE
+
+### All 10 Converters Created and Registered
+- **NullToVisibilityConverter** - Show/hide based on null values with optional invert parameter
+- **EnumToBooleanConverter** - Radio button binding for enum-to-bool conversion with reverse support
+- **StringFormatConverter** - Format values using parameter as format string
+- **MultiplyConverter** - Multiply double values with bidirectional support
+- **BooleanToOpacityConverter** - Convert bool to opacity (true=1.0, false=parameter or 0.5)
+- **PointToStringConverter** - Display Point values formatted as "(X, Y)"
+- **EnumToVisibilityConverter** - Show element when enum matches parameter value
+- **ComparisonToVisibilityConverter** - Numeric comparisons (gt, lt, eq, gte, lte, neq) for visibility
+- **FilePathToNameConverter** - Extract file name from path (with optional extension removal)
+- **MathConverter** - Math operations (+, -, *, /, %) on double values with reverse operations
+
+### Pre-existing Converters (Not recreated)
+- BooleanToVisibilityConverter ✅ (already existed)
+- InverseBooleanToVisibilityConverter ✅ (already existed)
+- ColorToBrushConverter ✅ (created in Step 12a)
+- SubtractHalfConverter ✅ (created in Step 12a)
+- AngleArcPathConverter ✅ (created in Step 12b)
+- PolygonPathConverter ✅ (created in Step 12e)
+
+### Changes Made
+- Created 10 new converter files in MagickCrop\Converters\
+- Updated App.xaml to register all converters as static resources:
+  - Added namespace: `xmlns:converters="clr-namespace:MagickCrop.Converters"`
+  - Registered 16 total converters (6 existing + 10 new)
+- All converters implement IValueConverter with proper Convert/ConvertBack methods
+- Bidirectional support where applicable (Multiply, EnumToBoolean, etc.)
+- Support for optional parameters for customization (opacity level, format strings, etc.)
+
+### Application Status
+- ✅ Build succeeds: 42 pre-existing warnings, 0 new errors
+- ✅ All converters compile and register successfully
+- ✅ Ready for Step 18: Commands Cleanup
