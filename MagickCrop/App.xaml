@@ -11,12 +11,23 @@
                 <ui:ThemesDictionary Theme="Dark" />
                 <ui:ControlsDictionary />
             </ResourceDictionary.MergedDictionaries>
+            <!-- Converters -->
             <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+            <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
             <converters:ColorToBrushConverter x:Key="ColorToBrushConverter"/>
             <converters:SubtractHalfConverter x:Key="SubtractHalfConverter"/>
             <converters:AngleArcPathConverter x:Key="AngleArcPathConverter"/>
             <converters:PolygonPathConverter x:Key="PolygonPathConverter"/>
+            <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
+            <converters:StringFormatConverter x:Key="StringFormatConverter"/>
+            <converters:MultiplyConverter x:Key="MultiplyConverter"/>
+            <converters:BooleanToOpacityConverter x:Key="BooleanToOpacityConverter"/>
+            <converters:PointToStringConverter x:Key="PointToStringConverter"/>
+            <converters:EnumToVisibilityConverter x:Key="EnumToVisibilityConverter"/>
+            <converters:ComparisonToVisibilityConverter x:Key="ComparisonToVisibilityConverter"/>
+            <converters:FilePathToNameConverter x:Key="FilePathToNameConverter"/>
+            <converters:MathConverter x:Key="MathConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
