@@ -143,6 +143,22 @@ public partial class MainWindowViewModel : ViewModelBase
 
     #endregion
 
+    #region File Operations State
+
+    /// <summary>
+    /// Gets or sets whether the application is currently saving a file.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isSaving;
+
+    /// <summary>
+    /// Gets or sets the path of the last saved file.
+    /// </summary>
+    [ObservableProperty]
+    private string? _lastSavedPath;
+
+    #endregion
+
     #region Constructors
 
     /// <summary>
