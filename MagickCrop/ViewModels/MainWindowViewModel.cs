@@ -28,6 +28,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IClipboardService _clipboardService;
     private readonly INavigationService _navigationService;
     private readonly IImageProcessingService _imageProcessingService;
+    private readonly IWindowFactory _windowFactory;
     private string? _currentImagePath;
     private MagickImage? _magickImage;
 
@@ -453,9 +454,64 @@ public partial class MainWindowViewModel : ViewModelBase
                 }
             }
         }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Opens a SaveWindow with export options for the current image.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(HasImage))]
+    private async Task ShowSaveWindow()
+    {
+        try
+        {
+            IsLoading = true;
+
+            // Save current image to a temporary file
+            var tempFileName = $"magickcrop_{Guid.NewGuid()}.jpg";
+            var tempPath = Path.Combine(Path.GetTempPath(), tempFileName);
+
+            if (_magickImage != null)
+            {
+                var success = await _imageProcessingService.SaveImageAsync(_magickImage, tempPath, MagickFormat.Jpg);
+
+                if (!success)
+                {
+                    _navigationService.ShowError("Failed to prepare image for export.");
+                    return;
+                }
+
+                // Create SaveWindow and show as modal dialog
+                var saveWindow = _windowFactory.CreateSaveWindow(tempPath);
+                var activeWindow = _navigationService.GetActiveWindow();
+                if (activeWindow != null)
+                {
+                    saveWindow.Owner = activeWindow;
+                }
+
+                saveWindow.ShowDialog();
+
+                // Delete the temporary file after dialog closes
+                try
+                {
+                    if (File.Exists(tempPath))
+                    {
+                        File.Delete(tempPath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Log error but don't show to user - cleanup failure is not critical
+                    System.Diagnostics.Debug.WriteLine($"Failed to delete temporary file: {ex.Message}");
+                }
+            }
+        }
         catch (Exception ex)
         {
-            _navigationService.ShowError($"Failed to export image: {ex.Message}");
+            _navigationService.ShowError($"Failed to open export dialog: {ex.Message}");
         }
         finally
         {
@@ -498,7 +554,8 @@ public partial class MainWindowViewModel : ViewModelBase
         App.GetService<IFileDialogService>(),
         App.GetService<IClipboardService>(),
         App.GetService<IImageProcessingService>(),
-        App.GetService<INavigationService>())
+        App.GetService<INavigationService>(),
+        App.GetService<IWindowFactory>())
     {
     }
 
@@ -510,18 +567,21 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <param name="clipboardService">Service for clipboard operations.</param>
     /// <param name="imageProcessingService">Service for image processing operations.</param>
     /// <param name="navigationService">Service for window navigation.</param>
+    /// <param name="windowFactory">Factory for creating windows.</param>
     public MainWindowViewModel(
         IRecentProjectsService recentProjectsService,
         IFileDialogService fileDialogService,
         IClipboardService clipboardService,
         IImageProcessingService imageProcessingService,
-        INavigationService navigationService)
+        INavigationService navigationService,
+        IWindowFactory windowFactory)
     {
         _recentProjectsService = recentProjectsService ?? throw new ArgumentNullException(nameof(recentProjectsService));
         _fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
         _clipboardService = clipboardService ?? throw new ArgumentNullException(nameof(clipboardService));
         _imageProcessingService = imageProcessingService ?? throw new ArgumentNullException(nameof(imageProcessingService));
         _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
+        _windowFactory = windowFactory ?? throw new ArgumentNullException(nameof(windowFactory));
 
         Title = "Magic Crop & Measure";
     }
