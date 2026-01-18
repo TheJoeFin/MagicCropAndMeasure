@@ -1,11 +1,15 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
+using System.IO.Compression;
+using System.Text.Json;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using ImageMagick;
 using MagickCrop.Messages;
+using MagickCrop.Models;
 using MagickCrop.Models.MeasurementControls;
 using MagickCrop.Services.Interfaces;
 using MagickCrop.ViewModels.Base;
@@ -25,6 +29,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly INavigationService _navigationService;
     private readonly IImageProcessingService _imageProcessingService;
     private string? _currentImagePath;
+    private MagickImage? _magickImage;
 
     #region Image State
 
@@ -75,6 +80,12 @@ public partial class MainWindowViewModel : ViewModelBase
     /// </summary>
     [ObservableProperty]
     private bool _showToolbar = true;
+
+    /// <summary>
+    /// Gets or sets whether the welcome screen is visible.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isWelcomeVisible = true;
 
     /// <summary>
     /// Gets the window title with optional unsaved changes indicator.
@@ -157,6 +168,13 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string? _lastSavedPath;
 
+    /// <summary>
+    /// Gets or sets whether the application is currently loading a file.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanPerformImageOperations))]
+    private bool _isLoading;
+
     #endregion
 
     #region Save Commands
@@ -229,6 +247,172 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsSaving = false;
         }
+    }
+
+    #endregion
+
+    #region Load Commands
+
+    /// <summary>
+    /// Opens a file dialog and loads a project from the selected .mcm file.
+    /// </summary>
+    [RelayCommand]
+    private async Task OpenProject()
+    {
+        var filter = "Magic Crop Project (*.mcm)|*.mcm|All Files (*.*)|*.*";
+        var filePath = _fileDialogService.ShowOpenFileDialog(filter, "Open Project");
+
+        if (string.IsNullOrEmpty(filePath))
+            return;
+
+        await LoadProjectFromFileAsync(filePath);
+    }
+
+    /// <summary>
+    /// Loads a project from the specified file path.
+    /// Handles unsaved changes prompt, image loading, measurement loading, and UI updates.
+    /// </summary>
+    /// <param name="filePath">The full path to the .mcm project file to load.</param>
+    public async Task LoadProjectFromFileAsync(string filePath)
+    {
+        if (!File.Exists(filePath))
+        {
+            _navigationService.ShowError("File not found.");
+            return;
+        }
+
+        // Check for unsaved changes
+        if (IsDirty)
+        {
+            var save = _navigationService.ShowConfirmation(
+                "You have unsaved changes. Do you want to save before opening a new project?");
+            if (save)
+            {
+                await SaveProject();
+            }
+        }
+
+        try
+        {
+            IsLoading = true;
+
+            var package = await Task.Run(() => LoadPackageFromFile(filePath));
+
+            if (package == null)
+            {
+                _navigationService.ShowError("Failed to load project file.");
+                return;
+            }
+
+            // Load image
+            if (package.ImageData != null)
+            {
+                _magickImage = new MagickImage(package.ImageData);
+                CurrentImage = _imageProcessingService.ToBitmapSource(_magickImage);
+                ImageWidth = (int)_magickImage.Width;
+                ImageHeight = (int)_magickImage.Height;
+            }
+
+            // Load measurements
+            if (package.Measurements != null)
+            {
+                LoadMeasurementCollection(package.Measurements);
+            }
+
+            // Update state
+            HasImage = true;
+            IsWelcomeVisible = false;
+            CurrentFilePath = filePath;
+            LastSavedPath = filePath;
+            CurrentProjectId = Guid.NewGuid();
+            IsDirty = false;
+            ClearUndoHistory();
+
+            // Update recent projects
+            await UpdateRecentProjectsAsync(filePath);
+
+            WeakReferenceMessenger.Default.Send(new ProjectOpenedMessage(filePath, CurrentProjectId));
+        }
+        catch (Exception ex)
+        {
+            _navigationService.ShowError($"Failed to load project: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Loads a measurement package from a .mcm file.
+    /// </summary>
+    /// <param name="filePath">The full path to the .mcm file.</param>
+    /// <returns>The loaded package or null if loading failed.</returns>
+    private MagickCropMeasurementPackage? LoadPackageFromFile(string filePath)
+    {
+        try
+        {
+            using var archive = ZipFile.OpenRead(filePath);
+            var package = new MagickCropMeasurementPackage();
+
+            // Load image
+            var imageEntry = archive.GetEntry("image.jpg") ?? archive.GetEntry("image.png");
+            if (imageEntry != null)
+            {
+                using var imageStream = imageEntry.Open();
+                using var memoryStream = new MemoryStream();
+                imageStream.CopyTo(memoryStream);
+                package.ImageData = memoryStream.ToArray();
+            }
+
+            // Load metadata
+            var metadataEntry = archive.GetEntry("metadata.json");
+            if (metadataEntry != null)
+            {
+                using var metadataStream = metadataEntry.Open();
+                using var reader = new StreamReader(metadataStream);
+                var json = reader.ReadToEnd();
+                package.Metadata = JsonSerializer.Deserialize<PackageMetadata>(json);
+            }
+
+            // Load measurements
+            var measurementsEntry = archive.GetEntry("measurements.json");
+            if (measurementsEntry != null)
+            {
+                using var measurementsStream = measurementsEntry.Open();
+                using var reader = new StreamReader(measurementsStream);
+                var json = reader.ReadToEnd();
+                package.Measurements = JsonSerializer.Deserialize<MeasurementCollection>(json);
+            }
+
+            return package;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    #endregion
+
+    #region Recent Projects
+
+    /// <summary>
+    /// Updates the recent projects list with the specified file path.
+    /// </summary>
+    /// <param name="filePath">The file path of the project to add to recent projects.</param>
+    private async Task UpdateRecentProjectsAsync(string filePath)
+    {
+        var projectInfo = new RecentProjectInfo
+        {
+            Id = CurrentProjectId.ToString(),
+            Name = Path.GetFileNameWithoutExtension(filePath),
+            PackagePath = filePath,
+            LastModified = DateTime.Now
+        };
+
+        await _recentProjectsService.AddRecentProjectAsync(projectInfo);
+        WeakReferenceMessenger.Default.Send(new RecentProjectsChangedMessage());
     }
 
     #endregion
@@ -335,6 +519,15 @@ public partial class MainWindowViewModel : ViewModelBase
             UndoCommand.NotifyCanExecuteChanged();
             RedoCommand.NotifyCanExecuteChanged();
         }
+    }
+
+    /// <summary>
+    /// Clears the undo/redo history.
+    /// </summary>
+    private void ClearUndoHistory()
+    {
+        _undoRedo?.Clear();
+        UpdateUndoRedoState();
     }
 
     #endregion
