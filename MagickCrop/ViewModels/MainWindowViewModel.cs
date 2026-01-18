@@ -1,3 +1,4 @@
+using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MagickCrop.Services.Interfaces;
 using MagickCrop.ViewModels.Base;
@@ -14,6 +15,42 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IFileDialogService _fileDialogService;
     private readonly IClipboardService _clipboardService;
     private readonly INavigationService _navigationService;
+
+    #region Image State
+
+    /// <summary>
+    /// Gets or sets the currently loaded image.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanPerformImageOperations))]
+    private BitmapSource? _currentImage;
+
+    /// <summary>
+    /// Gets or sets whether an image is currently loaded.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanPerformImageOperations))]
+    private bool _hasImage;
+
+    /// <summary>
+    /// Gets or sets the width of the current image in pixels.
+    /// </summary>
+    [ObservableProperty]
+    private int _imageWidth;
+
+    /// <summary>
+    /// Gets or sets the height of the current image in pixels.
+    /// </summary>
+    [ObservableProperty]
+    private int _imageHeight;
+
+    /// <summary>
+    /// Gets whether image operations can be performed.
+    /// Used by multiple commands as CanExecute condition.
+    /// </summary>
+    public bool CanPerformImageOperations => HasImage && !IsLoading;
+
+    #endregion
 
     /// <summary>
     /// Creates a new instance of MainWindowViewModel with services from the DI container.
