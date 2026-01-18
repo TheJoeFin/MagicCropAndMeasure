@@ -213,6 +213,40 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// Creates a new project, prompting to save if there are unsaved changes.
+    /// </summary>
+    [RelayCommand]
+    private async Task NewProject()
+    {
+        if (IsDirty && HasImage)
+        {
+            var save = _navigationService.ShowConfirmation(
+                "You have unsaved changes. Do you want to save before creating a new project?");
+            if (save)
+            {
+                await SaveProject();
+                if (IsDirty) // Save failed or was cancelled
+                    return;
+            }
+        }
+
+        ClearAllMeasurementsInternal();
+        CurrentImage = null;
+        HasImage = false;
+        IsWelcomeVisible = true;
+        CurrentFilePath = null;
+        LastSavedPath = null;
+        CurrentProjectId = Guid.NewGuid();
+        IsDirty = false;
+        ImageWidth = 0;
+        ImageHeight = 0;
+        _currentImagePath = null;
+        _magickImage?.Dispose();
+        _magickImage = null;
+        ClearUndoHistory();
+    }
+
+    /// <summary>
     /// Core save logic that creates and saves the measurement package to the specified path.
     /// </summary>
     /// <param name="filePath">The full path where the project file should be saved.</param>
@@ -224,19 +258,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
             await Task.Run(() =>
             {
-                // TODO: Implement CreateMeasurementPackage
-                // var package = CreateMeasurementPackage();
-
-                // TODO: Implement SavePackageToFile
-                // SavePackageToFile(filePath, package);
+                var package = CreateMeasurementPackage();
+                SavePackageToFile(package, filePath);
             });
 
             LastSavedPath = filePath;
             CurrentFilePath = filePath;
             IsDirty = false;
 
-            // TODO: Implement UpdateRecentProjectsAsync
-            // await UpdateRecentProjectsAsync();
+            await UpdateRecentProjectsAsync(filePath);
 
             WeakReferenceMessenger.Default.Send(new ProjectSavedMessage(filePath));
         }
@@ -247,6 +277,45 @@ public partial class MainWindowViewModel : ViewModelBase
         finally
         {
             IsSaving = false;
+        }
+    }
+
+    /// <summary>
+    /// Creates a measurement package from the current application state.
+    /// </summary>
+    /// <returns>A MagickCropMeasurementPackage containing current measurements and metadata.</returns>
+    private MagickCropMeasurementPackage CreateMeasurementPackage()
+    {
+        var metadata = new PackageMetadata
+        {
+            CreationDate = DateTime.Now,
+            LastModified = DateTime.Now,
+            OriginalFilename = Path.GetFileName(CurrentFilePath ?? "Untitled.mcm"),
+            OriginalImageSize = new System.Windows.Size(ImageWidth, ImageHeight),
+            CurrentImageSize = new System.Windows.Size(ImageWidth, ImageHeight),
+            ProjectId = CurrentProjectId.ToString()
+        };
+
+        var package = new MagickCropMeasurementPackage
+        {
+            Metadata = metadata,
+            Measurements = ToMeasurementCollection(),
+            ImagePath = _currentImagePath
+        };
+
+        return package;
+    }
+
+    /// <summary>
+    /// Saves a measurement package to a .mcm file.
+    /// </summary>
+    /// <param name="package">The package to save.</param>
+    /// <param name="filePath">The full path where the package should be saved.</param>
+    private void SavePackageToFile(MagickCropMeasurementPackage package, string filePath)
+    {
+        if (!package.SaveToFileAsync(filePath))
+        {
+            throw new InvalidOperationException($"Failed to save package to {filePath}");
         }
     }
 
