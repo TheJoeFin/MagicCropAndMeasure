@@ -11,3 +11,5 @@ global using MagickCrop.Models.MeasurementControls;
 global using MagickCrop.Services;
 global using MagickCrop.Services.Interfaces;
 global using MagickCrop.ViewModels;
+global using MagickCrop.Tests.Base;
+global using MagickCrop.Tests.Mocks;
