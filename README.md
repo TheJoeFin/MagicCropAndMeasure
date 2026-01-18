@@ -43,3 +43,24 @@ This is a simple app which does a few things.
 - Measure distance and angle
 
 If you like this app you'll probably enjoy some of my other apps: [JoeFinApps.com](https://www.JoeFinApps.com)
+
+## Architecture
+
+MagickCrop has been migrated to a modern **MVVM (Model-View-ViewModel)** architecture with **Dependency Injection**. This ensures clean separation of concerns, improved testability, and easier maintenance.
+
+**Key Architecture Highlights:**
+- **MVVM Pattern**: Clear separation between UI logic (Views), business logic (ViewModels), and data (Models)
+- **Dependency Injection**: Services are registered in `App.xaml.cs` and injected into ViewModels
+- **Messaging System**: Decoupled communication between components using `WeakReferenceMessenger`
+- **Observable Models**: Models use `INotifyPropertyChanged` for automatic UI updates
+- **Interface-based Services**: All services have interfaces for loose coupling and testability
+
+**Project Structure:**
+- `ViewModels/` - Contains all application logic and state management
+- `Services/` - Business logic encapsulation with interface-based design
+- `Models/` - Data structures with observable properties
+- `Views/` - XAML and minimal code-behind (Views and Controls)
+- `Converters/` - Value converters for XAML bindings
+- `Messages/` - Message definitions for component communication
+
+For detailed architecture documentation, see [ARCHITECTURE.md](ARCHITECTURE.md).
