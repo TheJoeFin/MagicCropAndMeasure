@@ -898,6 +898,25 @@ public partial class MainWindow : FluentWindow
         }
     }
 
+    private void CopyToClipboardButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(imagePath) || MainImage.Source is not BitmapSource bitmapSource)
+            return;
+
+        try
+        {
+            ClipboardHelper.CopyImageToClipboard(bitmapSource);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                ex.Message,
+                "Copy Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
     private void SetUiForLongTask()
     {
         BottomPane.IsEnabled = false;
@@ -4448,6 +4467,17 @@ public partial class MainWindow : FluentWindow
             if (WelcomeMessageModal.Visibility == Visibility.Visible || string.IsNullOrEmpty(imagePath))
             {
                 PasteButton_Click(sender, e);
+                e.Handled = true;
+                return;
+            }
+        }
+
+        // Handle Ctrl+C for copying image to clipboard
+        if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && e.Key == Key.C)
+        {
+            if (!string.IsNullOrEmpty(imagePath) && MainImage.Source is BitmapSource)
+            {
+                CopyToClipboardButton_Click(sender, e);
                 e.Handled = true;
                 return;
             }

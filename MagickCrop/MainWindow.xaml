@@ -206,55 +206,55 @@
                 Panel.ZIndex="1000"
                 Visibility="Collapsed" />
 
-                <!--  Rotation angle overlay label  -->
-                <TextBlock
-                    x:Name="RotationOverlayLabel"
-                    Margin="60,10,0,0"
-                    Padding="4,2"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Top"
-                    Background="#66000000"
-                    FontSize="14"
-                    FontWeight="SemiBold"
-                    Foreground="White"
-                    IsHitTestVisible="False"
-                    Text="0°"
-                    Visibility="Collapsed" />
+            <!--  Rotation angle overlay label  -->
+            <TextBlock
+                x:Name="RotationOverlayLabel"
+                Margin="60,10,0,0"
+                Padding="4,2"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Background="#66000000"
+                FontSize="14"
+                FontWeight="SemiBold"
+                Foreground="White"
+                IsHitTestVisible="False"
+                Text="0°"
+                Visibility="Collapsed" />
 
-                <!--  White point color preview  -->
-                <Border
-                    x:Name="WhitePointColorPreview"
-                    Width="80"
-                    Height="80"
-                    Margin="60,10,0,0"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Top"
-                    BorderBrush="White"
-                    BorderThickness="2"
-                    CornerRadius="4"
-                    IsHitTestVisible="False"
-                    Visibility="Collapsed">
-                    <Border.Effect>
-                        <DropShadowEffect
-                            BlurRadius="10"
-                            Opacity="0.5"
-                            ShadowDepth="2" />
-                    </Border.Effect>
-                    <Grid>
-                        <Rectangle x:Name="WhitePointColorRectangle" Fill="White" />
-                        <TextBlock
-                            Margin="4"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Bottom"
-                            Background="#AA000000"
-                            FontSize="10"
-                            FontWeight="SemiBold"
-                            Foreground="White"
-                            Padding="4,2"
-                            Text="Picked Color" />
-                    </Grid>
-                </Border>
-            </Grid>
+            <!--  White point color preview  -->
+            <Border
+                x:Name="WhitePointColorPreview"
+                Width="80"
+                Height="80"
+                Margin="60,10,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                BorderBrush="White"
+                BorderThickness="2"
+                CornerRadius="4"
+                IsHitTestVisible="False"
+                Visibility="Collapsed">
+                <Border.Effect>
+                    <DropShadowEffect
+                        BlurRadius="10"
+                        Opacity="0.5"
+                        ShadowDepth="2" />
+                </Border.Effect>
+                <Grid>
+                    <Rectangle x:Name="WhitePointColorRectangle" Fill="White" />
+                    <TextBlock
+                        Margin="4"
+                        Padding="4,2"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        Background="#AA000000"
+                        FontSize="10"
+                        FontWeight="SemiBold"
+                        Foreground="White"
+                        Text="Picked Color" />
+                </Grid>
+            </Border>
+        </Grid>
 
         <c:WelcomeMessage
             x:Name="WelcomeMessageModal"
@@ -1210,18 +1210,31 @@
                             <wpfui:SymbolIcon Symbol="SaveCopy24" />
                         </wpfui:Button.Icon>
                     </wpfui:Button>
-                    <wpfui:Button
-                        x:Name="Save"
-                        Width="180"
-                        Margin="0,8"
-                        HorizontalAlignment="Center"
-                        Click="Save_Click"
-                        Content="Save image..."
-                        ToolTip="Apply Transform, Save, and Preview file">
-                        <wpfui:Button.Icon>
-                            <wpfui:SymbolIcon Symbol="Save24" />
-                        </wpfui:Button.Icon>
-                    </wpfui:Button>
+                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                        <wpfui:Button
+                            x:Name="Save"
+                            Width="92"
+                            Margin="0,8"
+                            Click="Save_Click"
+                            Content="Save..."
+                            ToolTip="Apply Transform, Save, and Preview file">
+                            <wpfui:Button.Icon>
+                                <wpfui:SymbolIcon Symbol="Save24" />
+                            </wpfui:Button.Icon>
+                        </wpfui:Button>
+                        <wpfui:Button
+                            x:Name="CopyToClipboardButton"
+                            Width="80"
+                            Margin="8,8,0,8"
+                            Click="CopyToClipboardButton_Click"
+                            Content="Copy"
+                            ToolTip="Copy the current image to the clipboard (Ctrl+C)">
+                            <wpfui:Button.Icon>
+                                <wpfui:SymbolIcon Symbol="Copy24" />
+                            </wpfui:Button.Icon>
+                        </wpfui:Button>
+
+                    </StackPanel>
                     <wpfui:Button
                         x:Name="OpenFolderButton"
                         Width="180"

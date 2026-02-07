@@ -386,6 +386,29 @@ public static class ClipboardHelper
         return tempFileName;
     }
 
+    /// <summary>
+    /// Copies a BitmapSource to the clipboard in multiple formats for maximum compatibility.
+    /// </summary>
+    /// <param name="image">The image to copy to the clipboard</param>
+    public static void CopyImageToClipboard(BitmapSource image)
+    {
+        DataObject dataObject = new();
+
+        // Add standard WPF bitmap format
+        dataObject.SetImage(image);
+
+        // Add PNG format for higher quality paste in other applications
+        using (MemoryStream pngStream = new())
+        {
+            PngBitmapEncoder pngEncoder = new();
+            pngEncoder.Frames.Add(BitmapFrame.Create(image));
+            pngEncoder.Save(pngStream);
+            dataObject.SetData("PNG", pngStream.ToArray());
+        }
+
+        Clipboard.SetDataObject(dataObject, true);
+    }
+
     private static string DetermineOptimalFormat(BitmapSource image)
     {
         // Use PNG for images with transparency
