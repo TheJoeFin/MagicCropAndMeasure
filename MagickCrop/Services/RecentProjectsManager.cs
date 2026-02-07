@@ -153,6 +153,13 @@ public class RecentProjectsManager : IRecentProjectsService
     /// <param name="projectInfo">The project to add or update</param>
     private void UpdateRecentProjectsList(RecentProjectInfo projectInfo)
     {
+        // Ensure we're on the UI thread since we're modifying ObservableCollection
+        if (System.Windows.Application.Current?.Dispatcher.CheckAccess() == false)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(() => UpdateRecentProjectsList(projectInfo));
+            return;
+        }
+
         // Remove the project if it already exists in the list
         RecentProjectInfo? existingProject = RecentProjects.FirstOrDefault(p => p.Id == projectInfo.Id);
         if (existingProject is not null)
@@ -212,7 +219,42 @@ public class RecentProjectsManager : IRecentProjectsService
     /// </summary>
     public async Task LoadRecentProjectsAsync()
     {
-        await Task.Run(() => LoadRecentProjects());
+        // Load data on background thread
+        var projects = await Task.Run(() =>
+        {
+            if (!File.Exists(_appPaths.ProjectIndexFile))
+                return new List<RecentProjectInfo>();
+
+            try
+            {
+                string json = File.ReadAllText(_appPaths.ProjectIndexFile);
+                List<RecentProjectInfo>? loaded = JsonSerializer.Deserialize<List<RecentProjectInfo>>(json);
+
+                if (loaded is null)
+                    return new List<RecentProjectInfo>();
+
+                // Remove projects with missing package files
+                return loaded
+                    .Where(p => !string.IsNullOrEmpty(p.PackagePath) && File.Exists(p.PackagePath))
+                    .DistinctBy(p => p.Name)
+                    .ToList();
+            }
+            catch (Exception)
+            {
+                return new List<RecentProjectInfo>();
+            }
+        });
+
+        // Update UI on UI thread
+        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        {
+            RecentProjects.Clear();
+            foreach (var project in projects)
+            {
+                project.LoadThumbnail();
+                RecentProjects.Add(project);
+            }
+        });
     }
 
     /// <summary>
@@ -220,7 +262,7 @@ public class RecentProjectsManager : IRecentProjectsService
     /// </summary>
     public async Task AddRecentProjectAsync(RecentProjectInfo project)
     {
-        await Task.Run(() => UpdateRecentProjectsList(project));
+        await System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => UpdateRecentProjectsList(project))!;
     }
 
     /// <summary>
@@ -228,7 +270,39 @@ public class RecentProjectsManager : IRecentProjectsService
     /// </summary>
     public async Task RemoveRecentProjectAsync(Guid projectId)
     {
-        await Task.Run(() => RemoveProject(projectId.ToString(), deleteFiles: true));
+        string id = projectId.ToString();
+        
+        // Find project on UI thread
+        RecentProjectInfo? project = null;
+        await System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
+        {
+            project = RecentProjects.FirstOrDefault(p => p.Id == id);
+            if (project is not null)
+            {
+                RecentProjects.Remove(project);
+                SaveRecentProjectsList();
+            }
+        })!;
+
+        // Delete files on background thread
+        if (project is not null)
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    if (File.Exists(project.PackagePath))
+                        File.Delete(project.PackagePath);
+
+                    if (File.Exists(project.ThumbnailPath))
+                        File.Delete(project.ThumbnailPath);
+                }
+                catch (Exception)
+                {
+                    // Continue even if deletion fails
+                }
+            });
+        }
     }
 
     /// <summary>
@@ -263,10 +337,10 @@ public class RecentProjectsManager : IRecentProjectsService
     /// </summary>
     public async Task ClearRecentProjectsAsync()
     {
-        await Task.Run(() =>
+        await System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
         {
             RecentProjects.Clear();
             SaveRecentProjectsList();
-        });
+        })!;
     }
 }

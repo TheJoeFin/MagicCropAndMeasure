@@ -44,26 +44,34 @@ public partial class RecentProjectInfo : ObservableObject
     public string LastModifiedFormatted => FormatRelativeTime(LastModified);
 
     /// <summary>
-    /// Loads the thumbnail image
+    /// Loads the thumbnail image on the UI thread
     /// </summary>
     public void LoadThumbnail()
     {
-        if (!string.IsNullOrEmpty(ThumbnailPath) && File.Exists(ThumbnailPath))
+        if (string.IsNullOrEmpty(ThumbnailPath) || !File.Exists(ThumbnailPath))
+            return;
+
+        // Ensure we're on the UI thread since BitmapImage must be created there
+        if (System.Windows.Application.Current?.Dispatcher.CheckAccess() == false)
         {
-            try
-            {
-                BitmapImage bitmap = new();
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.UriSource = new Uri(ThumbnailPath);
-                bitmap.EndInit();
-                Thumbnail = bitmap;
-            }
-            catch
-            {
-                // If loading fails, we'll just have no thumbnail
-                Thumbnail = null;
-            }
+            System.Windows.Application.Current.Dispatcher.Invoke(() => LoadThumbnail());
+            return;
+        }
+
+        try
+        {
+            BitmapImage bitmap = new();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.UriSource = new Uri(ThumbnailPath);
+            bitmap.EndInit();
+            bitmap.Freeze(); // Make it thread-safe for cross-thread access
+            Thumbnail = bitmap;
+        }
+        catch
+        {
+            // If loading fails, we'll just have no thumbnail
+            Thumbnail = null;
         }
     }
 
