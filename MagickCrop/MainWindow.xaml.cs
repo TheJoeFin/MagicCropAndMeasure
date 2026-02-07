@@ -1034,6 +1034,13 @@ public partial class MainWindow : FluentWindow
 
     private async Task OpenImagePath(string imageFilePath)
     {
+        // Reset all transient state from any previous image / project
+        ResetTransientState();
+        RemoveMeasurementControls();
+        HideTransformControls();
+        HideCroppingControls();
+        HideResizeControls();
+
         Save.IsEnabled = true;
         ImageGrid.Width = ImageWidthConst;
         MainImage.Stretch = Stretch.Uniform;
@@ -3698,6 +3705,123 @@ public partial class MainWindow : FluentWindow
         ResetApplicationState();
     }
 
+    /// <summary>
+    /// Resets all transient interaction state: transform corner markers, rotation,
+    /// measurement placement modes, picker modes, drawing, selectors, and pixel zoom.
+    /// Call this when closing a project or before opening a new image.
+    /// </summary>
+    private void ResetTransientState()
+    {
+        // --- Cancel any active placement / creation state ---
+        isCreatingMeasurement = false;
+        draggingMode = DraggingMode.None;
+        clickedElement = null;
+        pointDraggingIndex = -1;
+        ShapeCanvas.ReleaseMouseCapture();
+        ReleaseMouseCapture();
+
+        // --- Rotation state ---
+        if (isRotateMode)
+            ToggleRotateMode(false);
+        isFreeRotatingDrag = false;
+        currentPreviewRotation = 0;
+        HideRotationOverlay();
+
+        // --- White / black point picker ---
+        isWhitePointPickerMode = false;
+        isBlackPointPickerMode = false;
+        WhitePointPickerToggle.IsChecked = false;
+        BlackPointPickerToggle.IsChecked = false;
+        WhitePointColorPreview.Visibility = Visibility.Collapsed;
+
+        // --- Angle measurement placement ---
+        isPlacingAngleMeasurement = false;
+        anglePlacementStep = AnglePlacementStep.None;
+        if (activeAnglePlacementControl != null)
+        {
+            ShapeCanvas.Children.Remove(activeAnglePlacementControl);
+            activeAnglePlacementControl = null;
+        }
+
+        // --- Rectangle measurement placement ---
+        isPlacingRectangleMeasurement = false;
+        if (activeRectanglePlacementControl != null)
+        {
+            ShapeCanvas.Children.Remove(activeRectanglePlacementControl);
+            activeRectanglePlacementControl = null;
+        }
+
+        // --- Polygon measurement placement ---
+        isPlacingPolygonMeasurement = false;
+        if (activePolygonPlacementControl != null)
+        {
+            ShapeCanvas.Children.Remove(activePolygonPlacementControl);
+            activePolygonPlacementControl = null;
+        }
+
+        // --- Circle measurement placement ---
+        isPlacingCircleMeasurement = false;
+        if (activeCirclePlacementControl != null)
+        {
+            ShapeCanvas.Children.Remove(activeCirclePlacementControl);
+            activeCirclePlacementControl = null;
+        }
+
+        // --- Active measure control references ---
+        activeMeasureControl = null;
+        activeAngleMeasureControl = null;
+        activeRectangleMeasureControl = null;
+        activePolygonMeasureControl = null;
+        activeCircleMeasureControl = null;
+
+        // --- Drawing mode ---
+        isDrawingMode = false;
+        DrawingCanvas.IsEnabled = false;
+        DrawingCanvas.IsHitTestVisible = false;
+        DrawingOptionsPanel.Visibility = Visibility.Collapsed;
+
+        // --- Measurement tool toggles ---
+        UncheckAllBut();
+
+        // --- Quadrilateral selectors ---
+        HideQuadrilateralSelector();
+        HideCropQuadrilateralSelector();
+
+        // --- Pixel zoom ---
+        HidePixelZoom();
+
+        // --- Cursor ---
+        Cursor = null;
+
+        // --- Transform corner markers: reset to XAML defaults ---
+        ResetTransformCornerMarkers();
+
+        // --- Resize drag state ---
+        isDraggingResizeGrip = false;
+        actualImageSize = new Size();
+    }
+
+    /// <summary>
+    /// Resets the perspective-transform corner markers and polyline to the XAML default positions.
+    /// </summary>
+    private void ResetTransformCornerMarkers()
+    {
+        Canvas.SetLeft(TopLeft, 100);
+        Canvas.SetTop(TopLeft, 100);
+
+        Canvas.SetLeft(TopRight, 700);
+        Canvas.SetTop(TopRight, 100);
+
+        Canvas.SetLeft(BottomRight, 700);
+        Canvas.SetTop(BottomRight, 525);
+
+        Canvas.SetLeft(BottomLeft, 100);
+        Canvas.SetTop(BottomLeft, 525);
+
+        // Rebuild the polyline so it matches the reset marker positions
+        DrawPolyLine();
+    }
+
     private void ResetApplicationState()
     {
         // Stop the autosave timer
@@ -3713,6 +3837,9 @@ public partial class MainWindow : FluentWindow
 
         // Reset the title
         wpfuiTitleBar.Title = "Magick Crop & Measure by TheJoeFin";
+
+        // Reset all transient interaction / control state
+        ResetTransientState();
 
         // Reset UI elements
         RemoveMeasurementControls();
