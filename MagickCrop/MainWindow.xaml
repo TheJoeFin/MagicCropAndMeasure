@@ -784,6 +784,25 @@
                     Orientation="Vertical"
                     Visibility="Collapsed">
                     <wpfui:Button
+                        x:Name="DetectCropShapeButton"
+                        Width="180"
+                        Margin="0,8"
+                        Appearance="Secondary"
+                        Click="DetectCropShapeButton_Click"
+                        Content="Detect Shape"
+                        ToolTip="Automatically detect a shape in the image and set the crop area">
+                        <wpfui:Button.Icon>
+                            <wpfui:SymbolIcon Symbol="ShapeIntersect24" />
+                        </wpfui:Button.Icon>
+                    </wpfui:Button>
+
+                    <!--  Quadrilateral Selector for Crop  -->
+                    <c:QuadrilateralSelector
+                        x:Name="CropQuadrilateralSelectorControl"
+                        Margin="0,8,0,0"
+                        Visibility="Collapsed" />
+
+                    <wpfui:Button
                         x:Name="ApplyCropButton"
                         Width="180"
                         Margin="0,8"
@@ -912,9 +931,6 @@
                     <c:QuadrilateralSelector
                         x:Name="QuadrilateralSelectorControl"
                         Margin="0,8,0,0"
-                        Cancelled="QuadrilateralSelector_Cancelled"
-                        ManualSelection="QuadrilateralSelector_ManualSelection"
-                        QuadrilateralSelected="QuadrilateralSelector_Selected"
                         Visibility="Collapsed" />
 
                     <wpfui:Button

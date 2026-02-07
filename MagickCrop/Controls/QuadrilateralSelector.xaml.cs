@@ -81,6 +81,7 @@ public partial class QuadrilateralSelector : UserControl
         if (sender is Border border && border.DataContext is QuadrilateralViewModel vm)
         {
             QuadrilateralSelected?.Invoke(this, vm.Quadrilateral);
+            e.Handled = true;
         }
     }
 

@@ -160,6 +160,15 @@ public partial class MainWindow : FluentWindow
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Collapsed;
 
+        // Wire QuadrilateralSelector events explicitly in code-behind
+        CropQuadrilateralSelectorControl.QuadrilateralSelected += CropQuadrilateralSelector_Selected;
+        CropQuadrilateralSelectorControl.ManualSelection += CropQuadrilateralSelector_ManualSelection;
+        CropQuadrilateralSelectorControl.Cancelled += CropQuadrilateralSelector_Cancelled;
+
+        QuadrilateralSelectorControl.QuadrilateralSelected += QuadrilateralSelector_Selected;
+        QuadrilateralSelectorControl.ManualSelection += QuadrilateralSelector_ManualSelection;
+        QuadrilateralSelectorControl.Cancelled += QuadrilateralSelector_Cancelled;
+
         try
         {
             PackageVersion version = Package.Current.Id.Version;
@@ -215,6 +224,10 @@ public partial class MainWindow : FluentWindow
         }
 
         ShapeCanvas.Children.Add(lines);
+
+        // Keep _polygonElements in sync with the new lines reference
+        if (_polygonElements is not null && _polygonElements.Count > 0)
+            _polygonElements[0] = lines;
     }
 
     private void TopLeft_MouseDown(object sender, MouseButtonEventArgs e)
@@ -2271,6 +2284,128 @@ public partial class MainWindow : FluentWindow
     {
         CropButtonPanel.Visibility = Visibility.Collapsed;
         CroppingRectangle.Visibility = Visibility.Collapsed;
+        HideCropQuadrilateralSelector();
+    }
+
+    private async void DetectCropShapeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+        {
+            _ = System.Windows.MessageBox.Show("Please open an image first.", "No Image", System.Windows.MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        IsWorkingBar.Visibility = Visibility.Visible;
+
+        try
+        {
+            QuadrilateralDetector.DetectionResult detectionResult = await Task.Run(() =>
+                QuadrilateralDetector.DetectQuadrilateralsWithDimensions(imagePath, minArea: QuadDetectionMinArea, maxResults: QuadDetectionMaxResults));
+
+            if (detectionResult.Quadrilaterals.Count == 0)
+            {
+                _ = System.Windows.MessageBox.Show(
+                    "No quadrilaterals detected in the image.\n\nPlease position the crop rectangle manually.",
+                    "No Shapes Detected",
+                    System.Windows.MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            else
+            {
+                List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads = [.. detectionResult.Quadrilaterals.Select(q =>
+                    QuadrilateralDetector.ScaleToDisplay(
+                        q,
+                        detectionResult.ImageWidth,
+                        detectionResult.ImageHeight,
+                        MainImage.ActualWidth,
+                        MainImage.ActualHeight))];
+
+                CropQuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
+                // Unsubscribe first to prevent handler stacking on repeated detection
+                CropQuadrilateralSelectorControl.QuadrilateralHoverEnter -= QuadrilateralSelector_HoverEnter;
+                CropQuadrilateralSelectorControl.QuadrilateralHoverExit -= QuadrilateralSelector_HoverExit;
+                CropQuadrilateralSelectorControl.QuadrilateralHoverEnter += QuadrilateralSelector_HoverEnter;
+                CropQuadrilateralSelectorControl.QuadrilateralHoverExit += QuadrilateralSelector_HoverExit;
+                CropQuadrilateralSelectorControl.Visibility = Visibility.Visible;
+            }
+        }
+        catch (IOException ioEx)
+        {
+            _ = System.Windows.MessageBox.Show(
+                $"File error while detecting quadrilaterals: {ioEx.Message}",
+                "File Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        catch (UnauthorizedAccessException uaEx)
+        {
+            _ = System.Windows.MessageBox.Show(
+                $"Access denied while detecting quadrilaterals: {uaEx.Message}",
+                "Access Denied",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        catch (Exception ex)
+        {
+            _ = System.Windows.MessageBox.Show(
+                $"Error detecting quadrilaterals: {ex.Message}",
+                "Detection Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            IsWorkingBar.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void CropQuadrilateralSelector_Selected(object? sender, QuadrilateralDetector.DetectedQuadrilateral quad)
+    {
+        PositionCroppingRectangle(quad);
+        HideCropQuadrilateralSelector();
+
+        // Defensive: ensure transform elements stay hidden while in crop mode
+        HideTransformControls();
+        CropButtonPanel.Visibility = Visibility.Visible;
+        CroppingRectangle.Visibility = Visibility.Visible;
+    }
+
+    private void CropQuadrilateralSelector_ManualSelection(object? sender, EventArgs e)
+    {
+        HideCropQuadrilateralSelector();
+    }
+
+    private void CropQuadrilateralSelector_Cancelled(object? sender, EventArgs e)
+    {
+        HideCropQuadrilateralSelector();
+    }
+
+    private void HideCropQuadrilateralSelector()
+    {
+        CropQuadrilateralSelectorControl.Visibility = Visibility.Collapsed;
+        CropQuadrilateralSelectorControl.QuadrilateralHoverEnter -= QuadrilateralSelector_HoverEnter;
+        CropQuadrilateralSelectorControl.QuadrilateralHoverExit -= QuadrilateralSelector_HoverExit;
+        RemoveHoverHighlight();
+    }
+
+    private void PositionCroppingRectangle(QuadrilateralDetector.DetectedQuadrilateral quad)
+    {
+        // Compute the axis-aligned bounding box of the quadrilateral
+        double minX = Math.Min(Math.Min(quad.TopLeft.X, quad.TopRight.X), Math.Min(quad.BottomLeft.X, quad.BottomRight.X));
+        double minY = Math.Min(Math.Min(quad.TopLeft.Y, quad.TopRight.Y), Math.Min(quad.BottomLeft.Y, quad.BottomRight.Y));
+        double maxX = Math.Max(Math.Max(quad.TopLeft.X, quad.TopRight.X), Math.Max(quad.BottomLeft.X, quad.BottomRight.X));
+        double maxY = Math.Max(Math.Max(quad.TopLeft.Y, quad.TopRight.Y), Math.Max(quad.BottomLeft.Y, quad.BottomRight.Y));
+
+        double width = maxX - minX;
+        double height = maxY - minY;
+
+        if (width <= 0 || height <= 0)
+            return;
+
+        Canvas.SetLeft(CroppingRectangle, minX);
+        Canvas.SetTop(CroppingRectangle, minY);
+        CroppingRectangle.Width = width;
+        CroppingRectangle.Height = height;
     }
 
     private void PerspectiveCorrectionMenuItem_Click(object sender, RoutedEventArgs e)
@@ -2297,6 +2432,7 @@ public partial class MainWindow : FluentWindow
     private void HideTransformControls()
     {
         TransformButtonPanel.Visibility = Visibility.Collapsed;
+        HideQuadrilateralSelector();
 
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Collapsed;
@@ -2342,6 +2478,9 @@ public partial class MainWindow : FluentWindow
 
                 // Show selector
                 QuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
+                // Unsubscribe first to prevent handler stacking on repeated detection
+                QuadrilateralSelectorControl.QuadrilateralHoverEnter -= QuadrilateralSelector_HoverEnter;
+                QuadrilateralSelectorControl.QuadrilateralHoverExit -= QuadrilateralSelector_HoverExit;
                 QuadrilateralSelectorControl.QuadrilateralHoverEnter += QuadrilateralSelector_HoverEnter;
                 QuadrilateralSelectorControl.QuadrilateralHoverExit += QuadrilateralSelector_HoverExit;
                 ShowQuadrilateralSelector();
