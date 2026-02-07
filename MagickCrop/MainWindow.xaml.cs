@@ -142,6 +142,11 @@ public partial class MainWindow : FluentWindow
     // Hover highlight polygon for quadrilateral selector
     private Polygon? hoverHighlightPolygon;
 
+    // --- Tri-fold correction state ---
+    private bool isTriFoldMode = false;
+    private Polygon? triFoldPolygon;
+    private readonly List<UIElement> _triFoldElements = [];
+
     public MainWindow()
     {
         ThemeService themeService = new();
@@ -159,6 +164,10 @@ public partial class MainWindow : FluentWindow
 
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Collapsed;
+
+        // Tri-fold elements: all 8 markers + fold guide lines (built later)
+        _triFoldElements.AddRange([TopLeft, TopRight, BottomRight, BottomLeft,
+            UpperFoldLeft, UpperFoldRight, LowerFoldLeft, LowerFoldRight]);
 
         // Wire QuadrilateralSelector events explicitly in code-behind
         CropQuadrilateralSelectorControl.QuadrilateralSelected += CropQuadrilateralSelector_Selected;
@@ -214,9 +223,10 @@ public partial class MainWindow : FluentWindow
             Opacity = 0.8,
         };
 
-        List<Ellipse> ellipseList = [.. ShapeCanvas.Children.OfType<Ellipse>()];
+        // Only include the 4 corner markers (Tags 0-3) in the polyline
+        Ellipse[] cornerEllipses = [TopLeft, TopRight, BottomRight, BottomLeft];
 
-        foreach (Ellipse ellipse in ellipseList)
+        foreach (Ellipse ellipse in cornerEllipses)
         {
             lines.Points.Add(
                 new Point(Canvas.GetLeft(ellipse) + (ellipse.Width / 2),
@@ -551,11 +561,19 @@ public partial class MainWindow : FluentWindow
 
     private void MovePolyline(Point newPoint)
     {
-        if (pointDraggingIndex < 0 || lines is null)
+        if (pointDraggingIndex < 0)
             return;
 
-        lines.Points[pointDraggingIndex] = newPoint;
-        AspectRatioTransformPreview.SetAndScalePoints(lines.Points);
+        // Update standard 4-corner polyline when dragging corner markers (index 0-3)
+        if (pointDraggingIndex < 4 && lines is not null)
+        {
+            lines.Points[pointDraggingIndex] = newPoint;
+            AspectRatioTransformPreview.SetAndScalePoints(lines.Points);
+        }
+
+        // Update tri-fold guide lines when in tri-fold mode
+        if (isTriFoldMode)
+            UpdateTriFoldGuideLines();
     }
 
     private async Task<MagickImage?> CorrectDistortion(string pathOfImage)
@@ -2232,6 +2250,7 @@ public partial class MainWindow : FluentWindow
     {
         HideResizeControls();
         HideTransformControls();
+        HideTriFoldControls();
 
         CropButtonPanel.Visibility = Visibility.Visible;
         CroppingRectangle.Visibility = Visibility.Visible;
@@ -2429,6 +2448,7 @@ public partial class MainWindow : FluentWindow
     {
         HideCroppingControls();
         HideResizeControls();
+        HideTriFoldControls();
 
         TransformButtonPanel.Visibility = Visibility.Visible;
 
@@ -2446,6 +2466,217 @@ public partial class MainWindow : FluentWindow
 
         lines?.Visibility = Visibility.Collapsed;
     }
+
+    #region Tri-Fold Correction
+
+    private void TriFoldCorrectionMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        ShowTriFoldControls();
+    }
+
+    private void CancelTriFoldButton_Click(object sender, RoutedEventArgs e)
+    {
+        HideTriFoldControls();
+    }
+
+    private void ShowTriFoldControls()
+    {
+        HideCroppingControls();
+        HideTransformControls();
+        HideResizeControls();
+
+        isTriFoldMode = true;
+        TriFoldButtonPanel.Visibility = Visibility.Visible;
+
+        // Position markers at default locations based on image size
+        ResetTriFoldMarkers();
+
+        // Show all 8 markers
+        foreach (UIElement element in _triFoldElements)
+            element.Visibility = Visibility.Visible;
+
+        // Hide the 4-corner polyline; the tri-fold polygon replaces it
+        if (lines is not null)
+            lines.Visibility = Visibility.Collapsed;
+
+        // Build the unified tri-fold polygon
+        DrawTriFoldGuideLines();
+    }
+
+    private void HideTriFoldControls()
+    {
+        isTriFoldMode = false;
+        TriFoldButtonPanel.Visibility = Visibility.Collapsed;
+
+        // Hide fold markers (corners are shared with _polygonElements, hide those too)
+        UpperFoldLeft.Visibility = Visibility.Collapsed;
+        UpperFoldRight.Visibility = Visibility.Collapsed;
+        LowerFoldLeft.Visibility = Visibility.Collapsed;
+        LowerFoldRight.Visibility = Visibility.Collapsed;
+
+        // Hide corner markers
+        foreach (UIElement element in _polygonElements)
+            element.Visibility = Visibility.Collapsed;
+
+        RemoveTriFoldGuideLines();
+    }
+
+    private void ResetTriFoldMarkers()
+    {
+        double imgW = MainImage.ActualWidth > 0 ? MainImage.ActualWidth : 600;
+        double imgH = MainImage.ActualHeight > 0 ? MainImage.ActualHeight : 425;
+
+        double margin = 20;
+        double left = margin;
+        double right = imgW - margin;
+        double top = margin;
+        double bottom = imgH - margin;
+        double oneThird = top + ((bottom - top) / 3.0);
+        double twoThirds = top + (2.0 * (bottom - top) / 3.0);
+
+        double halfEllipse = TopLeft.Width / 2;
+
+        Canvas.SetLeft(TopLeft, left - halfEllipse);
+        Canvas.SetTop(TopLeft, top - halfEllipse);
+        Canvas.SetLeft(TopRight, right - halfEllipse);
+        Canvas.SetTop(TopRight, top - halfEllipse);
+        Canvas.SetLeft(BottomRight, right - halfEllipse);
+        Canvas.SetTop(BottomRight, bottom - halfEllipse);
+        Canvas.SetLeft(BottomLeft, left - halfEllipse);
+        Canvas.SetTop(BottomLeft, bottom - halfEllipse);
+
+        Canvas.SetLeft(UpperFoldLeft, left - halfEllipse);
+        Canvas.SetTop(UpperFoldLeft, oneThird - halfEllipse);
+        Canvas.SetLeft(UpperFoldRight, right - halfEllipse);
+        Canvas.SetTop(UpperFoldRight, oneThird - halfEllipse);
+        Canvas.SetLeft(LowerFoldLeft, left - halfEllipse);
+        Canvas.SetTop(LowerFoldLeft, twoThirds - halfEllipse);
+        Canvas.SetLeft(LowerFoldRight, right - halfEllipse);
+        Canvas.SetTop(LowerFoldRight, twoThirds - halfEllipse);
+
+        DrawPolyLine();
+    }
+
+    private void DrawTriFoldGuideLines()
+    {
+        RemoveTriFoldGuideLines();
+
+        Color color = (Color)ColorConverter.ConvertFromString("#0066FF");
+        SolidColorBrush brush = new(color);
+
+        // Build a single polygon that traces the full tri-fold outline:
+        //   TL → TR → UFR → UFL → LFL → LFR → BR → BL → LFL → LFR → UFR → UFL
+        // This draws the outer rectangle and both internal fold lines in one stroke.
+        triFoldPolygon = new Polygon
+        {
+            Stroke = brush,
+            StrokeThickness = 2,
+            IsHitTestVisible = false,
+            StrokeLineJoin = PenLineJoin.Round,
+            Opacity = 0.8,
+            Points = GetTriFoldPolygonPoints()
+        };
+
+        ShapeCanvas.Children.Add(triFoldPolygon);
+    }
+
+    private PointCollection GetTriFoldPolygonPoints()
+    {
+        Point tl = GetEllipseCenter(TopLeft);
+        Point tr = GetEllipseCenter(TopRight);
+        Point ufl = GetEllipseCenter(UpperFoldLeft);
+        Point ufr = GetEllipseCenter(UpperFoldRight);
+        Point lfl = GetEllipseCenter(LowerFoldLeft);
+        Point lfr = GetEllipseCenter(LowerFoldRight);
+        Point bl = GetEllipseCenter(BottomLeft);
+        Point br = GetEllipseCenter(BottomRight);
+
+        // Trace: outer top → right side down to upper fold → cross left → down left side
+        // to lower fold → cross right → down right side to bottom → bottom back to left
+        // → up left side to lower fold → cross right → up right side to upper fold → cross left → close
+        return [tl, tr, ufr, ufl, lfl, lfr, br, bl, lfl, lfr, ufr, ufl];
+    }
+
+    private void UpdateTriFoldGuideLines()
+    {
+        if (triFoldPolygon is not null)
+            triFoldPolygon.Points = GetTriFoldPolygonPoints();
+    }
+
+    private void RemoveTriFoldGuideLines()
+    {
+        if (triFoldPolygon is not null)
+        {
+            ShapeCanvas.Children.Remove(triFoldPolygon);
+            triFoldPolygon = null;
+        }
+    }
+
+    private static Point GetEllipseCenter(Ellipse ellipse)
+    {
+        return new Point(
+            Canvas.GetLeft(ellipse) + (ellipse.Width / 2),
+            Canvas.GetTop(ellipse) + (ellipse.Height / 2));
+    }
+
+    private async void ApplyTriFoldButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return;
+
+        SetUiForLongTask();
+
+        try
+        {
+            using MagickImage sizeCheck = new(imagePath);
+            double scaleFactor = sizeCheck.Width / MainImage.ActualWidth;
+
+            Point tl = GetEllipseCenter(TopLeft);
+            Point tr = GetEllipseCenter(TopRight);
+            Point ufl = GetEllipseCenter(UpperFoldLeft);
+            Point ufr = GetEllipseCenter(UpperFoldRight);
+            Point lfl = GetEllipseCenter(LowerFoldLeft);
+            Point lfr = GetEllipseCenter(LowerFoldRight);
+            Point bl = GetEllipseCenter(BottomLeft);
+            Point br = GetEllipseCenter(BottomRight);
+
+            MagickImage? result = await TriFoldCorrector.CorrectTriFoldAsync(
+                imagePath, tl, tr, ufl, ufr, lfl, lfr, bl, br, scaleFactor);
+
+            if (result is null)
+            {
+                SetUiForCompletedTask();
+                return;
+            }
+
+            string tempFileName = System.IO.Path.GetTempFileName();
+            await result.WriteAsync(tempFileName);
+
+            MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
+            undoRedo.AddUndo(undoRedoItem);
+
+            imagePath = tempFileName;
+            MainImage.Source = result.ToBitmapSource();
+
+            actualImageSize = new Size(result.Width, result.Height);
+            result.Dispose();
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                ex.Message,
+                "Tri-Fold Correction Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            HideTriFoldControls();
+            SetUiForCompletedTask();
+        }
+    }
+
+    #endregion Tri-Fold Correction
 
     private async void DetectShapeButton_Click(object sender, RoutedEventArgs e)
     {
@@ -2654,6 +2885,7 @@ public partial class MainWindow : FluentWindow
     {
         HideCroppingControls();
         HideTransformControls();
+        HideTriFoldControls();
 
         // Initialize resize input controls
         InitializeResizeInputs();
@@ -3796,6 +4028,9 @@ public partial class MainWindow : FluentWindow
         // --- Transform corner markers: reset to XAML defaults ---
         ResetTransformCornerMarkers();
 
+        // --- Tri-fold state ---
+        HideTriFoldControls();
+
         // --- Resize drag state ---
         isDraggingResizeGrip = false;
         actualImageSize = new Size();
@@ -4290,6 +4525,7 @@ public partial class MainWindow : FluentWindow
             HideCroppingControls();
             HideTransformControls();
             HideResizeControls();
+            HideTriFoldControls();
             RotateControlsPanel.Visibility = Visibility.Visible;
             isRotateMode = true;
             EnsurePreviewRotateTransform();

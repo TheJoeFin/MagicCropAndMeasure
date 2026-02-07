@@ -157,6 +157,44 @@
                     Tag="3"
                     ToolTip="Drag to move bottom-left marker" />
 
+                <!--  Tri-fold correction markers (upper and lower fold lines)  -->
+                <Ellipse
+                    x:Name="UpperFoldLeft"
+                    Canvas.Left="100"
+                    Canvas.Top="240"
+                    Fill="#FF8C00"
+                    MouseDown="TopLeft_MouseDown"
+                    Tag="4"
+                    ToolTip="Drag to move upper fold left marker"
+                    Visibility="Collapsed" />
+                <Ellipse
+                    x:Name="UpperFoldRight"
+                    Canvas.Left="700"
+                    Canvas.Top="240"
+                    Fill="#FF8C00"
+                    MouseDown="TopLeft_MouseDown"
+                    Tag="5"
+                    ToolTip="Drag to move upper fold right marker"
+                    Visibility="Collapsed" />
+                <Ellipse
+                    x:Name="LowerFoldLeft"
+                    Canvas.Left="100"
+                    Canvas.Top="385"
+                    Fill="#FF8C00"
+                    MouseDown="TopLeft_MouseDown"
+                    Tag="6"
+                    ToolTip="Drag to move lower fold left marker"
+                    Visibility="Collapsed" />
+                <Ellipse
+                    x:Name="LowerFoldRight"
+                    Canvas.Left="700"
+                    Canvas.Top="385"
+                    Fill="#FF8C00"
+                    MouseDown="TopLeft_MouseDown"
+                    Tag="7"
+                    ToolTip="Drag to move lower fold right marker"
+                    Visibility="Collapsed" />
+
                 <local:ResizableRectangle x:Name="CroppingRectangle" Visibility="Collapsed" />
             </Canvas>
 
@@ -458,6 +496,15 @@
                                         ToolTip="Correct perspective using corner markers">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Foreground="#0066FF" Symbol="SelectObjectSkewEdit24" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem
+                                        Name="TriFoldCorrectionMenuItem"
+                                        Click="TriFoldCorrectionMenuItem_Click"
+                                        Header="Tri-Fold Correction"
+                                        ToolTip="Correct a tri-folded paper using 8 control points">
+                                        <MenuItem.Icon>
+                                            <wpfui:SymbolIcon Foreground="#FF8C00" Symbol="DocumentSplitHint24" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                 </StackPanel>
@@ -953,6 +1000,47 @@
                         Click="CancelTransformButton_Click"
                         Content="Cancel"
                         ToolTip="Cancel transform">
+                        <wpfui:Button.Icon>
+                            <wpfui:SymbolIcon Symbol="Dismiss24" />
+                        </wpfui:Button.Icon>
+                    </wpfui:Button>
+                </StackPanel>
+                <StackPanel
+                    x:Name="TriFoldButtonPanel"
+                    Grid.Row="1"
+                    HorizontalAlignment="Center"
+                    Orientation="Vertical"
+                    Visibility="Collapsed">
+                    <TextBlock
+                        Margin="0,4"
+                        FontWeight="SemiBold"
+                        Text="Tri-Fold Correction" />
+                    <TextBlock
+                        Margin="0,0,0,8"
+                        FontSize="11"
+                        Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Place 4 corner markers and 4 fold markers on the image."
+                        TextWrapping="Wrap" />
+                    <wpfui:Button
+                        x:Name="ApplyTriFoldButton"
+                        Width="180"
+                        Margin="0,6"
+                        Appearance="Primary"
+                        Click="ApplyTriFoldButton_Click"
+                        Content="Apply Tri-Fold"
+                        Foreground="White"
+                        ToolTip="Apply the tri-fold perspective correction">
+                        <wpfui:Button.Icon>
+                            <wpfui:SymbolIcon Symbol="DocumentSplitHint24" />
+                        </wpfui:Button.Icon>
+                    </wpfui:Button>
+                    <wpfui:Button
+                        x:Name="CancelTriFoldButton"
+                        Width="180"
+                        Appearance="Danger"
+                        Click="CancelTriFoldButton_Click"
+                        Content="Cancel"
+                        ToolTip="Cancel tri-fold correction">
                         <wpfui:Button.Icon>
                             <wpfui:SymbolIcon Symbol="Dismiss24" />
                         </wpfui:Button.Icon>
