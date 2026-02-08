@@ -3823,6 +3823,35 @@ public partial class MainWindow : FluentWindow
         await LoadMeasurementPackageAsync(filePath);
     }
 
+    public async Task OpenSharedImageAsync(string filePath)
+    {
+        wpfuiTitleBar.Title = $"Magick Crop & Measure: {System.IO.Path.GetFileName(filePath)}";
+        await OpenImagePath(filePath);
+    }
+
+    private void ShareButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+            return;
+
+        try
+        {
+            string title = string.IsNullOrEmpty(openedFileName)
+                ? "Shared Image"
+                : openedFileName;
+
+            ShareHelper.ShareImageFile(this, imagePath, title, openedFileName);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                ex.Message,
+                "Share Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
     private void SavePackageButton_Click(object sender, RoutedEventArgs e)
     {
         SaveMeasurementsPackageToFile();

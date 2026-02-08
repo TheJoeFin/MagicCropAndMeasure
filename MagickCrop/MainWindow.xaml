@@ -1224,16 +1224,26 @@
                         </wpfui:Button>
                         <wpfui:Button
                             x:Name="CopyToClipboardButton"
-                            Width="80"
+                            Width="36"
                             Margin="8,8,0,8"
                             Click="CopyToClipboardButton_Click"
-                            Content="Copy"
                             ToolTip="Copy the current image to the clipboard (Ctrl+C)">
                             <wpfui:Button.Icon>
                                 <wpfui:SymbolIcon Symbol="Copy24" />
                             </wpfui:Button.Icon>
                         </wpfui:Button>
 
+                        <wpfui:Button
+                            x:Name="ShareButton"
+                            Width="36"
+                            Margin="8,8,0,8"
+                            HorizontalAlignment="Center"
+                            Click="ShareButton_Click"
+                            ToolTip="Share the current image using the Windows Share sheet">
+                            <wpfui:Button.Icon>
+                                <wpfui:SymbolIcon Symbol="Share24" />
+                            </wpfui:Button.Icon>
+                        </wpfui:Button>
                     </StackPanel>
                     <wpfui:Button
                         x:Name="OpenFolderButton"
