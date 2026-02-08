@@ -1,4 +1,5 @@
 ﻿using MagickCrop.Models;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
@@ -17,7 +18,7 @@ public partial class SaveWindow : FluentWindow
     {
         InitializeComponent();
 
-        uiTitlebar.Title = $"Corrected Image {imagePath}";
+        uiTitlebar.Title = $"Corrected Image {Path.GetFileName(imagePath)}";
 
         tempPath = imagePath;
         Uri uriSource = new(imagePath);
