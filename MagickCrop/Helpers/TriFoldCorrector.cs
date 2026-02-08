@@ -86,8 +86,10 @@ public static class TriFoldCorrector
             using IMagickImage<ushort> panel3 = CorrectPanel(source, sLFL, sLFR, sBR, sBL, outW, outH3);
 
             // Stitch panels vertically
-            MagickImage result = new(MagickColors.White, (uint)outW, (uint)(outH1 + outH2 + outH3));
-            result.Format = source.Format; // Inherit format so WriteAsync can encode properly
+            MagickImage result = new(MagickColors.White, (uint)outW, (uint)(outH1 + outH2 + outH3))
+            {
+                Format = source.Format // Inherit format so WriteAsync can encode properly
+            };
             result.Composite(panel1, 0, 0, CompositeOperator.Over);
             result.Composite(panel2, 0, outH1, CompositeOperator.Over);
             result.Composite(panel3, 0, outH1 + outH2, CompositeOperator.Over);

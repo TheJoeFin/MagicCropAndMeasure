@@ -306,7 +306,7 @@ public static class QuadrilateralDetector
     /// </summary>
     private static List<DetectedQuadrilateral> FilterDuplicates(List<DetectedQuadrilateral> quadrilaterals)
     {
-        List<DetectedQuadrilateral> filtered = new();
+        List<DetectedQuadrilateral> filtered = [];
 
         foreach (DetectedQuadrilateral quad in quadrilaterals)
         {

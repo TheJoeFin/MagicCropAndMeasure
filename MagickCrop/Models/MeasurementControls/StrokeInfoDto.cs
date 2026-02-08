@@ -9,22 +9,22 @@ public class StrokeInfoDto
     /// Length in pixels
     /// </summary>
     public double PixelLength { get; set; }
-    
+
     /// <summary>
     /// Length after applying scale factor
     /// </summary>
     public double ScaledLength { get; set; }
-    
+
     /// <summary>
     /// Measurement units
     /// </summary>
     public string Units { get; set; } = "pixels";
-    
+
     /// <summary>
     /// Position of the stroke length display (X coordinate)
     /// </summary>
     public double DisplayPositionX { get; set; }
-    
+
     /// <summary>
     /// Position of the stroke length display (Y coordinate)
     /// </summary>

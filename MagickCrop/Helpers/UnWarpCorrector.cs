@@ -264,8 +264,10 @@ public static class UnWarpCorrector
             Debug.WriteLine($"[UnWarp-Local] Built {(GridDivisions + 1) * (GridDivisions + 1)} control points in {sw.ElapsedMilliseconds}ms");
 
             // Create a copy of the source for distortion
-            MagickImage patch = new(source);
-            patch.VirtualPixelMethod = VirtualPixelMethod.Transparent;
+            MagickImage patch = new(source)
+            {
+                VirtualPixelMethod = VirtualPixelMethod.Transparent
+            };
             patch.SetArtifact("distort:viewport", $"{outW}x{outH}+{(int)Math.Round(bboxLeft)}+{(int)Math.Round(bboxTop)}");
             patch.Distort(DistortMethod.Polynomial, args.ToArray());
             patch.ResetPage();

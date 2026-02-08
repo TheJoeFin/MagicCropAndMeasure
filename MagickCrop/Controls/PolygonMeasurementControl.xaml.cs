@@ -1,20 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using MagickCrop.Helpers;
+using MagickCrop.Models.MeasurementControls;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using MagickCrop.Models.MeasurementControls;
-using MagickCrop.Helpers;
 
 namespace MagickCrop.Controls;
 
 public partial class PolygonMeasurementControl : UserControl
 {
-    private readonly List<Point> vertices = new();
-    private readonly List<Ellipse> vertexPoints = new();
+    private readonly List<Point> vertices = [];
+    private readonly List<Ellipse> vertexPoints = [];
     private bool isClosed = false;
     private int pointDraggingIndex = -1;
 
@@ -70,25 +67,25 @@ public partial class PolygonMeasurementControl : UserControl
         CreateVertexPoint(vertex, vertices.Count - 1);
         UpdatePolygonPath();
         UpdateDisplay();
-        
+
         // Highlight first vertex when we have enough vertices to close
         if (vertices.Count == 3)
         {
             UpdateFirstVertexAppearance();
         }
-        
+
         System.Diagnostics.Debug.WriteLine($"Added vertex {vertices.Count}: Point({vertex.X:F1}, {vertex.Y:F1})");
     }
 
     public void UpdatePreviewLine(Point mousePosition)
     {
-        if (isClosed || vertices.Count == 0) 
+        if (isClosed || vertices.Count == 0)
         {
             PreviewLine.Visibility = Visibility.Collapsed;
             return;
         }
 
-        Point lastVertex = vertices[vertices.Count - 1];
+        Point lastVertex = vertices[^1];
         PreviewLine.X1 = lastVertex.X;
         PreviewLine.Y1 = lastVertex.Y;
         PreviewLine.X2 = mousePosition.X;
@@ -98,7 +95,7 @@ public partial class PolygonMeasurementControl : UserControl
 
     public void ClosePolygon()
     {
-        if (vertices.Count < 3 || isClosed) 
+        if (vertices.Count < 3 || isClosed)
         {
             System.Diagnostics.Debug.WriteLine($"ClosePolygon early return: vertices.Count={vertices.Count}, isClosed={isClosed}");
             return;
@@ -107,16 +104,16 @@ public partial class PolygonMeasurementControl : UserControl
         System.Diagnostics.Debug.WriteLine($"ClosePolygon: Closing polygon with {vertices.Count} vertices");
         isClosed = true;
         PreviewLine.Visibility = Visibility.Collapsed;
-        
+
         // Re-enable hit testing on the polygon path now that it's closed
         PolygonPath.IsHitTestVisible = true;
-        
+
         // Reset first vertex appearance back to normal
         ResetFirstVertexAppearance();
-        
+
         UpdatePolygonPath();
         UpdateDisplay();
-        
+
         System.Diagnostics.Debug.WriteLine("ClosePolygon: Polygon successfully closed");
     }
 
@@ -127,16 +124,16 @@ public partial class PolygonMeasurementControl : UserControl
         double dx = point.X - firstVertex.X;
         double dy = point.Y - firstVertex.Y;
         double distance = Math.Sqrt(dx * dx + dy * dy);
-        
+
         // Debug: Output distance for troubleshooting
         System.Diagnostics.Debug.WriteLine($"Distance from click to first vertex: {distance:F1}, Tolerance: {Defaults.VertexCloseTolerance}");
-        
+
         return distance <= Defaults.VertexCloseTolerance;
     }
 
     private void CreateVertexPoint(Point position, int index)
     {
-        var ellipse = new Ellipse
+        Ellipse ellipse = new()
         {
             Width = 12,
             Height = 12,
@@ -167,8 +164,8 @@ public partial class PolygonMeasurementControl : UserControl
             return;
         }
 
-        var geometry = new PathGeometry();
-        var figure = new PathFigure { StartPoint = vertices[0] };
+        PathGeometry geometry = new();
+        PathFigure figure = new() { StartPoint = vertices[0] };
 
         for (int i = 1; i < vertices.Count; i++)
         {
@@ -188,7 +185,7 @@ public partial class PolygonMeasurementControl : UserControl
     {
         for (int i = 0; i < vertexPoints.Count && i < vertices.Count; i++)
         {
-            var ellipse = vertexPoints[i];
+            Ellipse ellipse = vertexPoints[i];
             Canvas.SetLeft(ellipse, vertices[i].X - ellipse.Width / 2);
             Canvas.SetTop(ellipse, vertices[i].Y - ellipse.Height / 2);
         }
@@ -198,12 +195,12 @@ public partial class PolygonMeasurementControl : UserControl
     {
         if (vertexPoints.Count > 0 && !isClosed)
         {
-            var firstVertex = vertexPoints[0];
+            Ellipse firstVertex = vertexPoints[0];
             firstVertex.Width = 16;
             firstVertex.Height = 16;
             firstVertex.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF6600"));
             firstVertex.StrokeThickness = 2;
-            
+
             // Reposition after size change
             Canvas.SetLeft(firstVertex, vertices[0].X - firstVertex.Width / 2);
             Canvas.SetTop(firstVertex, vertices[0].Y - firstVertex.Height / 2);
@@ -214,13 +211,13 @@ public partial class PolygonMeasurementControl : UserControl
     {
         if (vertexPoints.Count > 0)
         {
-            var firstVertex = vertexPoints[0];
+            Ellipse firstVertex = vertexPoints[0];
             // Reset to normal appearance
             firstVertex.Width = 12;
             firstVertex.Height = 12;
             firstVertex.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0066FF"));
             firstVertex.StrokeThickness = 1;
-            
+
             // Reposition after size change
             Canvas.SetLeft(firstVertex, vertices[0].X - firstVertex.Width / 2);
             Canvas.SetTop(firstVertex, vertices[0].Y - firstVertex.Height / 2);
@@ -243,7 +240,7 @@ public partial class PolygonMeasurementControl : UserControl
     private void UpdateMeasurementText()
     {
         double perimeter = CalculatePerimeter();
-        
+
         if (isClosed)
         {
             double area = CalculateArea();
@@ -303,7 +300,7 @@ public partial class PolygonMeasurementControl : UserControl
             return;
 
         int vertexIndex = int.Parse(indexString);
-        
+
         // Special handling: if clicking on first vertex and polygon is not closed and we have 3+ vertices, close the polygon
         if (!isClosed && vertexIndex == 0 && vertices.Count >= 3)
         {
@@ -319,7 +316,7 @@ public partial class PolygonMeasurementControl : UserControl
             pointDraggingIndex = vertexIndex;
             MeasurementPointMouseDown?.Invoke(sender, e);
         }
-        
+
         e.Handled = true;
     }
 
@@ -349,7 +346,7 @@ public partial class PolygonMeasurementControl : UserControl
     {
         return new PolygonMeasurementControlDto
         {
-            Vertices = new List<Point>(vertices),
+            Vertices = [.. vertices],
             ScaleFactor = ScaleFactor,
             Units = Units,
             IsClosed = isClosed
@@ -359,10 +356,10 @@ public partial class PolygonMeasurementControl : UserControl
     public void FromDto(PolygonMeasurementControlDto dto)
     {
         System.Diagnostics.Debug.WriteLine($"FromDto: Restoring polygon with {dto.Vertices.Count} vertices, IsClosed: {dto.IsClosed}");
-        
+
         // Clear existing vertices and points
         vertices.Clear();
-        foreach (var ellipse in vertexPoints)
+        foreach (Ellipse ellipse in vertexPoints)
         {
             MeasurementCanvas.Children.Remove(ellipse);
         }
@@ -388,7 +385,7 @@ public partial class PolygonMeasurementControl : UserControl
 
         UpdatePolygonPath();
         UpdateDisplay();
-        
+
         System.Diagnostics.Debug.WriteLine($"FromDto: Polygon restoration complete");
     }
 }

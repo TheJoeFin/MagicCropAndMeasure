@@ -1,7 +1,7 @@
+using MagickCrop.Models.MeasurementControls;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using MagickCrop.Models.MeasurementControls;
 
 namespace MagickCrop.Controls;
 
@@ -72,7 +72,7 @@ public partial class RectangleMeasurementControl : UserControl
 
         // Update measurement text
         UpdateMeasurementText();
-        
+
         // Position the measurement text above the rectangle
         Canvas.SetLeft(MeasurementText, x + width / 2 - (MeasurementText.ActualWidth / 2));
         Canvas.SetTop(MeasurementText, y - MeasurementText.ActualHeight - 5);

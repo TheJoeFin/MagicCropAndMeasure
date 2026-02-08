@@ -30,13 +30,13 @@ public partial class MainWindow
             Fill = new SolidColorBrush(Color.FromArgb(60, 255, 165, 0)), // Semi-transparent orange
             IsHitTestVisible = false,
             StrokeLineJoin = PenLineJoin.Round,
-            Points = new PointCollection
-            {
+            Points =
+            [
                 quad.TopLeft,
                 quad.TopRight,
                 quad.BottomRight,
                 quad.BottomLeft
-            }
+            ]
         };
 
         // Add to canvas

@@ -47,9 +47,18 @@
             ToolTip="Distance measurement options">
             <Border.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Click="CopyMeasurementMenuItem_Click" Header="Copy Measurement" ToolTip="Copy the measurement value" />
-                    <MenuItem Click="SetRealWorldLengthMenuItem_Click" Header="Set Real World Length" ToolTip="Set a real-world length for this line" />
-                    <MenuItem Click="RemoveMeasurementMenuItem_Click" Header="Remove Measurement" ToolTip="Delete this measurement" />
+                    <MenuItem
+                        Click="CopyMeasurementMenuItem_Click"
+                        Header="Copy Measurement"
+                        ToolTip="Copy the measurement value" />
+                    <MenuItem
+                        Click="SetRealWorldLengthMenuItem_Click"
+                        Header="Set Real World Length"
+                        ToolTip="Set a real-world length for this line" />
+                    <MenuItem
+                        Click="RemoveMeasurementMenuItem_Click"
+                        Header="Remove Measurement"
+                        ToolTip="Delete this measurement" />
                 </ContextMenu>
             </Border.ContextMenu>
             <Button

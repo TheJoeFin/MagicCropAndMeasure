@@ -1,3 +1,4 @@
+using MagickCrop.Helpers;
 using MagickCrop.Models;
 using MagickCrop.Models.MeasurementControls;
 using System.Collections.ObjectModel;
@@ -5,7 +6,6 @@ using System.IO;
 using System.Text.Json;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using MagickCrop.Helpers;
 
 namespace MagickCrop.Services;
 
@@ -69,7 +69,7 @@ public class RecentProjectsManager
                 project.LoadThumbnail();
 
             // Do not replace the ObservableCollection instance to preserve bindings
-            foreach (var p in projects)
+            foreach (RecentProjectInfo p in projects)
                 RecentProjects.Add(p);
         }
         catch (Exception)

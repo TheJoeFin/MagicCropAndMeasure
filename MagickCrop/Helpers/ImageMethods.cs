@@ -2,6 +2,7 @@
 using System.Windows.Media.Imaging;
 
 namespace MagickCrop;
+
 public class ImageMethods
 {
     internal static RotateFlipType GetRotateFlipType(string path)

@@ -1,5 +1,3 @@
-using System.Windows.Media;
-
 namespace MagickCrop.Models.MeasurementControls;
 
 /// <summary>

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Windows;
 
 namespace MagickCrop.Models.MeasurementControls;
@@ -16,7 +15,7 @@ public class PolygonMeasurementControlDto : MeasurementControlDto
     /// <summary>
     /// List of vertices that define the polygon shape
     /// </summary>
-    public List<Point> Vertices { get; set; } = new();
+    public List<Point> Vertices { get; set; } = [];
 
     /// <summary>
     /// Scale factor for converting pixel measurements to real-world units

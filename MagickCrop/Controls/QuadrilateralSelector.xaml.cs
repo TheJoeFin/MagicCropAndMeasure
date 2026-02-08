@@ -47,13 +47,13 @@ public partial class QuadrilateralSelector : UserControl
             double scale = Math.Min(targetSize / width, targetSize / height);
 
             // Create scaled points
-            var scaledPoints = new PointCollection
-            {
+            PointCollection scaledPoints =
+            [
                 new Point((quad.TopLeft.X - minX) * scale + padding, (quad.TopLeft.Y - minY) * scale + padding),
                 new Point((quad.TopRight.X - minX) * scale + padding, (quad.TopRight.Y - minY) * scale + padding),
                 new Point((quad.BottomRight.X - minX) * scale + padding, (quad.BottomRight.Y - minY) * scale + padding),
                 new Point((quad.BottomLeft.X - minX) * scale + padding, (quad.BottomLeft.Y - minY) * scale + padding)
-            };
+            ];
 
             return scaledPoints;
         }
@@ -72,7 +72,7 @@ public partial class QuadrilateralSelector : UserControl
 
     public void SetQuadrilaterals(List<QuadrilateralDetector.DetectedQuadrilateral> quadrilaterals)
     {
-        var viewModels = quadrilaterals.Select((q, i) => new QuadrilateralViewModel(q, i)).ToList();
+        List<QuadrilateralViewModel> viewModels = quadrilaterals.Select((q, i) => new QuadrilateralViewModel(q, i)).ToList();
         QuadrilateralList.ItemsSource = viewModels;
     }
 

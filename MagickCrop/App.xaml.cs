@@ -2,9 +2,10 @@
 using System.Windows;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
+using Windows.Storage.Streams;
+using IStorageFile = Windows.Storage.IStorageFile;
 using ShareOperation = Windows.ApplicationModel.DataTransfer.ShareTarget.ShareOperation;
 using StandardDataFormats = Windows.ApplicationModel.DataTransfer.StandardDataFormats;
-using IStorageFile = Windows.Storage.IStorageFile;
 
 namespace MagickCrop;
 
@@ -62,7 +63,7 @@ public partial class App : Application
         {
             if (shareOperation.Data.Contains(StandardDataFormats.StorageItems))
             {
-                var items = await shareOperation.Data.GetStorageItemsAsync();
+                IReadOnlyList<global::Windows.Storage.IStorageItem> items = await shareOperation.Data.GetStorageItemsAsync();
                 if (items.Count > 0 && items[0] is IStorageFile file)
                 {
                     string path = file.Path;
@@ -77,11 +78,11 @@ public partial class App : Application
             }
             else if (shareOperation.Data.Contains(StandardDataFormats.Bitmap))
             {
-                var bitmapRef = await shareOperation.Data.GetBitmapAsync();
-                using var stream = await bitmapRef.OpenReadAsync();
+                RandomAccessStreamReference bitmapRef = await shareOperation.Data.GetBitmapAsync();
+                using IRandomAccessStreamWithContentType stream = await bitmapRef.OpenReadAsync();
 
                 string tempPath = Path.Combine(Path.GetTempPath(), $"MagickCrop_Share_{Guid.NewGuid()}.png");
-                using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
+                using (FileStream fileStream = new(tempPath, FileMode.Create, FileAccess.Write))
                 {
                     await stream.AsStreamForRead().CopyToAsync(fileStream);
                 }

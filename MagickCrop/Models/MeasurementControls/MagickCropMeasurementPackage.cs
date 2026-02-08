@@ -66,7 +66,7 @@ public class MagickCropMeasurementPackage
                 ZipFile.CreateFromDirectory(tempDir, packagePath);
                 return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine($"Error saving package: {ex.Message}");
 #if DEBUG
@@ -138,7 +138,7 @@ public class MagickCropMeasurementPackage
             if (File.Exists(packageImagePath))
             {
                 tempImagePath = Path.GetTempFileName();
-                    tempImagePath = Path.ChangeExtension(tempImagePath, ".jpg");
+                tempImagePath = Path.ChangeExtension(tempImagePath, ".jpg");
                 File.Copy(packageImagePath, tempImagePath, true);
                 package.ImagePath = tempImagePath;
             }

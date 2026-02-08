@@ -1,8 +1,7 @@
-using System;
+using MagickCrop.Models.MeasurementControls;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using MagickCrop.Models.MeasurementControls;
 
 namespace MagickCrop.Controls;
 

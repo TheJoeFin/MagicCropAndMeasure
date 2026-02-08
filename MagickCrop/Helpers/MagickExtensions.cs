@@ -1,6 +1,7 @@
 ﻿using ImageMagick;
 
 namespace MagickCrop;
+
 public static class MagickExtensions
 {
     internal static void ScaleAll(this MagickGeometry geometry, double factor)

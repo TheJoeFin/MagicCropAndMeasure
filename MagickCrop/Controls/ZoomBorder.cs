@@ -21,7 +21,7 @@ public class ZoomBorder : Border
         (TranslateTransform)((TransformGroup)element.RenderTransform)
           .Children.First(tr => tr is TranslateTransform);
 
-    private ScaleTransform GetScaleTransform(UIElement element) => 
+    private ScaleTransform GetScaleTransform(UIElement element) =>
         (ScaleTransform)((TransformGroup)element.RenderTransform)
           .Children.First(tr => tr is ScaleTransform);
 

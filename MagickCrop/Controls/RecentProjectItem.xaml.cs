@@ -9,9 +9,9 @@ public partial class RecentProjectItem : UserControl
 {
     public static readonly DependencyProperty ProjectProperty =
         DependencyProperty.Register(
-            "Project", 
-            typeof(RecentProjectInfo), 
-            typeof(RecentProjectItem), 
+            "Project",
+            typeof(RecentProjectInfo),
+            typeof(RecentProjectItem),
             new PropertyMetadata(null, OnProjectChanged));
 
     public static readonly DependencyProperty ProjectClickedCommandProperty =
@@ -61,10 +61,10 @@ public partial class RecentProjectItem : UserControl
     private void UpdateUI(RecentProjectInfo project)
     {
         ProjectNameTextBlock.Text = project.Name;
-        
+
         string timeAgo = GetTimeAgo(project.LastModified);
         LastModifiedTextBlock.Text = timeAgo;
-        
+
         if (project.Thumbnail != null)
         {
             ThumbnailImage.Source = project.Thumbnail;
@@ -82,7 +82,7 @@ public partial class RecentProjectItem : UserControl
     private void DeleteButton_Click(object sender, RoutedEventArgs e)
     {
         e.Handled = true; // Prevent the click from being handled by the item click handler
-        
+
         if (Project != null && ProjectDeletedCommand != null && ProjectDeletedCommand.CanExecute(Project))
         {
             ProjectDeletedCommand.Execute(Project);
@@ -109,7 +109,7 @@ public partial class RecentProjectItem : UserControl
         {
             return $"Edited {(int)span.TotalMinutes} minutes ago";
         }
-        
+
         return "Edited just now";
     }
 }

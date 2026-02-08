@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Documents;
@@ -128,7 +127,7 @@ internal sealed class RotateAdorner : Adorner
         double baseRadius = Math.Max(sz.Width, sz.Height) / 2 + CircleMargin;
 
         // Viewport metrics
-        var (sx, sy, centerOnLayer, layerSize) = GetLayerMetrics(_center);
+        (double sx, double sy, Point centerOnLayer, Size layerSize) = GetLayerMetrics(_center);
         double zoom = (Math.Abs(sx) + Math.Abs(sy)) * 0.5;
 
         // Estimate outward glyph extent in screen space assuming no scaling yet
@@ -247,7 +246,7 @@ internal sealed class RotateAdorner : Adorner
     protected override HitTestResult? HitTestCore(PointHitTestParameters hitTestParameters)
     {
         // Provide generous hit target around handle, adjusted for zoom so it feels consistent
-        var (sx, sy, _, _) = GetLayerMetrics(_center);
+        (double sx, double sy, Point _, Size _) = GetLayerMetrics(_center);
         double zoom = (Math.Abs(sx) + Math.Abs(sy)) * 0.5;
 
         // Estimate current visual scale based on radius if available
@@ -314,7 +313,7 @@ internal sealed class RotateAdorner : Adorner
             Point p = e.GetPosition(this);
             Point handle = PointOnCircle(_center, _radius, Angle);
 
-            var (sx, sy, _, _) = GetLayerMetrics(_center);
+            (double sx, double sy, Point _, Size _) = GetLayerMetrics(_center);
             double zoom = (Math.Abs(sx) + Math.Abs(sy)) * 0.5;
             double baseRadius = Math.Max(AdornedElement?.RenderSize.Width ?? 0, AdornedElement?.RenderSize.Height ?? 0) / 2 + CircleMargin;
             double visualScale = baseRadius > 0 ? Math.Clamp(_radius / baseRadius, 0.1, 1.0) : 1.0;

@@ -80,7 +80,7 @@ public static class DragDataObject
             return null;
         }
 
-        Bitmap bitmap = new Bitmap(source.PixelWidth, source.PixelHeight, DrawingImaging.PixelFormat.Format32bppArgb);
+        Bitmap bitmap = new(source.PixelWidth, source.PixelHeight, DrawingImaging.PixelFormat.Format32bppArgb);
         DrawingImaging.BitmapData bitmapData = bitmap.LockBits(new Rectangle(Point.Empty, bitmap.Size), DrawingImaging.ImageLockMode.WriteOnly, DrawingImaging.PixelFormat.Format32bppArgb);
 
         source.CopyPixels(System.Windows.Int32Rect.Empty, bitmapData.Scan0, bitmapData.Height * bitmapData.Stride, bitmapData.Stride);

@@ -8,15 +8,16 @@
     <Canvas x:Name="MeasurementCanvas">
         <Rectangle
             x:Name="MeasurementRectangle"
+            Fill="#200066FF"
+            Opacity="0.4"
             Stroke="#0066FF"
             StrokeDashArray="4,2"
             StrokeThickness="2"
-            Fill="#200066FF"
-            Opacity="0.4"
             ToolTip="Measured rectangle" />
         <Ellipse
             x:Name="TopLeftPoint"
-            Width="12" Height="12"
+            Width="12"
+            Height="12"
             Cursor="SizeAll"
             Fill="#0066FF"
             MouseDown="MeasurementPoint_MouseDown"
@@ -27,7 +28,8 @@
             ToolTip="Drag to move top-left corner" />
         <Ellipse
             x:Name="BottomRightPoint"
-            Width="12" Height="12"
+            Width="12"
+            Height="12"
             Cursor="SizeAll"
             Fill="#0066FF"
             MouseDown="MeasurementPoint_MouseDown"
@@ -44,8 +46,14 @@
             ToolTip="Rectangle measurement options">
             <Border.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Click="CopyMeasurementMenuItem_Click" Header="Copy Measurement" ToolTip="Copy the rectangle dimensions" />
-                    <MenuItem Click="RemoveMeasurementMenuItem_Click" Header="Remove Measurement" ToolTip="Delete this measurement" />
+                    <MenuItem
+                        Click="CopyMeasurementMenuItem_Click"
+                        Header="Copy Measurement"
+                        ToolTip="Copy the rectangle dimensions" />
+                    <MenuItem
+                        Click="RemoveMeasurementMenuItem_Click"
+                        Header="Remove Measurement"
+                        ToolTip="Delete this measurement" />
                 </ContextMenu>
             </Border.ContextMenu>
             <Button

@@ -1,7 +1,7 @@
+using ImageMagick;
 using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
-using ImageMagick;
 
 namespace MagickCrop.Helpers;
 
@@ -245,7 +245,7 @@ public static class ClipboardHelper
             if (dataObject.GetDataPresent(DataFormats.Bitmap) || dataObject.GetDataPresent("System.Drawing.Bitmap"))
             {
                 object? data = dataObject.GetData(DataFormats.Bitmap) ?? dataObject.GetData("System.Drawing.Bitmap");
-                
+
                 if (data is BitmapSource bitmapSource)
                     return bitmapSource;
 
@@ -293,8 +293,7 @@ public static class ClipboardHelper
         {
             if (dataObject.GetDataPresent(DataFormats.FileDrop))
             {
-                string[]? files = dataObject.GetData(DataFormats.FileDrop) as string[];
-                if (files != null && files.Length > 0)
+                if (dataObject.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)
                 {
                     string firstFile = files[0];
                     if (IsImageFile(firstFile) && File.Exists(firstFile))
@@ -324,8 +323,7 @@ public static class ClipboardHelper
         {
             if (dataObject.GetDataPresent(DataFormats.FileDrop))
             {
-                string[]? files = dataObject.GetData(DataFormats.FileDrop) as string[];
-                return files != null && files.Length > 0 && IsImageFile(files[0]);
+                return dataObject.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0 && IsImageFile(files[0]);
             }
         }
         catch
@@ -364,7 +362,7 @@ public static class ClipboardHelper
     public static string SaveImageToTempFile(BitmapSource image, string? preferredExtension = null)
     {
         string tempFileName = Path.GetTempFileName();
-        
+
         // Determine the best format based on image characteristics
         string extension = preferredExtension ?? DetermineOptimalFormat(image);
         tempFileName = Path.ChangeExtension(tempFileName, extension);

@@ -1670,17 +1670,17 @@ public partial class MainWindow : FluentWindow
         double translateX = (viewportWidth - scaledImageWidth) / 2 - (canvasMarginX * scale);
         double translateY = (viewportHeight - scaledImageHeight) / 2 - (canvasMarginY * scale);
 
-            canvasTranslate.X = translateX;
-            canvasTranslate.Y = translateY;
-        }
+        canvasTranslate.X = translateX;
+        canvasTranslate.Y = translateY;
+    }
 
-        /// <summary>
-        /// Menu item handler to center and zoom to fit the image on demand.
-        /// </summary>
-        private void CenterAndZoomToFitMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            CenterAndZoomToFit();
-        }
+    /// <summary>
+    /// Menu item handler to center and zoom to fit the image on demand.
+    /// </summary>
+    private void CenterAndZoomToFitMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        CenterAndZoomToFit();
+    }
 
     private async void AutoContrastMenuItem_Click(object sender, RoutedEventArgs e)
     {
@@ -1867,104 +1867,104 @@ public partial class MainWindow : FluentWindow
             };
             await errorBox.ShowDialogAsync();
         }
-            finally
-            {
-                SetUiForCompletedTask();
-            }
-        }
-
-        private async Task PickBlackPointColorAsync(Point imagePoint)
+        finally
         {
-            if (string.IsNullOrWhiteSpace(imagePath))
-                return;
-
-            try
-            {
-                // Reset picker mode and cursor
-                isBlackPointPickerMode = false;
-                draggingMode = DraggingMode.None;
-                Cursor = null;
-                BlackPointPickerToggle.IsChecked = false;
-
-                using MagickImage magickImage = new(imagePath);
-
-                // Convert display coordinates to actual image pixel coordinates
-                double scaleX = magickImage.Width / MainImage.ActualWidth;
-                double scaleY = magickImage.Height / MainImage.ActualHeight;
-                int pixelX = (int)(imagePoint.X * scaleX);
-                int pixelY = (int)(imagePoint.Y * scaleY);
-
-                // Clamp to image bounds
-                pixelX = Math.Clamp(pixelX, 0, (int)magickImage.Width - 1);
-                pixelY = Math.Clamp(pixelY, 0, (int)magickImage.Height - 1);
-
-                // Get the color at the clicked pixel
-                IMagickColor<ushort> pixelColor = magickImage.GetPixels().GetPixel(pixelX, pixelY).ToColor() ?? throw new InvalidOperationException("Could not get pixel color");
-
-                // Convert ushort (0-65535) to byte range (0-255)
-                byte r = (byte)(pixelColor.R / 257);
-                byte g = (byte)(pixelColor.G / 257);
-                byte b = (byte)(pixelColor.B / 257);
-
-                // Show the picked color in the preview
-                WhitePointColorRectangle.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb(r, g, b));
-                WhitePointColorPreview.Visibility = Visibility.Visible;
-
-                // Wait a moment for user to see the picked color
-                await Task.Delay(800);
-
-                SetUiForLongTask();
-
-                // Apply black point adjustment using the picked color as the black reference
-                await Task.Run(() =>
-                {
-                    // Avoid overflow to 255
-                    if (r == 255) r = 254;
-                    if (g == 255) g = 254;
-                    if (b == 255) b = 254;
-
-                    // Use Level per channel to map the picked color to black (0)
-                    // Level adjusts the range from [black, white] to [0, 255]
-                    // By setting the black point to the picked color, that color becomes minimum brightness
-                    magickImage.Level(new Percentage((r / 255.0) * 100), new Percentage(100), 1.0, Channels.Red);
-                    magickImage.Level(new Percentage((g / 255.0) * 100), new Percentage(100), 1.0, Channels.Green);
-                    magickImage.Level(new Percentage((b / 255.0) * 100), new Percentage(100), 1.0, Channels.Blue);
-                });
-
-                string tempFileName = System.IO.Path.GetTempFileName();
-                await magickImage.WriteAsync(tempFileName);
-
-                MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-                undoRedo.AddUndo(undoRedoItem);
-
-                imagePath = tempFileName;
-
-                MainImage.Source = magickImage.ToBitmapSource();
-
-                // Update actualImageSize to reflect current dimensions
-                actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-                // Hide the color preview after a delay
-                await Task.Delay(1500);
-                WhitePointColorPreview.Visibility = Visibility.Collapsed;
-            }
-            catch (Exception ex)
-            {
-                WhitePointColorPreview.Visibility = Visibility.Collapsed;
-                Wpf.Ui.Controls.MessageBox errorBox = new()
-                {
-                    Title = "Error",
-                    Content = $"Failed to apply black point: {ex.Message}",
-                };
-                await errorBox.ShowDialogAsync();
-            }
-            finally
-            {
-                SetUiForCompletedTask();
-            }
+            SetUiForCompletedTask();
         }
+    }
 
-        private async void BlackPointMenuItem_Click(object sender, RoutedEventArgs e)
+    private async Task PickBlackPointColorAsync(Point imagePoint)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return;
+
+        try
+        {
+            // Reset picker mode and cursor
+            isBlackPointPickerMode = false;
+            draggingMode = DraggingMode.None;
+            Cursor = null;
+            BlackPointPickerToggle.IsChecked = false;
+
+            using MagickImage magickImage = new(imagePath);
+
+            // Convert display coordinates to actual image pixel coordinates
+            double scaleX = magickImage.Width / MainImage.ActualWidth;
+            double scaleY = magickImage.Height / MainImage.ActualHeight;
+            int pixelX = (int)(imagePoint.X * scaleX);
+            int pixelY = (int)(imagePoint.Y * scaleY);
+
+            // Clamp to image bounds
+            pixelX = Math.Clamp(pixelX, 0, (int)magickImage.Width - 1);
+            pixelY = Math.Clamp(pixelY, 0, (int)magickImage.Height - 1);
+
+            // Get the color at the clicked pixel
+            IMagickColor<ushort> pixelColor = magickImage.GetPixels().GetPixel(pixelX, pixelY).ToColor() ?? throw new InvalidOperationException("Could not get pixel color");
+
+            // Convert ushort (0-65535) to byte range (0-255)
+            byte r = (byte)(pixelColor.R / 257);
+            byte g = (byte)(pixelColor.G / 257);
+            byte b = (byte)(pixelColor.B / 257);
+
+            // Show the picked color in the preview
+            WhitePointColorRectangle.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb(r, g, b));
+            WhitePointColorPreview.Visibility = Visibility.Visible;
+
+            // Wait a moment for user to see the picked color
+            await Task.Delay(800);
+
+            SetUiForLongTask();
+
+            // Apply black point adjustment using the picked color as the black reference
+            await Task.Run(() =>
+            {
+                // Avoid overflow to 255
+                if (r == 255) r = 254;
+                if (g == 255) g = 254;
+                if (b == 255) b = 254;
+
+                // Use Level per channel to map the picked color to black (0)
+                // Level adjusts the range from [black, white] to [0, 255]
+                // By setting the black point to the picked color, that color becomes minimum brightness
+                magickImage.Level(new Percentage((r / 255.0) * 100), new Percentage(100), 1.0, Channels.Red);
+                magickImage.Level(new Percentage((g / 255.0) * 100), new Percentage(100), 1.0, Channels.Green);
+                magickImage.Level(new Percentage((b / 255.0) * 100), new Percentage(100), 1.0, Channels.Blue);
+            });
+
+            string tempFileName = System.IO.Path.GetTempFileName();
+            await magickImage.WriteAsync(tempFileName);
+
+            MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
+            undoRedo.AddUndo(undoRedoItem);
+
+            imagePath = tempFileName;
+
+            MainImage.Source = magickImage.ToBitmapSource();
+
+            // Update actualImageSize to reflect current dimensions
+            actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
+            // Hide the color preview after a delay
+            await Task.Delay(1500);
+            WhitePointColorPreview.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception ex)
+        {
+            WhitePointColorPreview.Visibility = Visibility.Collapsed;
+            Wpf.Ui.Controls.MessageBox errorBox = new()
+            {
+                Title = "Error",
+                Content = $"Failed to apply black point: {ex.Message}",
+            };
+            await errorBox.ShowDialogAsync();
+        }
+        finally
+        {
+            SetUiForCompletedTask();
+        }
+    }
+
+    private async void BlackPointMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(imagePath))
             return;
@@ -2541,8 +2541,7 @@ public partial class MainWindow : FluentWindow
             element.Visibility = Visibility.Visible;
 
         // Hide the 4-corner polyline; the tri-fold polygon replaces it
-        if (lines is not null)
-            lines.Visibility = Visibility.Collapsed;
+        lines?.Visibility = Visibility.Collapsed;
 
         // Build the unified tri-fold polygon
         DrawTriFoldGuideLines();
@@ -2644,8 +2643,7 @@ public partial class MainWindow : FluentWindow
 
     private void UpdateTriFoldGuideLines()
     {
-        if (triFoldPolygon is not null)
-            triFoldPolygon.Points = GetTriFoldPolygonPoints();
+        triFoldPolygon?.Points = GetTriFoldPolygonPoints();
     }
 
     private void RemoveTriFoldGuideLines()
@@ -2855,8 +2853,7 @@ public partial class MainWindow : FluentWindow
         DrawPolyLine();
 
         // In un-warp mode the Bézier guide curves replace the polyline
-        if (lines is not null)
-            lines.Visibility = Visibility.Collapsed;
+        lines?.Visibility = Visibility.Collapsed;
 
         UpdateUnWarpGuideCurves();
     }
@@ -2881,8 +2878,7 @@ public partial class MainWindow : FluentWindow
             element.Visibility = Visibility.Visible;
 
         // Hide the 4-corner polyline; the un-warp curves replace it
-        if (lines is not null)
-            lines.Visibility = Visibility.Collapsed;
+        lines?.Visibility = Visibility.Collapsed;
 
         DrawUnWarpGuideCurves();
     }
@@ -3510,8 +3506,10 @@ public partial class MainWindow : FluentWindow
 
     private void InfoMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        AboutWindow aboutWindow = new();
-        aboutWindow.Owner = this;
+        AboutWindow aboutWindow = new()
+        {
+            Owner = this
+        };
         aboutWindow.ShowDialog();
     }
 
