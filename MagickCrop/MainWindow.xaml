@@ -332,6 +332,15 @@
                                     <wpfui:SymbolIcon Symbol="ArrowRedo24" />
                                 </MenuItem.Icon>
                             </MenuItem>
+                            <MenuItem
+                                x:Name="InfoMenuItem"
+                                Click="InfoMenuItem_Click"
+                                Header=""
+                                ToolTip="About Magick Crop &amp; Measure">
+                                <MenuItem.Icon>
+                                    <wpfui:SymbolIcon Symbol="Info24" />
+                                </MenuItem.Icon>
+                            </MenuItem>
                         </StackPanel>
                         <TextBlock Text="Tools" />
                         <TabControl ItemContainerStyle="{StaticResource NarrowTabHeaderStyle}">

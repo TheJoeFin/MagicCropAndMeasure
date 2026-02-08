@@ -7,8 +7,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="About"
-    Width="450"
-    Height="450"
+    Width="480"
+    Height="620"
     ResizeMode="NoResize"
     WindowStyle="ToolWindow"
     mc:Ignorable="d">
@@ -27,74 +27,198 @@
             Title="About Magick Crop &amp; Measure"
             Grid.Row="0"
             Height="32" />
-        <StackPanel Grid.Row="1" Margin="16">
-            <TextBlock
-                Margin="0,0,0,8"
-                HorizontalAlignment="Center"
-                FontSize="28"
-                FontWeight="Bold"
-                TextAlignment="Center">
-                About Magick Crop &amp; Measure
-            </TextBlock>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="24,16">
+                <!--  App icon and title  -->
+                <Image
+                    Width="64"
+                    Height="64"
+                    Margin="0,0,0,12"
+                    HorizontalAlignment="Center"
+                    Source="/Iconv3.ico" />
+                <TextBlock
+                    Margin="0,0,0,4"
+                    HorizontalAlignment="Center"
+                    FontSize="24"
+                    FontWeight="Bold"
+                    TextAlignment="Center">
+                    Magick Crop &amp; Measure
+                </TextBlock>
 
-            <!--  Version  -->
-            <TextBlock
-                x:Name="VersionTextBlock"
-                Margin="0,0,0,40"
-                HorizontalAlignment="Center"
-                FontSize="16" />
+                <!--  Version  -->
+                <TextBlock
+                    x:Name="VersionTextBlock"
+                    Margin="0,0,0,12"
+                    HorizontalAlignment="Center"
+                    FontSize="14"
+                    Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}" />
 
-            <!--  Created by  -->
-            <TextBlock
-                Margin="0,0,0,8"
-                HorizontalAlignment="Center"
-                FontSize="16">
-                Created by<Hyperlink NavigateUri="https://JoeFinApps.com" RequestNavigate="Hyperlink_RequestNavigate">
-                    TheJoeFin
-                </Hyperlink>
-            </TextBlock>
+                <!--  Description  -->
+                <TextBlock
+                    Margin="0,0,0,16"
+                    HorizontalAlignment="Center"
+                    FontSize="13"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap">
+                    A Windows desktop app for correcting perspective distortion in photos,
+                    cropping, resizing, adjusting colors, auto-detecting shapes,
+                    and taking precise measurements on images.
+                </TextBlock>
 
-            <!--  Project GitHub Link  -->
-            <TextBlock
-                Margin="0,0,0,8"
-                HorizontalAlignment="Center"
-                FontSize="16">
-                <Hyperlink NavigateUri="https://github.com/TheJoeFin/MagickCrop" RequestNavigate="Hyperlink_RequestNavigate">
-                    View this project on GitHub
-                </Hyperlink>
-            </TextBlock>
+                <TextBlock
+                    Margin="0,0,0,8"
+                    HorizontalAlignment="Center"
+                    FontSize="13"
+                    FontWeight="SemiBold">
+                    Please consider sending feedback or a review!
+                </TextBlock>
+                <ui:RatingControl
+                    HorizontalAlignment="Center"
+                    HalfStarEnabled="False"
+                    MaxRating="5"
+                    ValueChanged="RatingControl_ValueChanged" />
 
-            <!--  Uses packages  -->
-            <TextBlock
-                Margin="0,0,0,8"
-                HorizontalAlignment="Center"
-                FontSize="16">
-                Uses packages:
-            </TextBlock>
-            <TextBlock
-                Margin="0,0,0,8"
-                HorizontalAlignment="Center"
-                FontSize="16">
-                <Hyperlink NavigateUri="https://github.com/dlemstra/Magick.NET" RequestNavigate="Hyperlink_RequestNavigate">
-                    Magick.NET
-                </Hyperlink>
-            </TextBlock>
-            <TextBlock
-                Margin="0,0,0,8"
-                HorizontalAlignment="Center"
-                FontSize="16">
-                <Hyperlink NavigateUri="https://github.com/ImageMagick/ImageMagick" RequestNavigate="Hyperlink_RequestNavigate">
-                    ImageMagick
-                </Hyperlink>
-            </TextBlock>
-            <TextBlock
-                Margin="0,0,0,8"
-                HorizontalAlignment="Center"
-                FontSize="16">
-                <Hyperlink NavigateUri="https://github.com/lepoco/wpfui" RequestNavigate="Hyperlink_RequestNavigate">
-                    WPF-UI
-                </Hyperlink>
-            </TextBlock>
-        </StackPanel>
+                <!--  Created by  -->
+                <TextBlock
+                    Margin="0,8,0,4"
+                    HorizontalAlignment="Center"
+                    FontSize="14">
+                    Created by<Hyperlink NavigateUri="https://JoeFinApps.com" RequestNavigate="Hyperlink_RequestNavigate">
+                        TheJoeFin
+                    </Hyperlink>
+                </TextBlock>
+
+
+                <!--  Project GitHub Link  -->
+                <TextBlock
+                    Margin="0,0,0,16"
+                    HorizontalAlignment="Center"
+                    FontSize="14">
+                    <Hyperlink NavigateUri="https://github.com/TheJoeFin/MagickCrop" RequestNavigate="Hyperlink_RequestNavigate">
+                        View this project on GitHub
+                    </Hyperlink>
+                </TextBlock>
+
+                <Separator Margin="0,0,0,12" />
+
+                <!--  Powered by  -->
+                <TextBlock
+                    Margin="0,0,0,8"
+                    HorizontalAlignment="Center"
+                    FontSize="14"
+                    FontWeight="SemiBold">
+                    Powered by
+                </TextBlock>
+
+                <!--  Magick.NET  -->
+                <ui:Card Margin="0,0,0,6" Padding="12,8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock FontSize="13" FontWeight="SemiBold">
+                                <Hyperlink NavigateUri="https://github.com/dlemstra/Magick.NET" RequestNavigate="Hyperlink_RequestNavigate">
+                                    Magick.NET
+                                </Hyperlink>
+                            </TextBlock>
+                            <TextBlock
+                                FontSize="11"
+                                Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Image processing, transformation, and color adjustment" />
+                        </StackPanel>
+                        <TextBlock
+                            x:Name="MagickVersionText"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontFamily="Consolas"
+                            FontSize="11"
+                            Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" />
+                    </Grid>
+                </ui:Card>
+
+                <!--  ImageMagick  -->
+                <ui:Card Margin="0,0,0,6" Padding="12,8">
+                    <StackPanel>
+                        <TextBlock FontSize="13" FontWeight="SemiBold">
+                            <Hyperlink NavigateUri="https://github.com/ImageMagick/ImageMagick" RequestNavigate="Hyperlink_RequestNavigate">
+                                ImageMagick
+                            </Hyperlink>
+                        </TextBlock>
+                        <TextBlock
+                            FontSize="11"
+                            Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Underlying image manipulation engine used by Magick.NET" />
+                    </StackPanel>
+                </ui:Card>
+
+                <!--  Emgu.CV / OpenCV  -->
+                <ui:Card Margin="0,0,0,6" Padding="12,8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock FontSize="13" FontWeight="SemiBold">
+                                <Hyperlink NavigateUri="http://www.emgu.com/" RequestNavigate="Hyperlink_RequestNavigate">
+                                    Emgu.CV (OpenCV)
+                                </Hyperlink>
+                            </TextBlock>
+                            <TextBlock
+                                FontSize="11"
+                                Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Computer vision for automatic quadrilateral and shape detection" />
+                        </StackPanel>
+                        <TextBlock
+                            x:Name="EmguCvVersionText"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontFamily="Consolas"
+                            FontSize="11"
+                            Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" />
+                    </Grid>
+                </ui:Card>
+
+                <!--  WPF-UI  -->
+                <ui:Card Margin="0,0,0,6" Padding="12,8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock FontSize="13" FontWeight="SemiBold">
+                                <Hyperlink NavigateUri="https://github.com/lepoco/wpfui" RequestNavigate="Hyperlink_RequestNavigate">
+                                    WPF-UI
+                                </Hyperlink>
+                            </TextBlock>
+                            <TextBlock
+                                FontSize="11"
+                                Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Modern Fluent Design controls for WPF" />
+                        </StackPanel>
+                        <TextBlock
+                            x:Name="WpfUiVersionText"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontFamily="Consolas"
+                            FontSize="11"
+                            Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" />
+                    </Grid>
+                </ui:Card>
+
+                <Separator Margin="0,12,0,12" />
+
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    FontSize="12"
+                    Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                    TextAlignment="Center">
+                    © TheJoeFin — MIT License
+                </TextBlock>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </ui:FluentWindow>

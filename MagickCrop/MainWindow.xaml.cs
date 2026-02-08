@@ -4,6 +4,7 @@ using MagickCrop.Helpers;
 using MagickCrop.Models;
 using MagickCrop.Models.MeasurementControls;
 using MagickCrop.Services;
+using MagickCrop.Windows;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -3089,6 +3090,13 @@ public partial class MainWindow : FluentWindow
         string path = undoRedo.Redo();
         if (!string.IsNullOrWhiteSpace(path))
             imagePath = path;
+    }
+
+    private void InfoMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        AboutWindow aboutWindow = new();
+        aboutWindow.Owner = this;
+        aboutWindow.ShowDialog();
     }
 
     private void MeasureDistanceMenuItem_Click(object sender, RoutedEventArgs e)
