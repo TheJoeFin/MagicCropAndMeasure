@@ -234,6 +234,7 @@
                     Visibility="Collapsed" />
 
                 <local:ResizableRectangle x:Name="CroppingRectangle" Visibility="Collapsed" />
+                <local:ResizableRectangle x:Name="LocalAdjustmentRectangle" Visibility="Collapsed" />
             </Canvas>
 
             <!--  Pixel Precision Zoom Control - Outside ShapeCanvas to avoid being affected by canvas zoom  -->
@@ -570,6 +571,14 @@
                                     <wpfui:SymbolIcon Symbol="ImageEdit24" ToolTip="Adjust image appearance" />
                                 </TabItem.Header>
                                 <StackPanel Orientation="Vertical">
+                                    <CheckBox
+                                        x:Name="LocalAdjustmentCheckBox"
+                                        Margin="0,4"
+                                        Checked="LocalAdjustmentCheckBox_Checked"
+                                        Content="Local Area"
+                                        IsChecked="False"
+                                        ToolTip="When checked, adjustments apply only to the selected region"
+                                        Unchecked="LocalAdjustmentCheckBox_Unchecked" />
                                     <MenuItem
                                         Name="AutoContrastMenuItem"
                                         Click="AutoContrastMenuItem_Click"

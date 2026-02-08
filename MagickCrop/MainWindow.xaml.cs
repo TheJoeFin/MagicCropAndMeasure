@@ -953,6 +953,88 @@ public partial class MainWindow : FluentWindow
         autoSaveTimer?.Start();
     }
 
+    private void LocalAdjustmentCheckBox_Checked(object sender, RoutedEventArgs e)
+    {
+        LocalAdjustmentRectangle.SetAppearance(
+            new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0x8C, 0x00)),
+            showFill: false);
+        LocalAdjustmentRectangle.Visibility = Visibility.Visible;
+    }
+
+    private void LocalAdjustmentCheckBox_Unchecked(object sender, RoutedEventArgs e)
+    {
+        LocalAdjustmentRectangle.Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// Applies an image adjustment either globally or to the local region defined by <see cref="LocalAdjustmentRectangle"/>.
+    /// </summary>
+    private async Task ApplyAdjustmentAsync(Action<MagickImage> adjustment)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return;
+
+        SetUiForLongTask();
+
+        using MagickImage magickImage = new(imagePath);
+
+        if (LocalAdjustmentCheckBox.IsChecked == true)
+        {
+            MagickGeometry region = LocalAdjustmentRectangle.CropShape;
+
+            double displayWidth = MainImage.ActualWidth;
+            double displayHeight = MainImage.ActualHeight;
+            if (displayWidth == 0 || displayHeight == 0)
+            {
+                SetUiForCompletedTask();
+                return;
+            }
+
+            double factor = magickImage.Height / displayHeight;
+            region.ScaleAll(factor);
+
+            // Clamp to image bounds
+            if (region.X < 0) region.X = 0;
+            if (region.Y < 0) region.Y = 0;
+            if (region.X + region.Width > magickImage.Width)
+                region.Width = (uint)(magickImage.Width - region.X);
+            if (region.Y + region.Height > magickImage.Height)
+                region.Height = (uint)(magickImage.Height - region.Y);
+
+            int regionX = region.X;
+            int regionY = region.Y;
+
+            await Task.Run(() =>
+            {
+                using MagickImage cropped = (MagickImage)magickImage.Clone();
+                cropped.Crop(region);
+                cropped.Page = new MagickGeometry(0, 0, cropped.Width, cropped.Height);
+
+                adjustment(cropped);
+
+                magickImage.Composite(cropped, regionX, regionY, CompositeOperator.Over);
+            });
+        }
+        else
+        {
+            await Task.Run(() => adjustment(magickImage));
+        }
+
+        string tempFileName = System.IO.Path.GetTempFileName();
+        await magickImage.WriteAsync(tempFileName);
+
+        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
+        undoRedo.AddUndo(undoRedoItem);
+
+        imagePath = tempFileName;
+
+        MainImage.Source = magickImage.ToBitmapSource();
+
+        actualImageSize = new Size(magickImage.Width, magickImage.Height);
+
+        SetUiForCompletedTask();
+    }
+
     private async void OpenFileButton_Click(object sender, RoutedEventArgs e)
     {
         SetUiForLongTask();
@@ -1684,54 +1766,12 @@ public partial class MainWindow : FluentWindow
 
     private async void AutoContrastMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        SetUiForLongTask();
-
-        using MagickImage magickImage = new(imagePath);
-        await Task.Run(() => magickImage.SigmoidalContrast(10));
-
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
-
-        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
-
-        imagePath = tempFileName;
-
-        MainImage.Source = magickImage.ToBitmapSource();
-
-        // Update actualImageSize to reflect current dimensions
-        actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-        SetUiForCompletedTask();
+        await ApplyAdjustmentAsync(img => img.SigmoidalContrast(10));
     }
 
     private async void WhiteBalanceMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        SetUiForLongTask();
-
-        using MagickImage magickImage = new(imagePath);
-        await Task.Run(() => magickImage.WhiteBalance());
-
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
-
-        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
-
-        imagePath = tempFileName;
-
-        MainImage.Source = magickImage.ToBitmapSource();
-
-        // Update actualImageSize to reflect current dimensions
-        actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-        SetUiForCompletedTask();
+        await ApplyAdjustmentAsync(img => img.WhiteBalance());
     }
 
     private void WhitePointPickerToggle_Checked(object sender, RoutedEventArgs e)
@@ -1966,210 +2006,42 @@ public partial class MainWindow : FluentWindow
 
     private async void BlackPointMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        SetUiForLongTask();
-
-        using MagickImage magickImage = new(imagePath);
-        await Task.Run(() => magickImage.BlackThreshold(new Percentage(10)));
-
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
-
-        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
-
-        imagePath = tempFileName;
-
-        MainImage.Source = magickImage.ToBitmapSource();
-
-        // Update actualImageSize to reflect current dimensions
-        actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-        SetUiForCompletedTask();
+        await ApplyAdjustmentAsync(img => img.BlackThreshold(new Percentage(10)));
     }
 
     private async void WhitePointMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        SetUiForLongTask();
-
-        using MagickImage magickImage = new(imagePath);
-        await Task.Run(() => magickImage.WhiteThreshold(new Percentage(90)));
-
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
-
-        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
-
-        imagePath = tempFileName;
-
-        MainImage.Source = magickImage.ToBitmapSource();
-
-        // Update actualImageSize to reflect current dimensions
-        actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-        SetUiForCompletedTask();
+        await ApplyAdjustmentAsync(img => img.WhiteThreshold(new Percentage(90)));
     }
 
     private async void GrayscaleMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        SetUiForLongTask();
-
-        using MagickImage magickImage = new(imagePath);
-        await Task.Run(() => magickImage.Grayscale());
-
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
-
-        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
-
-        imagePath = tempFileName;
-
-        MainImage.Source = magickImage.ToBitmapSource();
-
-        // Update actualImageSize to reflect current dimensions
-        actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-        SetUiForCompletedTask();
+        await ApplyAdjustmentAsync(img => img.Grayscale());
     }
 
     private async void InvertMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        SetUiForLongTask();
-
-        using MagickImage magickImage = new(imagePath);
-        await Task.Run(() => magickImage.Negate());
-
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
-
-        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
-
-        imagePath = tempFileName;
-
-        MainImage.Source = magickImage.ToBitmapSource();
-
-        // Update actualImageSize to reflect current dimensions
-        actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-        SetUiForCompletedTask();
+        await ApplyAdjustmentAsync(img => img.Negate());
     }
 
     private async void AutoLevelsMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        SetUiForLongTask();
-
-        using MagickImage magickImage = new(imagePath);
-        await Task.Run(() => magickImage.AutoLevel());
-
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
-
-        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
-
-        imagePath = tempFileName;
-
-        MainImage.Source = magickImage.ToBitmapSource();
-
-        // Update actualImageSize to reflect current dimensions
-        actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-        SetUiForCompletedTask();
+        await ApplyAdjustmentAsync(img => img.AutoLevel());
     }
 
     private async void AutoGammaMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        SetUiForLongTask();
-
-        using MagickImage magickImage = new(imagePath);
-        await Task.Run(() => magickImage.AutoGamma());
-
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
-
-        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
-
-        imagePath = tempFileName;
-
-        MainImage.Source = magickImage.ToBitmapSource();
-
-        // Update actualImageSize to reflect current dimensions
-        actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-        SetUiForCompletedTask();
+        await ApplyAdjustmentAsync(img => img.AutoGamma());
     }
 
     private async void BlurMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        SetUiForLongTask();
-
-        using MagickImage magickImage = new(imagePath);
-        await Task.Run(() => magickImage.Blur(20, 10));
-
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
-
-        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
-
-        imagePath = tempFileName;
-
-        MainImage.Source = magickImage.ToBitmapSource();
-
-        // Update actualImageSize to reflect current dimensions
-        actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-        SetUiForCompletedTask();
+        await ApplyAdjustmentAsync(img => img.Blur(20, 10));
     }
 
     private async void FindEdgesMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        SetUiForLongTask();
-
-        using MagickImage magickImage = new(imagePath);
-        await Task.Run(() => magickImage.CannyEdge());
-
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
-
-        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
-
-        imagePath = tempFileName;
-
-        MainImage.Source = magickImage.ToBitmapSource();
-
-        // Update actualImageSize to reflect current dimensions
-        actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-        SetUiForCompletedTask();
+        await ApplyAdjustmentAsync(img => img.CannyEdge());
     }
 
     private async void Rotate90CwMenuItem_Click(object sender, RoutedEventArgs e)

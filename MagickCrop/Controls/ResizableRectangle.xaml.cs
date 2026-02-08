@@ -32,6 +32,17 @@ public partial class ResizableRectangle : UserControl
         (uint)rectangle.ActualHeight);
     }
 
+    /// <summary>
+    /// Sets the stroke color and optionally hides the fill of the inner rectangle.
+    /// </summary>
+    public void SetAppearance(System.Windows.Media.Brush stroke, bool showFill)
+    {
+        rectangle.Stroke = stroke;
+        rectangle.Fill = showFill
+            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Blue) { Opacity = 0.06 }
+            : null;
+    }
+
     private void UserControl_MouseMove(object sender, MouseEventArgs e)
     {
         if (Mouse.LeftButton == MouseButtonState.Released
