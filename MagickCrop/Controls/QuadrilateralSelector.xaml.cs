@@ -101,10 +101,12 @@ public partial class QuadrilateralSelector : UserControl
     private void ManualButton_Click(object sender, RoutedEventArgs e)
     {
         ManualSelection?.Invoke(this, EventArgs.Empty);
+        e.Handled = true;
     }
 
     private void CancelButton_Click(object sender, RoutedEventArgs e)
     {
         Cancelled?.Invoke(this, EventArgs.Empty);
+        e.Handled = true;
     }
 }

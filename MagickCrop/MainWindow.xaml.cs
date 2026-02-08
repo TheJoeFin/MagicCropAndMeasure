@@ -148,6 +148,11 @@ public partial class MainWindow : FluentWindow
     private Polygon? triFoldPolygon;
     private readonly List<UIElement> _triFoldElements = [];
 
+    // --- Un-warp state ---
+    private bool isUnWarpMode = false;
+    private System.Windows.Shapes.Path? unWarpPath;
+    private readonly List<UIElement> _unWarpElements = [];
+
     public MainWindow()
     {
         ThemeService themeService = new();
@@ -170,6 +175,10 @@ public partial class MainWindow : FluentWindow
         _triFoldElements.AddRange([TopLeft, TopRight, BottomRight, BottomLeft,
             UpperFoldLeft, UpperFoldRight, LowerFoldLeft, LowerFoldRight]);
 
+        // Un-warp elements: 4 corners + 4 midpoint handles
+        _unWarpElements.AddRange([TopLeft, TopRight, BottomRight, BottomLeft,
+            UnWarpMidTop, UnWarpMidRight, UnWarpMidBottom, UnWarpMidLeft]);
+
         // Wire QuadrilateralSelector events explicitly in code-behind
         CropQuadrilateralSelectorControl.QuadrilateralSelected += CropQuadrilateralSelector_Selected;
         CropQuadrilateralSelectorControl.ManualSelection += CropQuadrilateralSelector_ManualSelection;
@@ -178,6 +187,10 @@ public partial class MainWindow : FluentWindow
         QuadrilateralSelectorControl.QuadrilateralSelected += QuadrilateralSelector_Selected;
         QuadrilateralSelectorControl.ManualSelection += QuadrilateralSelector_ManualSelection;
         QuadrilateralSelectorControl.Cancelled += QuadrilateralSelector_Cancelled;
+
+        UnWarpQuadrilateralSelectorControl.QuadrilateralSelected += UnWarpQuadrilateralSelector_Selected;
+        UnWarpQuadrilateralSelectorControl.ManualSelection += UnWarpQuadrilateralSelector_ManualSelection;
+        UnWarpQuadrilateralSelectorControl.Cancelled += UnWarpQuadrilateralSelector_Cancelled;
 
         try
         {
@@ -575,6 +588,10 @@ public partial class MainWindow : FluentWindow
         // Update tri-fold guide lines when in tri-fold mode
         if (isTriFoldMode)
             UpdateTriFoldGuideLines();
+
+        // Update un-warp guide curves when in un-warp mode
+        if (isUnWarpMode)
+            UpdateUnWarpGuideCurves();
     }
 
     private async Task<MagickImage?> CorrectDistortion(string pathOfImage)
@@ -2271,6 +2288,7 @@ public partial class MainWindow : FluentWindow
         HideResizeControls();
         HideTransformControls();
         HideTriFoldControls();
+        HideUnWarpControls();
 
         CropButtonPanel.Visibility = Visibility.Visible;
         CroppingRectangle.Visibility = Visibility.Visible;
@@ -2469,6 +2487,7 @@ public partial class MainWindow : FluentWindow
         HideCroppingControls();
         HideResizeControls();
         HideTriFoldControls();
+        HideUnWarpControls();
 
         TransformButtonPanel.Visibility = Visibility.Visible;
 
@@ -2501,9 +2520,11 @@ public partial class MainWindow : FluentWindow
 
     private void ShowTriFoldControls()
     {
+        Debug.WriteLine($"[TriFold] ShowTriFoldControls called. Stack: {Environment.StackTrace}");
         HideCroppingControls();
         HideTransformControls();
         HideResizeControls();
+        HideUnWarpControls();
 
         isTriFoldMode = true;
         TriFoldButtonPanel.Visibility = Visibility.Visible;
@@ -2697,6 +2718,385 @@ public partial class MainWindow : FluentWindow
     }
 
     #endregion Tri-Fold Correction
+
+    #region Un-Warp Correction
+
+    private void UnWarpMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        ShowUnWarpControls();
+    }
+
+    private void CancelUnWarpButton_Click(object sender, RoutedEventArgs e)
+    {
+        HideUnWarpControls();
+    }
+
+    private async void DetectUnWarpShapeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+        {
+            _ = System.Windows.MessageBox.Show("Please open an image first.", "No Image",
+                System.Windows.MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        IsWorkingBar.Visibility = Visibility.Visible;
+
+        try
+        {
+            QuadrilateralDetector.DetectionResult detectionResult = await Task.Run(() =>
+                QuadrilateralDetector.DetectQuadrilateralsWithDimensions(
+                    imagePath, minArea: QuadDetectionMinArea, maxResults: QuadDetectionMaxResults));
+
+            if (detectionResult.Quadrilaterals.Count == 0)
+            {
+                _ = System.Windows.MessageBox.Show(
+                    "No quadrilaterals detected in the image.\n\nPlease position the corner markers manually.",
+                    "No Shapes Detected",
+                    System.Windows.MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            else
+            {
+                List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads =
+                [.. detectionResult.Quadrilaterals.Select(q =>
+                    QuadrilateralDetector.ScaleToDisplay(
+                        q,
+                        detectionResult.ImageWidth,
+                        detectionResult.ImageHeight,
+                        MainImage.ActualWidth,
+                        MainImage.ActualHeight))];
+
+                UnWarpQuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
+                UnWarpQuadrilateralSelectorControl.QuadrilateralHoverEnter -= QuadrilateralSelector_HoverEnter;
+                UnWarpQuadrilateralSelectorControl.QuadrilateralHoverExit -= QuadrilateralSelector_HoverExit;
+                UnWarpQuadrilateralSelectorControl.QuadrilateralHoverEnter += QuadrilateralSelector_HoverEnter;
+                UnWarpQuadrilateralSelectorControl.QuadrilateralHoverExit += QuadrilateralSelector_HoverExit;
+                UnWarpQuadrilateralSelectorControl.Visibility = Visibility.Visible;
+            }
+        }
+        catch (Exception ex)
+        {
+            _ = System.Windows.MessageBox.Show(
+                $"Error detecting quadrilaterals: {ex.Message}",
+                "Detection Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            IsWorkingBar.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void UnWarpQuadrilateralSelector_Selected(object? sender, QuadrilateralDetector.DetectedQuadrilateral quad)
+    {
+        Debug.WriteLine($"[UnWarp] QuadrilateralSelector_Selected: TL=({quad.TopLeft.X:F0},{quad.TopLeft.Y:F0})");
+        PositionUnWarpMarkers(quad);
+        HideUnWarpQuadrilateralSelector();
+        Debug.WriteLine($"[UnWarp] Selection complete. isUnWarpMode={isUnWarpMode}, UnWarpPanel={UnWarpButtonPanel.Visibility}, TriFoldPanel={TriFoldButtonPanel.Visibility}");
+    }
+
+    private void UnWarpQuadrilateralSelector_ManualSelection(object? sender, EventArgs e)
+    {
+        Debug.WriteLine("[UnWarp] ManualSelection clicked");
+        HideUnWarpQuadrilateralSelector();
+    }
+
+    private void UnWarpQuadrilateralSelector_Cancelled(object? sender, EventArgs e)
+    {
+        Debug.WriteLine("[UnWarp] Cancelled clicked");
+        HideUnWarpQuadrilateralSelector();
+    }
+
+    private void HideUnWarpQuadrilateralSelector()
+    {
+        UnWarpQuadrilateralSelectorControl.Visibility = Visibility.Collapsed;
+        UnWarpQuadrilateralSelectorControl.QuadrilateralHoverEnter -= QuadrilateralSelector_HoverEnter;
+        UnWarpQuadrilateralSelectorControl.QuadrilateralHoverExit -= QuadrilateralSelector_HoverExit;
+        RemoveHoverHighlight();
+    }
+
+    private void PositionUnWarpMarkers(QuadrilateralDetector.DetectedQuadrilateral quad)
+    {
+        double half = TopLeft.Width / 2;
+
+        // Position corner markers
+        Canvas.SetLeft(TopLeft, quad.TopLeft.X - half);
+        Canvas.SetTop(TopLeft, quad.TopLeft.Y - half);
+        Canvas.SetLeft(TopRight, quad.TopRight.X - half);
+        Canvas.SetTop(TopRight, quad.TopRight.Y - half);
+        Canvas.SetLeft(BottomRight, quad.BottomRight.X - half);
+        Canvas.SetTop(BottomRight, quad.BottomRight.Y - half);
+        Canvas.SetLeft(BottomLeft, quad.BottomLeft.X - half);
+        Canvas.SetTop(BottomLeft, quad.BottomLeft.Y - half);
+
+        // Position midpoint markers at the midpoint of each edge
+        Point midTop = MidPoint(quad.TopLeft, quad.TopRight);
+        Point midRight = MidPoint(quad.TopRight, quad.BottomRight);
+        Point midBottom = MidPoint(quad.BottomLeft, quad.BottomRight);
+        Point midLeft = MidPoint(quad.TopLeft, quad.BottomLeft);
+
+        Canvas.SetLeft(UnWarpMidTop, midTop.X - half);
+        Canvas.SetTop(UnWarpMidTop, midTop.Y - half);
+        Canvas.SetLeft(UnWarpMidRight, midRight.X - half);
+        Canvas.SetTop(UnWarpMidRight, midRight.Y - half);
+        Canvas.SetLeft(UnWarpMidBottom, midBottom.X - half);
+        Canvas.SetTop(UnWarpMidBottom, midBottom.Y - half);
+        Canvas.SetLeft(UnWarpMidLeft, midLeft.X - half);
+        Canvas.SetTop(UnWarpMidLeft, midLeft.Y - half);
+
+        DrawPolyLine();
+
+        // In un-warp mode the Bézier guide curves replace the polyline
+        if (lines is not null)
+            lines.Visibility = Visibility.Collapsed;
+
+        UpdateUnWarpGuideCurves();
+    }
+
+    private static Point MidPoint(Point a, Point b) =>
+        new((a.X + b.X) / 2.0, (a.Y + b.Y) / 2.0);
+
+    private void ShowUnWarpControls()
+    {
+        HideCroppingControls();
+        HideTransformControls();
+        HideResizeControls();
+        HideTriFoldControls();
+
+        isUnWarpMode = true;
+        UnWarpButtonPanel.Visibility = Visibility.Visible;
+
+        ResetUnWarpMarkers();
+
+        // Show all 8 markers (4 corners + 4 midpoints)
+        foreach (UIElement element in _unWarpElements)
+            element.Visibility = Visibility.Visible;
+
+        // Hide the 4-corner polyline; the un-warp curves replace it
+        if (lines is not null)
+            lines.Visibility = Visibility.Collapsed;
+
+        DrawUnWarpGuideCurves();
+    }
+
+    private void HideUnWarpControls()
+    {
+        Debug.WriteLine($"[UnWarp] HideUnWarpControls called. isUnWarpMode was {isUnWarpMode}");
+        isUnWarpMode = false;
+        UnWarpButtonPanel.Visibility = Visibility.Collapsed;
+
+        // Hide quadrilateral selector if open
+        HideUnWarpQuadrilateralSelector();
+
+        // Hide midpoint markers
+        UnWarpMidTop.Visibility = Visibility.Collapsed;
+        UnWarpMidRight.Visibility = Visibility.Collapsed;
+        UnWarpMidBottom.Visibility = Visibility.Collapsed;
+        UnWarpMidLeft.Visibility = Visibility.Collapsed;
+
+        // Hide corner markers
+        foreach (UIElement element in _polygonElements)
+            element.Visibility = Visibility.Collapsed;
+
+        RemoveUnWarpGuideCurves();
+    }
+
+    private void ResetUnWarpMarkers()
+    {
+        double imgW = MainImage.ActualWidth > 0 ? MainImage.ActualWidth : 600;
+        double imgH = MainImage.ActualHeight > 0 ? MainImage.ActualHeight : 425;
+
+        double margin = 20;
+        double left = margin;
+        double right = imgW - margin;
+        double top = margin;
+        double bottom = imgH - margin;
+        double midX = (left + right) / 2.0;
+        double midY = (top + bottom) / 2.0;
+
+        double halfEllipse = TopLeft.Width / 2;
+
+        // Corners
+        Canvas.SetLeft(TopLeft, left - halfEllipse);
+        Canvas.SetTop(TopLeft, top - halfEllipse);
+        Canvas.SetLeft(TopRight, right - halfEllipse);
+        Canvas.SetTop(TopRight, top - halfEllipse);
+        Canvas.SetLeft(BottomRight, right - halfEllipse);
+        Canvas.SetTop(BottomRight, bottom - halfEllipse);
+        Canvas.SetLeft(BottomLeft, left - halfEllipse);
+        Canvas.SetTop(BottomLeft, bottom - halfEllipse);
+
+        // Midpoints (initially on the straight edges)
+        Canvas.SetLeft(UnWarpMidTop, midX - halfEllipse);
+        Canvas.SetTop(UnWarpMidTop, top - halfEllipse);
+        Canvas.SetLeft(UnWarpMidRight, right - halfEllipse);
+        Canvas.SetTop(UnWarpMidRight, midY - halfEllipse);
+        Canvas.SetLeft(UnWarpMidBottom, midX - halfEllipse);
+        Canvas.SetTop(UnWarpMidBottom, bottom - halfEllipse);
+        Canvas.SetLeft(UnWarpMidLeft, left - halfEllipse);
+        Canvas.SetTop(UnWarpMidLeft, midY - halfEllipse);
+
+        DrawPolyLine();
+    }
+
+    private void DrawUnWarpGuideCurves()
+    {
+        RemoveUnWarpGuideCurves();
+
+        Color color = (Color)ColorConverter.ConvertFromString("#00CC88");
+        SolidColorBrush brush = new(color);
+
+        Point tl = GetEllipseCenter(TopLeft);
+        Point tr = GetEllipseCenter(TopRight);
+        Point bl = GetEllipseCenter(BottomLeft);
+        Point br = GetEllipseCenter(BottomRight);
+        Point mt = GetEllipseCenter(UnWarpMidTop);
+        Point mr = GetEllipseCenter(UnWarpMidRight);
+        Point mb = GetEllipseCenter(UnWarpMidBottom);
+        Point ml = GetEllipseCenter(UnWarpMidLeft);
+
+        PathGeometry geometry = BuildUnWarpPathGeometry(tl, tr, bl, br, mt, mr, mb, ml);
+
+        unWarpPath = new System.Windows.Shapes.Path
+        {
+            Stroke = brush,
+            StrokeThickness = 2,
+            IsHitTestVisible = false,
+            StrokeLineJoin = PenLineJoin.Round,
+            Opacity = 0.8,
+            Data = geometry
+        };
+
+        ShapeCanvas.Children.Add(unWarpPath);
+    }
+
+    private void UpdateUnWarpGuideCurves()
+    {
+        if (unWarpPath is null)
+            return;
+
+        Point tl = GetEllipseCenter(TopLeft);
+        Point tr = GetEllipseCenter(TopRight);
+        Point bl = GetEllipseCenter(BottomLeft);
+        Point br = GetEllipseCenter(BottomRight);
+        Point mt = GetEllipseCenter(UnWarpMidTop);
+        Point mr = GetEllipseCenter(UnWarpMidRight);
+        Point mb = GetEllipseCenter(UnWarpMidBottom);
+        Point ml = GetEllipseCenter(UnWarpMidLeft);
+
+        unWarpPath.Data = BuildUnWarpPathGeometry(tl, tr, bl, br, mt, mr, mb, ml);
+    }
+
+    private static PathGeometry BuildUnWarpPathGeometry(
+        Point tl, Point tr, Point bl, Point br,
+        Point mt, Point mr, Point mb, Point ml)
+    {
+        // Convert pass-through midpoints to true quadratic Bézier control points.
+        // For B(0.5) to pass through the midpoint: C = 2*mid - 0.5*start - 0.5*end
+        Point ctrlTop = BezierControlFromPassThrough(tl, mt, tr);
+        Point ctrlRight = BezierControlFromPassThrough(tr, mr, br);
+        Point ctrlBottom = BezierControlFromPassThrough(bl, mb, br);
+        Point ctrlLeft = BezierControlFromPassThrough(tl, ml, bl);
+
+        PathFigure figure = new()
+        {
+            StartPoint = tl,
+            IsClosed = true,
+            IsFilled = false
+        };
+
+        // Top edge: TL → TR
+        figure.Segments.Add(new QuadraticBezierSegment(ctrlTop, tr, true));
+        // Right edge: TR → BR
+        figure.Segments.Add(new QuadraticBezierSegment(ctrlRight, br, true));
+        // Bottom edge: BR → BL (reverse direction)
+        Point ctrlBottomRev = BezierControlFromPassThrough(br, mb, bl);
+        figure.Segments.Add(new QuadraticBezierSegment(ctrlBottomRev, bl, true));
+        // Left edge: BL → TL (reverse direction)
+        Point ctrlLeftRev = BezierControlFromPassThrough(bl, ml, tl);
+        figure.Segments.Add(new QuadraticBezierSegment(ctrlLeftRev, tl, true));
+
+        PathGeometry geometry = new();
+        geometry.Figures.Add(figure);
+        return geometry;
+    }
+
+    private static Point BezierControlFromPassThrough(Point start, Point passThrough, Point end)
+    {
+        return new Point(
+            2 * passThrough.X - 0.5 * start.X - 0.5 * end.X,
+            2 * passThrough.Y - 0.5 * start.Y - 0.5 * end.Y);
+    }
+
+    private void RemoveUnWarpGuideCurves()
+    {
+        if (unWarpPath is not null)
+        {
+            ShapeCanvas.Children.Remove(unWarpPath);
+            unWarpPath = null;
+        }
+    }
+
+    private async void ApplyUnWarpButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return;
+
+        SetUiForLongTask();
+
+        try
+        {
+            using MagickImage sizeCheck = new(imagePath);
+            double scaleFactor = sizeCheck.Width / MainImage.ActualWidth;
+
+            Point tl = GetEllipseCenter(TopLeft);
+            Point tr = GetEllipseCenter(TopRight);
+            Point bl = GetEllipseCenter(BottomLeft);
+            Point br = GetEllipseCenter(BottomRight);
+            Point mt = GetEllipseCenter(UnWarpMidTop);
+            Point mr = GetEllipseCenter(UnWarpMidRight);
+            Point mb = GetEllipseCenter(UnWarpMidBottom);
+            Point ml = GetEllipseCenter(UnWarpMidLeft);
+
+            MagickImage? result = await UnWarpCorrector.CorrectUnWarpAsync(
+                imagePath, tl, tr, bl, br, mt, mr, mb, ml, scaleFactor);
+
+            if (result is null)
+            {
+                SetUiForCompletedTask();
+                return;
+            }
+
+            string tempFileName = System.IO.Path.GetTempFileName();
+            await result.WriteAsync(tempFileName);
+
+            MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
+            undoRedo.AddUndo(undoRedoItem);
+
+            imagePath = tempFileName;
+            MainImage.Source = result.ToBitmapSource();
+
+            actualImageSize = new Size(result.Width, result.Height);
+            result.Dispose();
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                ex.Message,
+                "Un-Warp Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            HideUnWarpControls();
+            SetUiForCompletedTask();
+        }
+    }
+
+    #endregion Un-Warp Correction
 
     private async void DetectShapeButton_Click(object sender, RoutedEventArgs e)
     {
@@ -2906,6 +3306,7 @@ public partial class MainWindow : FluentWindow
         HideCroppingControls();
         HideTransformControls();
         HideTriFoldControls();
+        HideUnWarpControls();
 
         // Initialize resize input controls
         InitializeResizeInputs();
@@ -4593,6 +4994,7 @@ public partial class MainWindow : FluentWindow
             HideTransformControls();
             HideResizeControls();
             HideTriFoldControls();
+            HideUnWarpControls();
             RotateControlsPanel.Visibility = Visibility.Visible;
             isRotateMode = true;
             EnsurePreviewRotateTransform();
