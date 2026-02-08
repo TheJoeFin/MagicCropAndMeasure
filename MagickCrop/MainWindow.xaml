@@ -1139,30 +1139,38 @@
                         Margin="0,8,0,0"
                         Visibility="Collapsed" />
 
-                    <wpfui:Button
-                        x:Name="ApplyUnWarpButton"
-                        Width="180"
-                        Margin="0,6"
-                        Appearance="Primary"
-                        Click="ApplyUnWarpButton_Click"
-                        Content="Apply Un-Warp"
-                        Foreground="White"
-                        ToolTip="Straighten the selected curved region">
-                        <wpfui:Button.Icon>
-                            <wpfui:SymbolIcon Symbol="BorderAll24" />
-                        </wpfui:Button.Icon>
-                    </wpfui:Button>
-                    <wpfui:Button
-                        x:Name="CancelUnWarpButton"
-                        Width="180"
-                        Appearance="Danger"
-                        Click="CancelUnWarpButton_Click"
-                        Content="Cancel"
-                        ToolTip="Cancel un-warp">
-                        <wpfui:Button.Icon>
-                            <wpfui:SymbolIcon Symbol="Dismiss24" />
-                        </wpfui:Button.Icon>
-                    </wpfui:Button>
+                    <StackPanel x:Name="UnWarpActionButtons" Orientation="Vertical">
+                        <CheckBox
+                            x:Name="LocalUnWarpCheckBox"
+                            Margin="0,6"
+                            Content="Local correction"
+                            IsChecked="False"
+                            ToolTip="Correct in place without cropping — the straightened area replaces the original region" />
+                        <wpfui:Button
+                            x:Name="ApplyUnWarpButton"
+                            Width="180"
+                            Margin="0,6"
+                            Appearance="Primary"
+                            Click="ApplyUnWarpButton_Click"
+                            Content="Apply Un-Warp"
+                            Foreground="White"
+                            ToolTip="Straighten the selected curved region">
+                            <wpfui:Button.Icon>
+                                <wpfui:SymbolIcon Symbol="BorderAll24" />
+                            </wpfui:Button.Icon>
+                        </wpfui:Button>
+                        <wpfui:Button
+                            x:Name="CancelUnWarpButton"
+                            Width="180"
+                            Appearance="Danger"
+                            Click="CancelUnWarpButton_Click"
+                            Content="Cancel"
+                            ToolTip="Cancel un-warp">
+                            <wpfui:Button.Icon>
+                                <wpfui:SymbolIcon Symbol="Dismiss24" />
+                            </wpfui:Button.Icon>
+                        </wpfui:Button>
+                    </StackPanel>
                 </StackPanel>
                 <StackPanel
                     x:Name="ResizeButtonsPanel"

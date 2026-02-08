@@ -2773,6 +2773,7 @@ public partial class MainWindow : FluentWindow
                 UnWarpQuadrilateralSelectorControl.QuadrilateralHoverEnter += QuadrilateralSelector_HoverEnter;
                 UnWarpQuadrilateralSelectorControl.QuadrilateralHoverExit += QuadrilateralSelector_HoverExit;
                 UnWarpQuadrilateralSelectorControl.Visibility = Visibility.Visible;
+                UnWarpActionButtons.Visibility = Visibility.Collapsed;
             }
         }
         catch (Exception ex)
@@ -2815,6 +2816,7 @@ public partial class MainWindow : FluentWindow
         UnWarpQuadrilateralSelectorControl.QuadrilateralHoverEnter -= QuadrilateralSelector_HoverEnter;
         UnWarpQuadrilateralSelectorControl.QuadrilateralHoverExit -= QuadrilateralSelector_HoverExit;
         RemoveHoverHighlight();
+        UnWarpActionButtons.Visibility = Visibility.Visible;
     }
 
     private void PositionUnWarpMarkers(QuadrilateralDetector.DetectedQuadrilateral quad)
@@ -3060,8 +3062,17 @@ public partial class MainWindow : FluentWindow
             Point mb = GetEllipseCenter(UnWarpMidBottom);
             Point ml = GetEllipseCenter(UnWarpMidLeft);
 
-            MagickImage? result = await UnWarpCorrector.CorrectUnWarpAsync(
-                imagePath, tl, tr, bl, br, mt, mr, mb, ml, scaleFactor);
+            MagickImage? result;
+            if (LocalUnWarpCheckBox.IsChecked == true)
+            {
+                result = await UnWarpCorrector.CorrectUnWarpLocalAsync(
+                    imagePath, tl, tr, bl, br, mt, mr, mb, ml, scaleFactor);
+            }
+            else
+            {
+                result = await UnWarpCorrector.CorrectUnWarpAsync(
+                    imagePath, tl, tr, bl, br, mt, mr, mb, ml, scaleFactor);
+            }
 
             if (result is null)
             {
