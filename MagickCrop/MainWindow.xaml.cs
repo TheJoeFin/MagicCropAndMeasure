@@ -1159,6 +1159,10 @@ public partial class MainWindow : FluentWindow
 
     private void ShapeCanvas_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
+        // Only zoom when the mouse is over the canvas area so ScrollViewers elsewhere still work
+        if (!MainGrid.IsMouseOver)
+            return;
+
         // Get the current mouse position relative to the canvas
         Point mousePosition = e.GetPosition(ShapeCanvas);
 
