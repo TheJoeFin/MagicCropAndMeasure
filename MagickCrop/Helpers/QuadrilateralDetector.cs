@@ -20,8 +20,8 @@ public static class QuadrilateralDetector
     private const double SizeWeight = 0.6;
     private const double RectangularityWeight = 0.4;
 
-    // Duplicate detection threshold - quadrilaterals with corners closer than this are considered duplicates
-    private const double DuplicateDistanceThreshold = 5.0; // pixels
+    // Duplicate detection: fraction of the image's short side used as the proximity diameter
+    private const double DuplicateDiameterFraction = 0.02;
 
     /// <summary>
     /// Represents a detected quadrilateral with its corner points
@@ -185,8 +185,8 @@ public static class QuadrilateralDetector
                 }
             }
 
-            // Remove duplicates before sorting
-            result.Quadrilaterals = FilterDuplicates(result.Quadrilaterals);
+            // Remove duplicates before sorting (threshold is 2% of the short side)
+            result.Quadrilaterals = FilterDuplicates(result.Quadrilaterals, result.ImageWidth, result.ImageHeight);
 
             // Sort by confidence (highest first) and take top results
             result.Quadrilaterals = [.. result.Quadrilaterals.OrderByDescending(q => q.Confidence).Take(maxResults)];
@@ -302,25 +302,36 @@ public static class QuadrilateralDetector
     }
 
     /// <summary>
-    /// Filter out duplicate quadrilaterals that have very similar corner positions
+    /// Filter out duplicate quadrilaterals that have very similar corner positions.
+    /// Two quads are duplicates when every corresponding corner is within a circle
+    /// whose diameter is 2% of the image's short side. Among duplicates the smallest
+    /// quadrilateral (by area) is kept.
     /// </summary>
-    private static List<DetectedQuadrilateral> FilterDuplicates(List<DetectedQuadrilateral> quadrilaterals)
+    private static List<DetectedQuadrilateral> FilterDuplicates(
+        List<DetectedQuadrilateral> quadrilaterals, double imageWidth, double imageHeight)
     {
+        double shortSide = Math.Min(imageWidth, imageHeight);
+        double threshold = DuplicateDiameterFraction * shortSide;
+
         List<DetectedQuadrilateral> filtered = [];
 
         foreach (DetectedQuadrilateral quad in quadrilaterals)
         {
-            bool isDuplicate = false;
-            foreach (DetectedQuadrilateral existing in filtered)
+            bool merged = false;
+            for (int i = 0; i < filtered.Count; i++)
             {
-                if (AreDuplicates(quad, existing))
+                if (AreDuplicates(quad, filtered[i], threshold))
                 {
-                    isDuplicate = true;
+                    // Keep the smaller quadrilateral
+                    if (quad.Area < filtered[i].Area)
+                        filtered[i] = quad;
+
+                    merged = true;
                     break;
                 }
             }
 
-            if (!isDuplicate)
+            if (!merged)
             {
                 filtered.Add(quad);
             }
@@ -330,20 +341,16 @@ public static class QuadrilateralDetector
     }
 
     /// <summary>
-    /// Check if two quadrilaterals are duplicates based on corner proximity
+    /// Check if two quadrilaterals are duplicates: every corresponding corner
+    /// must be within the given distance threshold.
     /// </summary>
-    private static bool AreDuplicates(DetectedQuadrilateral quad1, DetectedQuadrilateral quad2)
+    private static bool AreDuplicates(
+        DetectedQuadrilateral quad1, DetectedQuadrilateral quad2, double threshold)
     {
-        // Calculate average distance between corresponding corners
-        double totalDistance =
-            Distance(quad1.TopLeft, quad2.TopLeft) +
-            Distance(quad1.TopRight, quad2.TopRight) +
-            Distance(quad1.BottomRight, quad2.BottomRight) +
-            Distance(quad1.BottomLeft, quad2.BottomLeft);
-
-        double averageDistance = totalDistance / 4.0;
-
-        return averageDistance < DuplicateDistanceThreshold;
+        return Distance(quad1.TopLeft, quad2.TopLeft) < threshold
+            && Distance(quad1.TopRight, quad2.TopRight) < threshold
+            && Distance(quad1.BottomRight, quad2.BottomRight) < threshold
+            && Distance(quad1.BottomLeft, quad2.BottomLeft) < threshold;
     }
 
     /// <summary>
