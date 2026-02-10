@@ -8,6 +8,9 @@ public record AspectRatioItem
     public string Text { get; set; } = string.Empty;
     public double RatioValue { get; set; } = 0;
     public AspectRatio AspectRatioEnum { get; set; }
+    public double? RealWorldWidth { get; set; }
+    public double? RealWorldHeight { get; set; }
+    public string? RealWorldUnits { get; set; }
 
     public static List<AspectRatioItem> GetStandardAspectRatios() =>
         [
@@ -25,7 +28,10 @@ public record AspectRatioItem
                 Symbol = "DocumentLandscape24",
                 Text = "Letter Landscape",
                 RatioValue = 8.5 / 11,
-                AspectRatioEnum = AspectRatio.LetterLandscape
+                AspectRatioEnum = AspectRatio.LetterLandscape,
+                RealWorldWidth = 11,
+                RealWorldHeight = 8.5,
+                RealWorldUnits = "in",
             },
             new AspectRatioItem
             {
@@ -33,7 +39,10 @@ public record AspectRatioItem
                 Symbol = "Document24",
                 Text = "Letter Portrait",
                 RatioValue = 11 / 8.5,
-                AspectRatioEnum = AspectRatio.LetterPortrait
+                AspectRatioEnum = AspectRatio.LetterPortrait,
+                RealWorldWidth = 8.5,
+                RealWorldHeight = 11,
+                RealWorldUnits = "in",
             },
             new AspectRatioItem
             {
@@ -49,7 +58,10 @@ public record AspectRatioItem
                 Symbol = "DocumentLandscape24",
                 Text = "A4 Landscape",
                 RatioValue = 210.0 / 297.0,
-                AspectRatioEnum = AspectRatio.A4Landscape
+                AspectRatioEnum = AspectRatio.A4Landscape,
+                RealWorldWidth = 297,
+                RealWorldHeight = 210,
+                RealWorldUnits = "mm",
             },
             new AspectRatioItem
             {
@@ -57,7 +69,10 @@ public record AspectRatioItem
                 Symbol = "Document24",
                 Text = "A4 Portrait",
                 RatioValue = 297.0 / 210.0,
-                AspectRatioEnum = AspectRatio.A4Portrait
+                AspectRatioEnum = AspectRatio.A4Portrait,
+                RealWorldWidth = 210,
+                RealWorldHeight = 297,
+                RealWorldUnits = "mm",
             },
             new AspectRatioItem
             {
@@ -65,7 +80,10 @@ public record AspectRatioItem
                 Symbol = "AlignEndHorizontal20",
                 Text = "US Bill Portrait",
                 RatioValue = 6.14 / 2.61,
-                AspectRatioEnum = AspectRatio.UsDollarBillPortrait
+                AspectRatioEnum = AspectRatio.UsDollarBillPortrait,
+                RealWorldWidth = 2.61,
+                RealWorldHeight = 6.14,
+                RealWorldUnits = "in",
             },
             new AspectRatioItem
             {
@@ -73,7 +91,10 @@ public record AspectRatioItem
                 Symbol = "AlignEndVertical20",
                 Text = "US Bill Landscape",
                 RatioValue = 2.61 / 6.14,
-                AspectRatioEnum = AspectRatio.UsDollarBillLandscape
+                AspectRatioEnum = AspectRatio.UsDollarBillLandscape,
+                RealWorldWidth = 6.14,
+                RealWorldHeight = 2.61,
+                RealWorldUnits = "in",
             },
             new AspectRatioItem
             {

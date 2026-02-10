@@ -594,7 +594,7 @@ public partial class MainWindow : FluentWindow
             UpdateUnWarpGuideCurves();
     }
 
-    private async Task<MagickImage?> CorrectDistortion(string pathOfImage)
+    private async Task<(MagickImage Image, int TargetWidth, int TargetHeight)?> CorrectDistortion(string pathOfImage)
     {
         if (lines is null || selectedAspectRatio is null)
             return null;
@@ -670,7 +670,7 @@ public partial class MainWindow : FluentWindow
                 MessageBoxImage.Error);
         }
 
-        return image;
+        return (image, (int)finalSize.Width, (int)finalSize.Height);
     }
 
     /// <summary>
@@ -698,12 +698,29 @@ public partial class MainWindow : FluentWindow
             originalCropHeight = CroppingRectangle.ActualHeight;
         }
 
-        MagickImage? image = await CorrectDistortion(imagePath);
+        var result = await CorrectDistortion(imagePath);
 
-        if (image is null)
+        if (result is null)
         {
             SetUiForCompletedTask();
             return;
+        }
+
+        var (image, targetWidth, targetHeight) = result.Value;
+
+        bool alsoCropAndScale = AlsoCropAndScaleCheckBox.IsChecked == true;
+
+        // Crop the distorted image to the exact target dimensions
+        if (alsoCropAndScale && targetWidth > 0 && targetHeight > 0)
+        {
+            await Task.Run(() =>
+            {
+                image.Crop(new MagickGeometry((uint)targetWidth, (uint)targetHeight)
+                {
+                    IgnoreAspectRatio = true,
+                });
+                image.Page = new MagickGeometry(0, 0, (uint)targetWidth, (uint)targetHeight);
+            });
         }
 
         string tempFileName = System.IO.Path.GetTempFileName();
@@ -747,6 +764,21 @@ public partial class MainWindow : FluentWindow
             }
         }
 
+        // Set measurement scale based on the selected aspect ratio's real-world dimensions
+        if (alsoCropAndScale && selectedAspectRatio is not null
+            && selectedAspectRatio.RealWorldWidth is double realWidth
+            && selectedAspectRatio.RealWorldHeight is double realHeight
+            && !string.IsNullOrEmpty(selectedAspectRatio.RealWorldUnits))
+        {
+            UpdateLayout();
+            double displayWidth = MainImage.ActualWidth;
+            if (displayWidth > 0)
+            {
+                ScaleInput.Value = realWidth / displayWidth;
+                MeasurementUnits.Text = selectedAspectRatio.RealWorldUnits;
+            }
+        }
+
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Collapsed;
 
@@ -783,14 +815,16 @@ public partial class MainWindow : FluentWindow
             return;
         }
 
-        MagickImage? image = await CorrectDistortion(imagePath);
+        var result = await CorrectDistortion(imagePath);
 
 
-        if (image is null)
+        if (result is null)
         {
             SetUiForCompletedTask();
             return;
         }
+
+        var (image, _, _) = result.Value;
 
         try
         {

@@ -1074,6 +1074,13 @@
                         Margin="0,8,0,0"
                         Visibility="Collapsed" />
 
+                    <CheckBox
+                        x:Name="AlsoCropAndScaleCheckBox"
+                        Margin="0,6"
+                        Content="Crop &amp; set scale"
+                        IsChecked="False"
+                        ToolTip="After transforming, crop to the target size and set the measurement scale based on the selected aspect ratio" />
+
                     <wpfui:Button
                         x:Name="ApplyTransformButton"
                         Width="180"
