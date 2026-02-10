@@ -34,13 +34,7 @@
 
             <!--  Welcome Header  -->
             <StackPanel Grid.Row="0" Orientation="Vertical">
-                <Viewbox Height="100" Margin="0,0,0,20">
-                    <StackPanel Orientation="Horizontal">
-                        <wpfui:SymbolIcon Symbol="Wand48" />
-                        <wpfui:SymbolIcon Symbol="Crop48" />
-                        <wpfui:SymbolIcon Symbol="Ruler48" />
-                    </StackPanel>
-                </Viewbox>
+                <Image Height="100" Source="/Iconv3.png" />
                 <TextBlock
                     HorizontalAlignment="Center"
                     FontSize="20"
