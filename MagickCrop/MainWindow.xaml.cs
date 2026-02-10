@@ -1233,6 +1233,7 @@ public partial class MainWindow : FluentWindow
 
         Save.IsEnabled = true;
         ImageGrid.Width = ImageWidthConst;
+        ImageGrid.Height = double.NaN;
         MainImage.Stretch = Stretch.Uniform;
 
         WelcomeMessageModal.Visibility = Visibility.Collapsed;
@@ -2289,9 +2290,10 @@ public partial class MainWindow : FluentWindow
         ShowResizeControls();
     }
 
-    private void CropImage_Click(object sender, RoutedEventArgs e)
+    private async void CropImage_Click(object sender, RoutedEventArgs e)
     {
         ShowCroppingControls();
+        await RunCropDetectionAsync();
     }
 
     private void ShowCroppingControls()
@@ -2365,11 +2367,15 @@ public partial class MainWindow : FluentWindow
 
     private async void DetectCropShapeButton_Click(object sender, RoutedEventArgs e)
     {
+        await RunCropDetectionAsync();
+    }
+
+    private async Task RunCropDetectionAsync()
+    {
+        CropDetectInfoText.Visibility = Visibility.Collapsed;
+
         if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
-        {
-            _ = System.Windows.MessageBox.Show("Please open an image first.", "No Image", System.Windows.MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
-        }
 
         IsWorkingBar.Visibility = Visibility.Visible;
 
@@ -2380,11 +2386,8 @@ public partial class MainWindow : FluentWindow
 
             if (detectionResult.Quadrilaterals.Count == 0)
             {
-                _ = System.Windows.MessageBox.Show(
-                    "No quadrilaterals detected in the image.\n\nPlease position the crop rectangle manually.",
-                    "No Shapes Detected",
-                    System.Windows.MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                CropDetectInfoText.Text = "No shapes detected. Position the crop rectangle manually.";
+                CropDetectInfoText.Visibility = Visibility.Visible;
             }
             else
             {
@@ -2397,7 +2400,6 @@ public partial class MainWindow : FluentWindow
                         MainImage.ActualHeight))];
 
                 CropQuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
-                // Unsubscribe first to prevent handler stacking on repeated detection
                 CropQuadrilateralSelectorControl.QuadrilateralHoverEnter -= QuadrilateralSelector_HoverEnter;
                 CropQuadrilateralSelectorControl.QuadrilateralHoverExit -= QuadrilateralSelector_HoverExit;
                 CropQuadrilateralSelectorControl.QuadrilateralHoverEnter += QuadrilateralSelector_HoverEnter;
@@ -2405,29 +2407,10 @@ public partial class MainWindow : FluentWindow
                 CropQuadrilateralSelectorControl.Visibility = Visibility.Visible;
             }
         }
-        catch (IOException ioEx)
-        {
-            _ = System.Windows.MessageBox.Show(
-                $"File error while detecting quadrilaterals: {ioEx.Message}",
-                "File Error",
-                System.Windows.MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-        catch (UnauthorizedAccessException uaEx)
-        {
-            _ = System.Windows.MessageBox.Show(
-                $"Access denied while detecting quadrilaterals: {uaEx.Message}",
-                "Access Denied",
-                System.Windows.MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
         catch (Exception ex)
         {
-            _ = System.Windows.MessageBox.Show(
-                $"Error detecting quadrilaterals: {ex.Message}",
-                "Detection Error",
-                System.Windows.MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            CropDetectInfoText.Text = $"Detection failed: {ex.Message}";
+            CropDetectInfoText.Visibility = Visibility.Visible;
         }
         finally
         {
@@ -2484,9 +2467,10 @@ public partial class MainWindow : FluentWindow
         CroppingRectangle.Height = height;
     }
 
-    private void PerspectiveCorrectionMenuItem_Click(object sender, RoutedEventArgs e)
+    private async void PerspectiveCorrectionMenuItem_Click(object sender, RoutedEventArgs e)
     {
         ShowTransformControls();
+        await RunTransformDetectionAsync();
     }
 
     private void CancelTransformButton_Click(object sender, RoutedEventArgs e)
@@ -2733,9 +2717,10 @@ public partial class MainWindow : FluentWindow
 
     #region Un-Warp Correction
 
-    private void UnWarpMenuItem_Click(object sender, RoutedEventArgs e)
+    private async void UnWarpMenuItem_Click(object sender, RoutedEventArgs e)
     {
         ShowUnWarpControls();
+        await RunUnWarpDetectionAsync();
     }
 
     private void CancelUnWarpButton_Click(object sender, RoutedEventArgs e)
@@ -2745,12 +2730,15 @@ public partial class MainWindow : FluentWindow
 
     private async void DetectUnWarpShapeButton_Click(object sender, RoutedEventArgs e)
     {
+        await RunUnWarpDetectionAsync();
+    }
+
+    private async Task RunUnWarpDetectionAsync()
+    {
+        UnWarpDetectInfoText.Visibility = Visibility.Collapsed;
+
         if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
-        {
-            _ = System.Windows.MessageBox.Show("Please open an image first.", "No Image",
-                System.Windows.MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
-        }
 
         IsWorkingBar.Visibility = Visibility.Visible;
 
@@ -2762,11 +2750,8 @@ public partial class MainWindow : FluentWindow
 
             if (detectionResult.Quadrilaterals.Count == 0)
             {
-                _ = System.Windows.MessageBox.Show(
-                    "No quadrilaterals detected in the image.\n\nPlease position the corner markers manually.",
-                    "No Shapes Detected",
-                    System.Windows.MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                UnWarpDetectInfoText.Text = "No shapes detected. Position the corner markers manually.";
+                UnWarpDetectInfoText.Visibility = Visibility.Visible;
             }
             else
             {
@@ -2790,11 +2775,8 @@ public partial class MainWindow : FluentWindow
         }
         catch (Exception ex)
         {
-            _ = System.Windows.MessageBox.Show(
-                $"Error detecting quadrilaterals: {ex.Message}",
-                "Detection Error",
-                System.Windows.MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            UnWarpDetectInfoText.Text = $"Detection failed: {ex.Message}";
+            UnWarpDetectInfoText.Visibility = Visibility.Visible;
         }
         finally
         {
@@ -3122,32 +3104,30 @@ public partial class MainWindow : FluentWindow
 
     private async void DetectShapeButton_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
-        {
-            _ = System.Windows.MessageBox.Show("Please open an image first.", "No Image", System.Windows.MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
+        await RunTransformDetectionAsync();
+    }
 
-        // Show progress indicator
+    private async Task RunTransformDetectionAsync()
+    {
+        TransformDetectInfoText.Visibility = Visibility.Collapsed;
+
+        if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+            return;
+
         IsWorkingBar.Visibility = Visibility.Visible;
 
         try
         {
-            // Detect quadrilaterals in background thread
             QuadrilateralDetector.DetectionResult detectionResult = await Task.Run(() =>
                 QuadrilateralDetector.DetectQuadrilateralsWithDimensions(imagePath, minArea: QuadDetectionMinArea, maxResults: QuadDetectionMaxResults));
 
             if (detectionResult.Quadrilaterals.Count == 0)
             {
-                _ = System.Windows.MessageBox.Show(
-                    "No quadrilaterals detected in the image.\n\nPlease position the corner markers manually.",
-                    "No Shapes Detected",
-                    System.Windows.MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                TransformDetectInfoText.Text = "No shapes detected. Position the corner markers manually.";
+                TransformDetectInfoText.Visibility = Visibility.Visible;
             }
             else
             {
-                // Scale quadrilaterals to display coordinates
                 List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads = [.. detectionResult.Quadrilaterals.Select(q =>
                     QuadrilateralDetector.ScaleToDisplay(
                         q,
@@ -3156,9 +3136,7 @@ public partial class MainWindow : FluentWindow
                         MainImage.ActualWidth,
                         MainImage.ActualHeight))];
 
-                // Show selector
                 QuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
-                // Unsubscribe first to prevent handler stacking on repeated detection
                 QuadrilateralSelectorControl.QuadrilateralHoverEnter -= QuadrilateralSelector_HoverEnter;
                 QuadrilateralSelectorControl.QuadrilateralHoverExit -= QuadrilateralSelector_HoverExit;
                 QuadrilateralSelectorControl.QuadrilateralHoverEnter += QuadrilateralSelector_HoverEnter;
@@ -3166,29 +3144,10 @@ public partial class MainWindow : FluentWindow
                 ShowQuadrilateralSelector();
             }
         }
-        catch (IOException ioEx)
-        {
-            _ = System.Windows.MessageBox.Show(
-                $"File error while detecting quadrilaterals: {ioEx.Message}",
-                "File Error",
-                System.Windows.MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-        catch (UnauthorizedAccessException uaEx)
-        {
-            _ = System.Windows.MessageBox.Show(
-                $"Access denied while detecting quadrilaterals: {uaEx.Message}",
-                "Access Denied",
-                System.Windows.MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
         catch (Exception ex)
         {
-            _ = System.Windows.MessageBox.Show(
-                $"Error detecting quadrilaterals: {ex.Message}",
-                "Detection Error",
-                System.Windows.MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            TransformDetectInfoText.Text = $"Detection failed: {ex.Message}";
+            TransformDetectInfoText.Visibility = Visibility.Visible;
         }
         finally
         {
@@ -4807,6 +4766,9 @@ public partial class MainWindow : FluentWindow
         // --- Tri-fold state ---
         HideTriFoldControls();
 
+        // --- Un-warp state ---
+        HideUnWarpControls();
+
         // --- Resize drag state ---
         isDraggingResizeGrip = false;
         actualImageSize = new Size();
@@ -4864,10 +4826,12 @@ public partial class MainWindow : FluentWindow
         Save.IsEnabled = false;
 
         // Reset the canvas transform
-        if (ShapeCanvas.RenderTransform is MatrixTransform matTrans)
-        {
-            matTrans.Matrix = new Matrix();
-        }
+        canvasScale.ScaleX = 1;
+        canvasScale.ScaleY = 1;
+        canvasScale.CenterX = 0;
+        canvasScale.CenterY = 0;
+        canvasTranslate.X = 0;
+        canvasTranslate.Y = 0;
 
         // Reset undo/redo
         UndoRedo.Clear();

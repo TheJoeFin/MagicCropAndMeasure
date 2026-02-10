@@ -959,6 +959,15 @@
                             <wpfui:SymbolIcon Symbol="ShapeIntersect24" />
                         </wpfui:Button.Icon>
                     </wpfui:Button>
+                    <TextBlock
+                        x:Name="CropDetectInfoText"
+                        Width="170"
+                        Margin="0,2,0,4"
+                        FontSize="11"
+                        FontStyle="Italic"
+                        Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
+                        TextWrapping="Wrap"
+                        Visibility="Collapsed" />
 
                     <!--  Quadrilateral Selector for Crop  -->
                     <c:QuadrilateralSelector
@@ -1090,6 +1099,15 @@
                             <wpfui:SymbolIcon Symbol="ShapeIntersect24" />
                         </wpfui:Button.Icon>
                     </wpfui:Button>
+                    <TextBlock
+                        x:Name="TransformDetectInfoText"
+                        Width="170"
+                        Margin="0,2,0,4"
+                        FontSize="11"
+                        FontStyle="Italic"
+                        Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
+                        TextWrapping="Wrap"
+                        Visibility="Collapsed" />
 
                     <!--  Quadrilateral Selector in Sidebar  -->
                     <c:QuadrilateralSelector
@@ -1200,6 +1218,15 @@
                             <wpfui:SymbolIcon Symbol="ShapeIntersect24" />
                         </wpfui:Button.Icon>
                     </wpfui:Button>
+                    <TextBlock
+                        x:Name="UnWarpDetectInfoText"
+                        Width="170"
+                        Margin="0,2,0,4"
+                        FontSize="11"
+                        FontStyle="Italic"
+                        Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
+                        TextWrapping="Wrap"
+                        Visibility="Collapsed" />
 
                     <!--  Quadrilateral Selector for Un-Warp  -->
                     <c:QuadrilateralSelector
