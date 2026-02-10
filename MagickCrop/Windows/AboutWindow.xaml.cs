@@ -46,8 +46,24 @@ public partial class AboutWindow : FluentWindow
 
     private static string GetAppVersion()
     {
-        PackageVersion version = Package.Current.Id.Version;
-        return $"{version.Major}.{version.Minor}.{version.Build}";
+        try
+        {
+            PackageVersion version = Package.Current.Id.Version;
+            return $"{version.Major}.{version.Minor}.{version.Build}";
+        }
+        catch (InvalidOperationException)
+        {
+            // Running unpackaged — fall back to the EXE file version
+            string? exePath = Environment.ProcessPath;
+            if (exePath is not null)
+            {
+                FileVersionInfo fileInfo = FileVersionInfo.GetVersionInfo(exePath);
+                if (fileInfo.FileVersion is not null)
+                    return fileInfo.FileVersion;
+            }
+
+            return "unknown";
+        }
     }
 
     private void RatingControl_ValueChanged(object sender, RoutedEventArgs e)
