@@ -1899,20 +1899,61 @@ public partial class MainWindow : FluentWindow
             SetUiForLongTask();
 
             // Apply white balance using the picked color as the white reference
-            await Task.Run(() =>
+            void ApplyWhitePoint(MagickImage target)
             {
                 // Avoid division by zero
-                if (r == 0) r = 1;
-                if (g == 0) g = 1;
-                if (b == 0) b = 1;
+                byte lr = r == 0 ? (byte)1 : r;
+                byte lg = g == 0 ? (byte)1 : g;
+                byte lb = b == 0 ? (byte)1 : b;
 
                 // Use Level per channel to map the picked color to white (255)
                 // Level adjusts the range from [black, white] to [0, 255]
                 // By setting the white point to the picked color, that color becomes maximum brightness
-                magickImage.Level(new Percentage(0), new Percentage((r / 255.0) * 100), 1.0, Channels.Red);
-                magickImage.Level(new Percentage(0), new Percentage((g / 255.0) * 100), 1.0, Channels.Green);
-                magickImage.Level(new Percentage(0), new Percentage((b / 255.0) * 100), 1.0, Channels.Blue);
-            });
+                target.Level(new Percentage(0), new Percentage((lr / 255.0) * 100), 1.0, Channels.Red);
+                target.Level(new Percentage(0), new Percentage((lg / 255.0) * 100), 1.0, Channels.Green);
+                target.Level(new Percentage(0), new Percentage((lb / 255.0) * 100), 1.0, Channels.Blue);
+            }
+
+            if (LocalAdjustmentCheckBox.IsChecked == true)
+            {
+                MagickGeometry region = LocalAdjustmentRectangle.CropShape;
+
+                double displayWidth = MainImage.ActualWidth;
+                double displayHeight = MainImage.ActualHeight;
+                if (displayWidth == 0 || displayHeight == 0)
+                {
+                    SetUiForCompletedTask();
+                    return;
+                }
+
+                double factor = magickImage.Height / displayHeight;
+                region.ScaleAll(factor);
+
+                if (region.X < 0) region.X = 0;
+                if (region.Y < 0) region.Y = 0;
+                if (region.X + region.Width > magickImage.Width)
+                    region.Width = (uint)(magickImage.Width - region.X);
+                if (region.Y + region.Height > magickImage.Height)
+                    region.Height = (uint)(magickImage.Height - region.Y);
+
+                int regionX = region.X;
+                int regionY = region.Y;
+
+                await Task.Run(() =>
+                {
+                    using MagickImage cropped = (MagickImage)magickImage.Clone();
+                    cropped.Crop(region);
+                    cropped.Page = new MagickGeometry(0, 0, cropped.Width, cropped.Height);
+
+                    ApplyWhitePoint(cropped);
+
+                    magickImage.Composite(cropped, regionX, regionY, CompositeOperator.Over);
+                });
+            }
+            else
+            {
+                await Task.Run(() => ApplyWhitePoint(magickImage));
+            }
 
             string tempFileName = System.IO.Path.GetTempFileName();
             await magickImage.WriteAsync(tempFileName);
@@ -1990,20 +2031,61 @@ public partial class MainWindow : FluentWindow
             SetUiForLongTask();
 
             // Apply black point adjustment using the picked color as the black reference
-            await Task.Run(() =>
+            void ApplyBlackPoint(MagickImage target)
             {
                 // Avoid overflow to 255
-                if (r == 255) r = 254;
-                if (g == 255) g = 254;
-                if (b == 255) b = 254;
+                byte lr = r == 255 ? (byte)254 : r;
+                byte lg = g == 255 ? (byte)254 : g;
+                byte lb = b == 255 ? (byte)254 : b;
 
                 // Use Level per channel to map the picked color to black (0)
                 // Level adjusts the range from [black, white] to [0, 255]
                 // By setting the black point to the picked color, that color becomes minimum brightness
-                magickImage.Level(new Percentage((r / 255.0) * 100), new Percentage(100), 1.0, Channels.Red);
-                magickImage.Level(new Percentage((g / 255.0) * 100), new Percentage(100), 1.0, Channels.Green);
-                magickImage.Level(new Percentage((b / 255.0) * 100), new Percentage(100), 1.0, Channels.Blue);
-            });
+                target.Level(new Percentage((lr / 255.0) * 100), new Percentage(100), 1.0, Channels.Red);
+                target.Level(new Percentage((lg / 255.0) * 100), new Percentage(100), 1.0, Channels.Green);
+                target.Level(new Percentage((lb / 255.0) * 100), new Percentage(100), 1.0, Channels.Blue);
+            }
+
+            if (LocalAdjustmentCheckBox.IsChecked == true)
+            {
+                MagickGeometry region = LocalAdjustmentRectangle.CropShape;
+
+                double displayWidth = MainImage.ActualWidth;
+                double displayHeight = MainImage.ActualHeight;
+                if (displayWidth == 0 || displayHeight == 0)
+                {
+                    SetUiForCompletedTask();
+                    return;
+                }
+
+                double factor = magickImage.Height / displayHeight;
+                region.ScaleAll(factor);
+
+                if (region.X < 0) region.X = 0;
+                if (region.Y < 0) region.Y = 0;
+                if (region.X + region.Width > magickImage.Width)
+                    region.Width = (uint)(magickImage.Width - region.X);
+                if (region.Y + region.Height > magickImage.Height)
+                    region.Height = (uint)(magickImage.Height - region.Y);
+
+                int regionX = region.X;
+                int regionY = region.Y;
+
+                await Task.Run(() =>
+                {
+                    using MagickImage cropped = (MagickImage)magickImage.Clone();
+                    cropped.Crop(region);
+                    cropped.Page = new MagickGeometry(0, 0, cropped.Width, cropped.Height);
+
+                    ApplyBlackPoint(cropped);
+
+                    magickImage.Composite(cropped, regionX, regionY, CompositeOperator.Over);
+                });
+            }
+            else
+            {
+                await Task.Run(() => ApplyBlackPoint(magickImage));
+            }
 
             string tempFileName = System.IO.Path.GetTempFileName();
             await magickImage.WriteAsync(tempFileName);
