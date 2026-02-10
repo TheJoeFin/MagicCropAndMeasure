@@ -59,11 +59,16 @@ public class MagickCropMeasurementPackage
                 string imagePath = Path.Combine(tempDir, ImageFileName);
                 File.Copy(ImagePath, imagePath);
 
-                // Create zip archive
+                // Create zip archive atomically: write to a temp file first,
+                // then replace the target so a crash mid-write can't corrupt
+                // the existing package.
+                string tempPackagePath = packagePath + ".tmp";
+                ZipFile.CreateFromDirectory(tempDir, tempPackagePath);
+
                 if (File.Exists(packagePath))
                     File.Delete(packagePath);
 
-                ZipFile.CreateFromDirectory(tempDir, packagePath);
+                File.Move(tempPackagePath, packagePath);
                 return true;
             }
             catch (Exception ex)

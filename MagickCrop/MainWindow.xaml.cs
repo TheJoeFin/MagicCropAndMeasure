@@ -1,4 +1,4 @@
-﻿using ImageMagick;
+using ImageMagick;
 using MagickCrop.Controls;
 using MagickCrop.Helpers;
 using MagickCrop.Models;
@@ -58,7 +58,7 @@ public partial class MainWindow : FluentWindow
     private MagickCropMeasurementPackage? openedPackage;
     private readonly List<UIElement> _polygonElements;
 
-    private readonly UndoRedo undoRedo = new();
+    public UndoRedo UndoRedo { get; } = new();
     private AspectRatioItem? selectedAspectRatio;
     private readonly ObservableCollection<DistanceMeasurementControl> measurementTools = [];
     private DistanceMeasurementControl? activeMeasureControl;
@@ -213,6 +213,25 @@ public partial class MainWindow : FluentWindow
         ShapeCanvas.MouseUp += ShapeCanvas_MouseUp;
         ShapeCanvas.LostMouseCapture += ShapeCanvas_LostMouseCapture; // safety to ensure capture released
         rotationOverlayLabel = FindName("RotationOverlayLabel") as WpfTextBlock; // cache
+
+        CheckObjectEraseAvailability();
+    }
+
+    private async void CheckObjectEraseAvailability()
+    {
+        try
+        {
+            bool supported = await Task.Run(() => ObjectEraseHelper.IsSupported());
+            if (supported)
+            {
+                ObjectEraseSeparator.Visibility = Visibility.Visible;
+                ObjectEraseMenuItem.Visibility = Visibility.Visible;
+            }
+        }
+        catch
+        {
+            // AI feature not available on this device — keep menu item hidden
+        }
     }
 
     private void ShapeCanvas_LostMouseCapture(object sender, MouseEventArgs e)
@@ -698,7 +717,7 @@ public partial class MainWindow : FluentWindow
             originalCropHeight = CroppingRectangle.ActualHeight;
         }
 
-        var result = await CorrectDistortion(imagePath);
+        (MagickImage Image, int TargetWidth, int TargetHeight)? result = await CorrectDistortion(imagePath);
 
         if (result is null)
         {
@@ -706,7 +725,7 @@ public partial class MainWindow : FluentWindow
             return;
         }
 
-        var (image, targetWidth, targetHeight) = result.Value;
+        (MagickImage? image, int targetWidth, int targetHeight) = result.Value;
 
         bool alsoCropAndScale = AlsoCropAndScaleCheckBox.IsChecked == true;
 
@@ -815,7 +834,7 @@ public partial class MainWindow : FluentWindow
             return;
         }
 
-        var result = await CorrectDistortion(imagePath);
+        (MagickImage Image, int TargetWidth, int TargetHeight)? result = await CorrectDistortion(imagePath);
 
 
         if (result is null)
@@ -824,7 +843,7 @@ public partial class MainWindow : FluentWindow
             return;
         }
 
-        var (image, _, _) = result.Value;
+        (MagickImage? image, int _, int _) = result.Value;
 
         try
         {
@@ -1058,7 +1077,7 @@ public partial class MainWindow : FluentWindow
         await magickImage.WriteAsync(tempFileName);
 
         MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
+        UndoRedo.AddUndo(undoRedoItem);
 
         imagePath = tempFileName;
 
@@ -1959,7 +1978,7 @@ public partial class MainWindow : FluentWindow
             await magickImage.WriteAsync(tempFileName);
 
             MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-            undoRedo.AddUndo(undoRedoItem);
+            UndoRedo.AddUndo(undoRedoItem);
 
             imagePath = tempFileName;
 
@@ -2091,7 +2110,7 @@ public partial class MainWindow : FluentWindow
             await magickImage.WriteAsync(tempFileName);
 
             MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-            undoRedo.AddUndo(undoRedoItem);
+            UndoRedo.AddUndo(undoRedoItem);
 
             imagePath = tempFileName;
 
@@ -2174,7 +2193,7 @@ public partial class MainWindow : FluentWindow
         await magickImage.WriteAsync(tempFileName);
 
         MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
+        UndoRedo.AddUndo(undoRedoItem);
 
         imagePath = tempFileName;
 
@@ -2200,7 +2219,7 @@ public partial class MainWindow : FluentWindow
         await magickImage.WriteAsync(tempFileName);
 
         MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
+        UndoRedo.AddUndo(undoRedoItem);
 
         imagePath = tempFileName;
 
@@ -2226,7 +2245,7 @@ public partial class MainWindow : FluentWindow
         await magickImage.WriteAsync(tempFileName);
 
         MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
+        UndoRedo.AddUndo(undoRedoItem);
 
         imagePath = tempFileName;
 
@@ -2252,7 +2271,7 @@ public partial class MainWindow : FluentWindow
         await magickImage.WriteAsync(tempFileName);
 
         MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
+        UndoRedo.AddUndo(undoRedoItem);
 
         imagePath = tempFileName;
 
@@ -2281,6 +2300,7 @@ public partial class MainWindow : FluentWindow
         HideTransformControls();
         HideTriFoldControls();
         HideUnWarpControls();
+        HideObjectEraseControls();
 
         CropButtonPanel.Visibility = Visibility.Visible;
         CroppingRectangle.Visibility = Visibility.Visible;
@@ -2317,7 +2337,7 @@ public partial class MainWindow : FluentWindow
         await magickImage.WriteAsync(tempFileName);
 
         MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
+        UndoRedo.AddUndo(undoRedoItem);
 
         imagePath = tempFileName;
 
@@ -2480,6 +2500,7 @@ public partial class MainWindow : FluentWindow
         HideResizeControls();
         HideTriFoldControls();
         HideUnWarpControls();
+        HideObjectEraseControls();
 
         TransformButtonPanel.Visibility = Visibility.Visible;
 
@@ -2517,6 +2538,7 @@ public partial class MainWindow : FluentWindow
         HideTransformControls();
         HideResizeControls();
         HideUnWarpControls();
+        HideObjectEraseControls();
 
         isTriFoldMode = true;
         TriFoldButtonPanel.Visibility = Visibility.Visible;
@@ -2684,7 +2706,7 @@ public partial class MainWindow : FluentWindow
             await result.WriteAsync(tempFileName);
 
             MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-            undoRedo.AddUndo(undoRedoItem);
+            UndoRedo.AddUndo(undoRedoItem);
 
             imagePath = tempFileName;
             MainImage.Source = result.ToBitmapSource();
@@ -2855,6 +2877,7 @@ public partial class MainWindow : FluentWindow
         HideTransformControls();
         HideResizeControls();
         HideTriFoldControls();
+        HideObjectEraseControls();
 
         isUnWarpMode = true;
         UnWarpButtonPanel.Visibility = Visibility.Visible;
@@ -3072,7 +3095,7 @@ public partial class MainWindow : FluentWindow
             await result.WriteAsync(tempFileName);
 
             MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-            undoRedo.AddUndo(undoRedoItem);
+            UndoRedo.AddUndo(undoRedoItem);
 
             imagePath = tempFileName;
             MainImage.Source = result.ToBitmapSource();
@@ -3271,7 +3294,7 @@ public partial class MainWindow : FluentWindow
         await magickImage.WriteAsync(tempFileName);
 
         ResizeUndoRedoItem undoRedoItem = new(MainImage, ImageGrid, oldGridSize, imagePath, tempFileName);
-        undoRedo.AddUndo(undoRedoItem);
+        UndoRedo.AddUndo(undoRedoItem);
 
         imagePath = tempFileName;
 
@@ -3306,6 +3329,7 @@ public partial class MainWindow : FluentWindow
         HideTransformControls();
         HideTriFoldControls();
         HideUnWarpControls();
+        HideObjectEraseControls();
 
         // Initialize resize input controls
         InitializeResizeInputs();
@@ -3478,16 +3502,143 @@ public partial class MainWindow : FluentWindow
         AspectRatioIcon?.Symbol = SymbolRegular.LinkDismiss24;
     }
 
+    #region Object Erase (AI)
+
+    private bool isObjectEraseMode = false;
+
+    private void ObjectEraseMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return;
+
+        ShowObjectEraseControls();
+    }
+
+    private void ShowObjectEraseControls()
+    {
+        HideCroppingControls();
+        HideTransformControls();
+        HideTriFoldControls();
+        HideUnWarpControls();
+        HideResizeControls();
+
+        isObjectEraseMode = true;
+        ObjectEraseButtonPanel.Visibility = Visibility.Visible;
+
+        // Configure the erase mask canvas
+        EraseMaskCanvas.Strokes.Clear();
+        EraseMaskCanvas.Visibility = Visibility.Visible;
+        EraseMaskCanvas.IsEnabled = true;
+        EraseMaskCanvas.IsHitTestVisible = true;
+        EraseMaskCanvas.EditingMode = InkCanvasEditingMode.Ink;
+        EraseMaskCanvas.DefaultDrawingAttributes = new DrawingAttributes
+        {
+            Color = Colors.Red,
+            Width = EraseBrushSizeSlider.Value,
+            Height = EraseBrushSizeSlider.Value,
+            IsHighlighter = true,
+            StylusTip = StylusTip.Ellipse,
+        };
+    }
+
+    private void HideObjectEraseControls()
+    {
+        isObjectEraseMode = false;
+        ObjectEraseButtonPanel.Visibility = Visibility.Collapsed;
+
+        EraseMaskCanvas.Strokes.Clear();
+        EraseMaskCanvas.Visibility = Visibility.Collapsed;
+        EraseMaskCanvas.IsEnabled = false;
+        EraseMaskCanvas.IsHitTestVisible = false;
+    }
+
+    private void EraseBrushSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (EraseMaskCanvas is null)
+            return;
+
+        EraseMaskCanvas.DefaultDrawingAttributes = new DrawingAttributes
+        {
+            Color = Colors.Red,
+            Width = e.NewValue,
+            Height = e.NewValue,
+            IsHighlighter = true,
+            StylusTip = StylusTip.Ellipse,
+        };
+    }
+
+    private void ClearEraseMaskButton_Click(object sender, RoutedEventArgs e)
+    {
+        EraseMaskCanvas.Strokes.Clear();
+    }
+
+    private async void ApplyObjectEraseButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return;
+
+        if (EraseMaskCanvas.Strokes.Count == 0)
+        {
+            System.Windows.MessageBox.Show(
+                "Please paint over the objects you want to remove first.",
+                "No Mask",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        SetUiForLongTask();
+
+        try
+        {
+            StrokeCollection strokes = EraseMaskCanvas.Strokes;
+            double displayWidth = MainImage.ActualWidth;
+            double displayHeight = MainImage.ActualHeight;
+
+            string resultPath = await ObjectEraseHelper.EraseObjectsAsync(
+                imagePath!, strokes, displayWidth, displayHeight);
+
+            MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath!, resultPath);
+            UndoRedo.AddUndo(undoRedoItem);
+
+            imagePath = resultPath;
+
+            using MagickImage resultImage = new(resultPath);
+            MainImage.Source = resultImage.ToBitmapSource();
+            actualImageSize = new Size(resultImage.Width, resultImage.Height);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                $"Object Erase failed: {ex.Message}",
+                "Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            HideObjectEraseControls();
+            SetUiForCompletedTask();
+        }
+    }
+
+    private void CancelObjectEraseButton_Click(object sender, RoutedEventArgs e)
+    {
+        HideObjectEraseControls();
+    }
+
+    #endregion Object Erase (AI)
+
     private void UndoMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        string path = undoRedo.Undo();
+        string path = UndoRedo.Undo();
         if (!string.IsNullOrWhiteSpace(path))
             imagePath = path;
     }
 
     private void RedoMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        string path = undoRedo.Redo();
+        string path = UndoRedo.Redo();
         if (!string.IsNullOrWhiteSpace(path))
             imagePath = path;
     }
@@ -4706,6 +4857,7 @@ public partial class MainWindow : FluentWindow
         HideTransformControls();
         HideCroppingControls();
         HideResizeControls();
+        HideObjectEraseControls();
         BottomBorder.Visibility = Visibility.Collapsed;
         WelcomeMessageModal.Visibility = Visibility.Visible;
         OpenFolderButton.IsEnabled = false;
@@ -4718,7 +4870,7 @@ public partial class MainWindow : FluentWindow
         }
 
         // Reset undo/redo
-        undoRedo.Clear();
+        UndoRedo.Clear();
 
         // Create a new project ID
         currentProjectId = Guid.NewGuid().ToString();
@@ -5089,6 +5241,28 @@ public partial class MainWindow : FluentWindow
             }
         }
 
+        // Handle Ctrl+Z for undo
+        if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && e.Key == Key.Z)
+        {
+            if (UndoRedo.CanUndo)
+            {
+                UndoMenuItem_Click(sender, e);
+                e.Handled = true;
+                return;
+            }
+        }
+
+        // Handle Ctrl+Y for redo
+        if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && e.Key == Key.Y)
+        {
+            if (UndoRedo.CanRedo)
+            {
+                RedoMenuItem_Click(sender, e);
+                e.Handled = true;
+                return;
+            }
+        }
+
         if (e.Key == Key.Escape)
         {
             UncheckAllBut();
@@ -5419,7 +5593,7 @@ public partial class MainWindow : FluentWindow
             });
 
             MagickImageUndoRedoItem undoItem = new(MainImage, previousPath, tempFileName);
-            undoRedo.AddUndo(undoItem);
+            UndoRedo.AddUndo(undoItem);
             imagePath = tempFileName;
 
             using MagickImage newImage = new(imagePath);

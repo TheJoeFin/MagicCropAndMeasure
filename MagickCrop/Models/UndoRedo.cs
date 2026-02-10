@@ -1,14 +1,18 @@
 ﻿using ImageMagick;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace MagickCrop;
 
-public class UndoRedo
+public class UndoRedo : INotifyPropertyChanged
 {
     private readonly Stack<UndoRedoItem> _undoStack = new();
     private readonly Stack<UndoRedoItem> _redoStack = new();
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     public bool CanUndo => _undoStack.Count > 0;
     public bool CanRedo => _redoStack.Count > 0;
@@ -19,6 +23,8 @@ public class UndoRedo
     {
         _undoStack.Push(item);
         _redoStack.Clear();
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
     }
 
     public string Undo()
@@ -29,6 +35,8 @@ public class UndoRedo
         UndoRedoItem item = _undoStack.Pop();
         string newPath = item.Undo();
         _redoStack.Push(item);
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
         return newPath;
     }
 
@@ -40,6 +48,8 @@ public class UndoRedo
         UndoRedoItem item = _redoStack.Pop();
         string newPath = item.Redo();
         _undoStack.Push(item);
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
         return newPath;
     }
 
@@ -47,6 +57,13 @@ public class UndoRedo
     {
         _undoStack.Clear();
         _redoStack.Clear();
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
+    }
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
 

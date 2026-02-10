@@ -114,6 +114,12 @@
                         IsEnabled="False"
                         IsHitTestVisible="False"
                         StrokeCollected="DrawingCanvas_StrokeCollected" />
+                    <InkCanvas
+                        x:Name="EraseMaskCanvas"
+                        Background="Transparent"
+                        IsEnabled="False"
+                        IsHitTestVisible="False"
+                        Visibility="Collapsed" />
                     <ResizeGrip
                         x:Name="ImageResizeGrip"
                         Grid.Row="1"
@@ -355,7 +361,7 @@
                                 x:Name="UndoMenuItem"
                                 Click="UndoMenuItem_Click"
                                 Header="Undo"
-                                IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type wpfui:FluentWindow}}, Path=undoRedo.CanUndo, Mode=OneWay}"
+                                IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type wpfui:FluentWindow}}, Path=UndoRedo.CanUndo, Mode=OneWay}"
                                 ToolTip="Undo last action">
                                 <MenuItem.Icon>
                                     <wpfui:SymbolIcon Symbol="ArrowUndo24" />
@@ -365,7 +371,7 @@
                                 x:Name="RedoMenuItem"
                                 Click="RedoMenuItem_Click"
                                 Header=""
-                                IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type wpfui:FluentWindow}}, Path=undoRedo.CanRedo, Mode=OneWay}"
+                                IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type wpfui:FluentWindow}}, Path=UndoRedo.CanRedo, Mode=OneWay}"
                                 ToolTip="Redo last undone action">
                                 <MenuItem.Icon>
                                     <wpfui:SymbolIcon Symbol="ArrowRedo24" />
@@ -634,7 +640,10 @@
                                             <wpfui:SymbolIcon Symbol="Whiteboard24" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-                                    <GroupBox Padding="0,12" Header="Pickers">
+                                    <GroupBox
+                                        Margin="8,0"
+                                        Padding="0,6"
+                                        Header="Pickers">
                                         <StackPanel HorizontalAlignment="Center">
                                             <ToggleButton
                                                 x:Name="WhitePointPickerToggle"
@@ -703,6 +712,17 @@
                                             <wpfui:SymbolIcon Symbol="Triangle24" />
                                         </MenuItem.Icon>
                                     </MenuItem>
+                                    <Separator x:Name="ObjectEraseSeparator" Visibility="Collapsed" />
+                                    <MenuItem
+                                        Name="ObjectEraseMenuItem"
+                                        Click="ObjectEraseMenuItem_Click"
+                                        Header="Object Erase (AI)"
+                                        ToolTip="Use AI to erase objects from the image by painting over them"
+                                        Visibility="Collapsed">
+                                        <MenuItem.Icon>
+                                            <wpfui:SymbolIcon Symbol="Eraser24" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
                                 </StackPanel>
                             </TabItem>
                             <TabItem x:Name="MeasureTabItem">
@@ -710,7 +730,10 @@
                                     <wpfui:SymbolIcon Symbol="Ruler24" ToolTip="Measure distance and angle" />
                                 </TabItem.Header>
                                 <StackPanel Orientation="Vertical">
-                                    <GroupBox Padding="0,12" Header="Measurement Tools">
+                                    <GroupBox
+                                        Margin="8,0"
+                                        Padding="0,6"
+                                        Header="Measurement Tools">
                                         <StackPanel x:Name="MeasureToolsPanel" HorizontalAlignment="Center">
                                             <ToggleButton
                                                 x:Name="MeasureDistanceToggle"
@@ -1216,6 +1239,68 @@
                             </wpfui:Button.Icon>
                         </wpfui:Button>
                     </StackPanel>
+                </StackPanel>
+                <StackPanel
+                    x:Name="ObjectEraseButtonPanel"
+                    Grid.Row="1"
+                    HorizontalAlignment="Center"
+                    Orientation="Vertical"
+                    Visibility="Collapsed">
+                    <TextBlock
+                        Margin="0,4"
+                        FontWeight="SemiBold"
+                        Text="Object Erase (AI)" />
+                    <TextBlock
+                        Width="170"
+                        Margin="0,0,0,8"
+                        FontSize="11"
+                        Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Paint over the objects you want to remove, then click Apply."
+                        TextWrapping="Wrap" />
+                    <Label Margin="0,4,0,0" Content="Brush Size:" />
+                    <Slider
+                        x:Name="EraseBrushSizeSlider"
+                        Width="150"
+                        Maximum="100"
+                        Minimum="5"
+                        ToolTip="Set brush size for painting the erase mask"
+                        ValueChanged="EraseBrushSizeSlider_ValueChanged"
+                        Value="30" />
+                    <wpfui:Button
+                        x:Name="ClearEraseMaskButton"
+                        Width="180"
+                        Margin="0,6"
+                        Click="ClearEraseMaskButton_Click"
+                        Content="Clear Mask"
+                        ToolTip="Clear the painted mask">
+                        <wpfui:Button.Icon>
+                            <wpfui:SymbolIcon Symbol="Delete24" />
+                        </wpfui:Button.Icon>
+                    </wpfui:Button>
+                    <wpfui:Button
+                        x:Name="ApplyObjectEraseButton"
+                        Width="180"
+                        Margin="0,6"
+                        Appearance="Primary"
+                        Click="ApplyObjectEraseButton_Click"
+                        Content="Apply Erase"
+                        Foreground="White"
+                        ToolTip="Erase the painted objects using AI">
+                        <wpfui:Button.Icon>
+                            <wpfui:SymbolIcon Symbol="Eraser24" />
+                        </wpfui:Button.Icon>
+                    </wpfui:Button>
+                    <wpfui:Button
+                        x:Name="CancelObjectEraseButton"
+                        Width="180"
+                        Appearance="Danger"
+                        Click="CancelObjectEraseButton_Click"
+                        Content="Cancel"
+                        ToolTip="Cancel object erase">
+                        <wpfui:Button.Icon>
+                            <wpfui:SymbolIcon Symbol="Dismiss24" />
+                        </wpfui:Button.Icon>
+                    </wpfui:Button>
                 </StackPanel>
                 <StackPanel
                     x:Name="ResizeButtonsPanel"
