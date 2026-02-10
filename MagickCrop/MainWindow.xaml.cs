@@ -631,7 +631,14 @@ public partial class MainWindow : FluentWindow
         // Ratio defined by Height / Width
         double aspectRatio = selectedAspectRatio.RatioValue;
 
-        if (selectedAspectRatio.AspectRatioEnum == AspectRatio.Custom)
+        if (selectedAspectRatio.AspectRatioEnum == AspectRatio.Original)
+        {
+            if (originalImageSize.Width > 0 && originalImageSize.Height > 0)
+                aspectRatio = originalImageSize.Height / originalImageSize.Width;
+            else
+                return null;
+        }
+        else if (selectedAspectRatio.AspectRatioEnum == AspectRatio.Custom)
         {
             if (CustomHeight.Value is double height
                 && CustomWidth.Value is double width
@@ -1257,6 +1264,10 @@ public partial class MainWindow : FluentWindow
         // Update original size after image is loaded (will be the default ImageWidthConst height calculated from aspect ratio)
         originalImageSize = new Size(bitmapImage.Width, bitmapImage.Height);
 
+        // Update the aspect ratio preview if "Original" is currently selected
+        if (selectedAspectRatio?.AspectRatioEnum == AspectRatio.Original)
+            UpdateOriginalAspectRatioPreview();
+
         BottomBorder.Visibility = Visibility.Visible;
         SetUiForCompletedTask();
 
@@ -1676,10 +1687,18 @@ public partial class MainWindow : FluentWindow
         if (item.AspectRatioEnum == AspectRatio.Custom)
         {
             CustomButtonGrid.Visibility = Visibility.Visible;
+            UpdateCustomAspectRatioPreview();
             return;
         }
 
         CustomButtonGrid.Visibility = Visibility.Collapsed;
+
+        if (item.AspectRatioEnum == AspectRatio.Original)
+        {
+            UpdateOriginalAspectRatioPreview();
+            return;
+        }
+
         AspectRatioTransformPreview.RatioItem = item;
     }
 
@@ -1695,6 +1714,43 @@ public partial class MainWindow : FluentWindow
 
         double trimmedValue = Math.Round(aspectRatio, 2);
         AspectRatioTextBox.Text = $"Ratio: {trimmedValue}";
+
+        UpdateCustomAspectRatioPreview();
+    }
+
+    /// <summary>
+    /// Updates the aspect ratio preview shape to match the currently loaded image's original dimensions.
+    /// Does not mutate items in the ComboBox to avoid breaking selection tracking.
+    /// </summary>
+    private void UpdateOriginalAspectRatioPreview()
+    {
+        if (originalImageSize.Width <= 0 || originalImageSize.Height <= 0)
+            return;
+
+        double ratio = originalImageSize.Height / originalImageSize.Width;
+        AspectRatioItem previewItem = new()
+        {
+            RatioValue = ratio,
+            AspectRatioEnum = AspectRatio.Original
+        };
+        AspectRatioTransformPreview.RatioItem = previewItem;
+    }
+
+    /// <summary>
+    /// Updates the aspect ratio preview shape to match the current custom width/height values.
+    /// </summary>
+    private void UpdateCustomAspectRatioPreview()
+    {
+        if (CustomHeight.Value is double h && CustomWidth.Value is double w && h != 0 && w != 0)
+        {
+            double ratio = h / w;
+            AspectRatioItem customPreview = new()
+            {
+                RatioValue = ratio,
+                AspectRatioEnum = AspectRatio.Custom
+            };
+            AspectRatioTransformPreview.RatioItem = customPreview;
+        }
     }
 
     private void FluentWindow_PreviewDragOver(object sender, DragEventArgs e)
