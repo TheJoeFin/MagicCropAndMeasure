@@ -3709,6 +3709,136 @@ public partial class MainWindow : FluentWindow
         }
     }
 
+    private async void SetImageScaleButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (MainImage.Source is not BitmapSource bitmap)
+            return;
+
+        int sourcePixelWidth = bitmap.PixelWidth;
+        int sourcePixelHeight = bitmap.PixelHeight;
+
+        double displayWidth = MainImage.ActualWidth;
+        double displayHeight = MainImage.ActualHeight;
+
+        if (displayWidth <= 0 || displayHeight <= 0)
+            return;
+
+        double imageAspectRatio = displayWidth / displayHeight;
+
+        bool isUpdatingFromScale = false;
+
+        Wpf.Ui.Controls.NumberBox widthInput = new()
+        {
+            Value = null,
+            Minimum = 0.0001,
+            SmallChange = 0.1,
+            Width = 180,
+            PlaceholderText = "Width",
+        };
+
+        Wpf.Ui.Controls.NumberBox heightInput = new()
+        {
+            Value = null,
+            Minimum = 0.0001,
+            SmallChange = 0.1,
+            Width = 180,
+            PlaceholderText = "Height",
+        };
+
+        Wpf.Ui.Controls.TextBox unitsInput = new()
+        {
+            Text = MeasurementUnits.Text,
+            PlaceholderText = "e.g. in, cm, mm",
+            Width = 180,
+        };
+
+        widthInput.ValueChanged += (s, args) =>
+        {
+            if (isUpdatingFromScale)
+                return;
+
+            double newWidth = widthInput.Value ?? 0;
+            if (newWidth <= 0) return;
+
+            isUpdatingFromScale = true;
+            heightInput.Value = Math.Round(newWidth / imageAspectRatio, 4);
+            isUpdatingFromScale = false;
+        };
+
+        heightInput.ValueChanged += (s, args) =>
+        {
+            if (isUpdatingFromScale)
+                return;
+
+            double newHeight = heightInput.Value ?? 0;
+            if (newHeight <= 0) return;
+
+            isUpdatingFromScale = true;
+            widthInput.Value = Math.Round(newHeight * imageAspectRatio, 4);
+            isUpdatingFromScale = false;
+        };
+
+        StackPanel content = new()
+        {
+            Orientation = Orientation.Vertical,
+            Children =
+            {
+                new WpfTextBlock
+                {
+                    Text = $"Source: {sourcePixelWidth} × {sourcePixelHeight} px",
+                    Margin = new Thickness(0, 0, 0, 4),
+                    FontWeight = FontWeights.SemiBold,
+                },
+                new WpfTextBlock
+                {
+                    Text = $"Display: {displayWidth:F0} × {displayHeight:F0} px",
+                    Margin = new Thickness(0, 0, 0, 12),
+                    Foreground = System.Windows.Media.Brushes.Gray,
+                },
+                new WpfTextBlock { Text = "Real-world width:", Margin = new Thickness(0, 0, 0, 4) },
+                widthInput,
+                new WpfTextBlock { Text = "Real-world height:", Margin = new Thickness(0, 8, 0, 4) },
+                heightInput,
+                new WpfTextBlock { Text = "Units:", Margin = new Thickness(0, 8, 0, 4) },
+                unitsInput,
+            },
+        };
+
+        ContentDialog dialog = new()
+        {
+            Title = "Set Image Scale",
+            Content = content,
+            PrimaryButtonText = "Apply",
+            CloseButtonText = "Cancel",
+            DialogHost = Presenter,
+        };
+
+        dialog.Closing += (s, args) =>
+        {
+            if (args.Result != ContentDialogResult.Primary)
+                return;
+
+            double realWidth = widthInput.Value ?? 0;
+            double realHeight = heightInput.Value ?? 0;
+
+            if (realWidth <= 0 && realHeight <= 0)
+                return;
+
+            // Calculate real-world units per display pixel using the actual control size
+            double pixelsPerUnit = realWidth > 0
+                ? realWidth / displayWidth
+                : realHeight / displayHeight;
+
+            ScaleInput.Value = pixelsPerUnit;
+
+            string units = unitsInput.Text?.Trim() ?? string.Empty;
+            if (!string.IsNullOrEmpty(units))
+                MeasurementUnits.Text = units;
+        };
+
+        await dialog.ShowAsync();
+    }
+
     private void ScaleInput_ValueChanged(object sender, RoutedEventArgs e)
     {
         double newScale = ScaleInput.Value ?? 1.0;
