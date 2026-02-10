@@ -5,6 +5,8 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:wpfui="http://schemas.lepo.co/wpfui/2022/xaml"
+    MaxWidth="180"
+    HorizontalAlignment="Center"
     d:DesignHeight="200"
     d:DesignWidth="400"
     mc:Ignorable="d">
@@ -17,36 +19,41 @@
 
         <TextBlock
             Grid.Row="0"
-            Margin="8"
             FontSize="14"
             FontWeight="SemiBold"
-            Text="Select a detected quadrilateral:" />
+            Text="Select a quadrilateral:" />
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <ItemsControl x:Name="QuadrilateralList" Margin="8,0">
+            <ItemsControl x:Name="QuadrilateralList">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border
-                            Margin="0,4"
-                            Padding="12,8"
-                            Background="{DynamicResource CardBackground}"
-                            BorderBrush="{DynamicResource CardBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="4"
-                            Cursor="Hand"
-                            MouseDown="QuadrilateralItem_MouseDown"
+                        <Button
+                            Click="QuadrilateralItem_Click"
                             MouseEnter="QuadrilateralItem_MouseEnter"
                             MouseLeave="QuadrilateralItem_MouseLeave"
                             ToolTip="Click to use this quadrilateral">
-                            <Border.Style>
-                                <Style TargetType="Border">
-                                    <Style.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="Background" Value="{DynamicResource CardBackgroundSecondary}" />
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Border.Style>
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border
+                                        Margin="0,4"
+                                        Padding="12,8"
+                                        Background="{DynamicResource CardBackground}"
+                                        BorderBrush="{DynamicResource CardBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="{DynamicResource CardBackgroundSecondary}" />
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <ContentPresenter />
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
                             <StackPanel Orientation="Horizontal">
                                 <Canvas
                                     Width="60"
@@ -68,7 +75,7 @@
                                         Text="{Binding Description}" />
                                 </StackPanel>
                             </StackPanel>
-                        </Border>
+                        </Button>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -76,7 +83,7 @@
 
         <StackPanel
             Grid.Row="2"
-            Margin="8"
+            Margin="0,8"
             HorizontalAlignment="Right"
             Orientation="Horizontal">
             <wpfui:Button
@@ -84,11 +91,12 @@
                 Appearance="Secondary"
                 Click="ManualButton_Click"
                 Content="Set Manually"
-                ToolTip="Position corners manually" />
+                ToolTip="Position corners manually"
+                Visibility="Collapsed" />
             <wpfui:Button
                 Appearance="Secondary"
                 Click="CancelButton_Click"
-                Content="Cancel" />
+                Content="Cancel Detection" />
         </StackPanel>
     </Grid>
 </UserControl>

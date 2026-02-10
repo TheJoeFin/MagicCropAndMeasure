@@ -21,7 +21,7 @@ public partial class QuadrilateralSelector : UserControl
         public QuadrilateralViewModel(QuadrilateralDetector.DetectedQuadrilateral quad, int index)
         {
             Quadrilateral = quad ?? throw new ArgumentNullException(nameof(quad));
-            Name = $"Quadrilateral {index + 1}";
+            Name = $"Quad: {index + 1}";
             Description = $"Confidence: {quad.Confidence:P0}";
 
             // Scale points for preview (60x60 canvas)
@@ -72,22 +72,22 @@ public partial class QuadrilateralSelector : UserControl
 
     public void SetQuadrilaterals(List<QuadrilateralDetector.DetectedQuadrilateral> quadrilaterals)
     {
-        List<QuadrilateralViewModel> viewModels = quadrilaterals.Select((q, i) => new QuadrilateralViewModel(q, i)).ToList();
+        List<QuadrilateralViewModel> viewModels = [.. quadrilaterals.Select((q, i) => new QuadrilateralViewModel(q, i))];
         QuadrilateralList.ItemsSource = viewModels;
     }
 
-    private void QuadrilateralItem_MouseDown(object sender, MouseButtonEventArgs e)
+    private void QuadrilateralItem_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Border border && border.DataContext is QuadrilateralViewModel vm)
+        e.Handled = true;
+        if (sender is Button button && button.DataContext is QuadrilateralViewModel vm)
         {
             QuadrilateralSelected?.Invoke(this, vm.Quadrilateral);
-            e.Handled = true;
         }
     }
 
     private void QuadrilateralItem_MouseEnter(object sender, MouseEventArgs e)
     {
-        if (sender is Border border && border.DataContext is QuadrilateralViewModel vm)
+        if (sender is Button button && button.DataContext is QuadrilateralViewModel vm)
         {
             QuadrilateralHoverEnter?.Invoke(this, vm.Quadrilateral);
         }
