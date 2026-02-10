@@ -3773,8 +3773,45 @@ public partial class MainWindow : FluentWindow
         strokeMeasurements = updatedMeasurements;
     }
 
+    private void HideMeasurementsToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        SetMeasurementsVisibility(Visibility.Collapsed);
+    }
+
+    private void HideMeasurementsToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        SetMeasurementsVisibility(Visibility.Visible);
+    }
+
+    private void SetMeasurementsVisibility(Visibility visibility)
+    {
+        foreach (DistanceMeasurementControl control in measurementTools)
+            control.Visibility = visibility;
+
+        foreach (AngleMeasurementControl control in angleMeasurementTools)
+            control.Visibility = visibility;
+
+        foreach (RectangleMeasurementControl control in rectangleMeasurementTools)
+            control.Visibility = visibility;
+
+        foreach (PolygonMeasurementControl control in polygonMeasurementTools)
+            control.Visibility = visibility;
+
+        foreach (CircleMeasurementControl control in circleMeasurementTools)
+            control.Visibility = visibility;
+
+        foreach (VerticalLineControl control in verticalLineControls)
+            control.Visibility = visibility;
+
+        foreach (HorizontalLineControl control in horizontalLineControls)
+            control.Visibility = visibility;
+
+        DrawingCanvas.Visibility = visibility;
+    }
+
     private void CloseMeasurementButton_Click(object sender, RoutedEventArgs e)
     {
+        HideMeasurementsToggle.IsChecked = false;
         RemoveMeasurementControls();
         ClearAllStrokesAndLengths();
         isDrawingMode = false;

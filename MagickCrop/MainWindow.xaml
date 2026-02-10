@@ -870,6 +870,22 @@
                                                 Value="2" />
                                         </StackPanel>
 
+                                        <ToggleButton
+                                            x:Name="HideMeasurementsToggle"
+                                            Width="150"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Center"
+                                            Checked="HideMeasurementsToggle_Checked"
+                                            ToolTip="Hide all measurements on the image"
+                                            Unchecked="HideMeasurementsToggle_Unchecked">
+                                            <ToggleButton.Content>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="EyeOff24" />
+                                                    <TextBlock VerticalAlignment="Center" Text="Hide All" />
+                                                </StackPanel>
+                                            </ToggleButton.Content>
+                                        </ToggleButton>
+
                                         <wpfui:HyperlinkButton
                                             x:Name="CloseMeasurementButton"
                                             HorizontalAlignment="Center"
