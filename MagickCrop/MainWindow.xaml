@@ -13,7 +13,6 @@
     Width="1000"
     Height="800"
     AllowDrop="True"
-    DataContext="{Binding RelativeSource={RelativeSource Self}}"
     MouseMove="TopLeft_MouseMove"
     PreviewDragOver="FluentWindow_PreviewDragOver"
     PreviewDrop="FluentWindow_PreviewDrop"
@@ -360,9 +359,8 @@
                             Orientation="Horizontal">
                             <MenuItem
                                 x:Name="UndoMenuItem"
-                                Click="UndoMenuItem_Click"
+                                Command="{Binding UndoCommand}"
                                 Header="Undo"
-                                IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type wpfui:FluentWindow}}, Path=UndoRedo.CanUndo, Mode=OneWay}"
                                 ToolTip="Undo last action">
                                 <MenuItem.Icon>
                                     <wpfui:SymbolIcon Symbol="ArrowUndo24" />
@@ -370,9 +368,8 @@
                             </MenuItem>
                             <MenuItem
                                 x:Name="RedoMenuItem"
-                                Click="RedoMenuItem_Click"
+                                Command="{Binding RedoCommand}"
                                 Header=""
-                                IsEnabled="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type wpfui:FluentWindow}}, Path=UndoRedo.CanRedo, Mode=OneWay}"
                                 ToolTip="Redo last undone action">
                                 <MenuItem.Icon>
                                     <wpfui:SymbolIcon Symbol="ArrowRedo24" />
@@ -380,7 +377,7 @@
                             </MenuItem>
                             <MenuItem
                                 x:Name="InfoMenuItem"
-                                Click="InfoMenuItem_Click"
+                                Command="{Binding ShowAboutCommand}"
                                 Header=""
                                 ToolTip="About Magick Crop &amp; Measure">
                                 <MenuItem.Icon>
@@ -397,7 +394,7 @@
                                 <StackPanel Orientation="Vertical">
                                     <MenuItem
                                         Name="Rotate90CwMenuItem"
-                                        Click="Rotate90CwMenuItem_Click"
+                                        Command="{Binding Rotate90CwCommand}"
                                         Header="Rotate 90° CW"
                                         ToolTip="Rotate 90 degrees clockwise">
                                         <MenuItem.Icon>
@@ -406,7 +403,7 @@
                                     </MenuItem>
                                     <MenuItem
                                         Name="Rotate90CcwMenuItem"
-                                        Click="Rotate90CcwMenuItem_Click"
+                                        Command="{Binding Rotate90CcwCommand}"
                                         Header="Rotate 90° CCW"
                                         ToolTip="Rotate 90 degrees counter-clockwise">
                                         <MenuItem.Icon>
@@ -503,7 +500,7 @@
                                     </StackPanel>
                                     <MenuItem
                                         Name="FlipHozMenuItem"
-                                        Click="FlipHozMenuItem_Click"
+                                        Command="{Binding FlipHorizontalCommand}"
                                         Header="Flip Horizontal"
                                         ToolTip="Flip image horizontally">
                                         <MenuItem.Icon>
@@ -512,7 +509,7 @@
                                     </MenuItem>
                                     <MenuItem
                                         Name="FlipVertMenuItem"
-                                        Click="FlipVertMenuItem_Click"
+                                        Command="{Binding FlipVerticalCommand}"
                                         Header="Flip Vertical"
                                         ToolTip="Flip image vertically">
                                         <MenuItem.Icon>
@@ -588,7 +585,7 @@
                                         Unchecked="LocalAdjustmentCheckBox_Unchecked" />
                                     <MenuItem
                                         Name="AutoContrastMenuItem"
-                                        Click="AutoContrastMenuItem_Click"
+                                        Command="{Binding ApplyAutoContrastCommand}"
                                         Header="10% Auto Contrast"
                                         ToolTip="Increase contrast automatically">
                                         <MenuItem.Icon>
@@ -597,7 +594,7 @@
                                     </MenuItem>
                                     <MenuItem
                                         Name="BlackPointMenuItem"
-                                        Click="BlackPointMenuItem_Click"
+                                        Command="{Binding ApplyBlackPointCommand}"
                                         Header="10% Black Threshold"
                                         ToolTip="Adjust black point threshold">
                                         <MenuItem.Icon>
@@ -606,7 +603,7 @@
                                     </MenuItem>
                                     <MenuItem
                                         Name="WhitePointMenuItem"
-                                        Click="WhitePointMenuItem_Click"
+                                        Command="{Binding ApplyWhitePointCommand}"
                                         Header="10% White Threshold"
                                         ToolTip="Adjust white point threshold">
                                         <MenuItem.Icon>
@@ -616,7 +613,7 @@
                                     <Separator />
                                     <MenuItem
                                         Name="GrayscaleMenuItem"
-                                        Click="GrayscaleMenuItem_Click"
+                                        Command="{Binding ApplyGrayscaleCommand}"
                                         Header="Grayscale"
                                         ToolTip="Convert image to grayscale">
                                         <MenuItem.Icon>
@@ -625,7 +622,7 @@
                                     </MenuItem>
                                     <MenuItem
                                         Name="InvertMenuItem"
-                                        Click="InvertMenuItem_Click"
+                                        Command="{Binding ApplyInvertCommand}"
                                         Header="Invert Colors"
                                         ToolTip="Invert image colors">
                                         <MenuItem.Icon>
@@ -634,7 +631,7 @@
                                     </MenuItem>
                                     <MenuItem
                                         Name="WhiteBalanceMenuItem"
-                                        Click="WhiteBalanceMenuItem_Click"
+                                        Command="{Binding ApplyWhiteBalanceCommand}"
                                         Header="Auto White Balance"
                                         ToolTip="Balance colors automatically">
                                         <MenuItem.Icon>
@@ -678,7 +675,7 @@
                                     </GroupBox>
                                     <MenuItem
                                         Name="AutoLevelsMenuItem"
-                                        Click="AutoLevelsMenuItem_Click"
+                                        Command="{Binding ApplyAutoLevelsCommand}"
                                         Header="Auto Level"
                                         ToolTip="Auto-adjust levels">
                                         <MenuItem.Icon>
@@ -687,7 +684,7 @@
                                     </MenuItem>
                                     <MenuItem
                                         Name="AutoGammaMenuItem"
-                                        Click="AutoGammaMenuItem_Click"
+                                        Command="{Binding ApplyAutoGammaCommand}"
                                         Header="Auto Gamma"
                                         ToolTip="Auto-adjust gamma">
                                         <MenuItem.Icon>
@@ -697,7 +694,7 @@
                                     <Separator />
                                     <MenuItem
                                         Name="BlurMenuItem"
-                                        Click="BlurMenuItem_Click"
+                                        Command="{Binding ApplyBlurCommand}"
                                         Header="Gaussian Blur"
                                         ToolTip="Apply Gaussian blur">
                                         <MenuItem.Icon>
@@ -706,7 +703,7 @@
                                     </MenuItem>
                                     <MenuItem
                                         Name="FindEdgesMenuItem"
-                                        Click="FindEdgesMenuItem_Click"
+                                        Command="{Binding ApplyFindEdgesCommand}"
                                         Header="Find Edges"
                                         ToolTip="Detect edges in image">
                                         <MenuItem.Icon>
@@ -1510,7 +1507,7 @@
                             x:Name="CopyToClipboardButton"
                             Width="36"
                             Margin="8,8,0,8"
-                            Click="CopyToClipboardButton_Click"
+                            Command="{Binding CopyToClipboardCommand}"
                             ToolTip="Copy the current image to the clipboard (Ctrl+C)">
                             <wpfui:Button.Icon>
                                 <wpfui:SymbolIcon Symbol="Copy24" />
@@ -1522,7 +1519,7 @@
                             Width="36"
                             Margin="8,8,0,8"
                             HorizontalAlignment="Center"
-                            Click="ShareButton_Click"
+                            Command="{Binding ShareCommand}"
                             ToolTip="Share the current image using the Windows Share sheet">
                             <wpfui:Button.Icon>
                                 <wpfui:SymbolIcon Symbol="Share24" />
@@ -1533,7 +1530,7 @@
                         x:Name="OpenFolderButton"
                         Width="180"
                         HorizontalAlignment="Center"
-                        Click="OpenFolderButton_Click"
+                        Command="{Binding OpenFolderCommand}"
                         Content="Open Folder"
                         IsEnabled="False"
                         ToolTip="Open Folder Where File Was Saved">

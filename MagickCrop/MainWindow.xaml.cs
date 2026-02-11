@@ -1,6 +1,7 @@
 using ImageMagick;
 using MagickCrop.Controls;
 using MagickCrop.Helpers;
+using MagickCrop.ViewModels;
 using MagickCrop.Models;
 using MagickCrop.Models.MeasurementControls;
 using MagickCrop.Services;
@@ -27,12 +28,86 @@ using WpfTextBlock = System.Windows.Controls.TextBlock;
 
 namespace MagickCrop;
 
-public partial class MainWindow : FluentWindow
+public partial class MainWindow : FluentWindow, IMainWindowView
 {
+    public MainWindowViewModel ViewModel { get; private set; } = null!;
+
+    // Proxy properties - delegate to ViewModel so existing code-behind references keep working
+    private string? imagePath
+    {
+        get => ViewModel.ImagePath;
+        set => ViewModel.ImagePath = value;
+    }
+
+    private string? originalFilePath
+    {
+        get => ViewModel.OriginalFilePath;
+        set => ViewModel.OriginalFilePath = value;
+    }
+
+    private string? savedPath
+    {
+        get => ViewModel.SavedPath;
+        set => ViewModel.SavedPath = value;
+    }
+
+    private string openedFileName
+    {
+        get => ViewModel.OpenedFileName;
+        set => ViewModel.OpenedFileName = value;
+    }
+
+    private MagickCropMeasurementPackage? openedPackage
+    {
+        get => ViewModel.OpenedPackage;
+        set => ViewModel.OpenedPackage = value;
+    }
+
+    private string? currentProjectId
+    {
+        get => ViewModel.CurrentProjectId;
+        set => ViewModel.CurrentProjectId = value;
+    }
+
+    private Size originalImageSize
+    {
+        get => ViewModel.OriginalImageSize;
+        set => ViewModel.OriginalImageSize = value;
+    }
+
+    private Size actualImageSize
+    {
+        get => ViewModel.ActualImageSize;
+        set => ViewModel.ActualImageSize = value;
+    }
+
+    // ── IMainWindowView implementation ──
+    BitmapSource? IMainWindowView.ImageSource
+    {
+        get => MainImage.Source as BitmapSource;
+        set => MainImage.Source = value;
+    }
+
+    System.Windows.Controls.Image IMainWindowView.MainImageControl => MainImage;
+    double IMainWindowView.ImageActualWidth => MainImage.ActualWidth;
+    double IMainWindowView.ImageActualHeight => MainImage.ActualHeight;
+
+    bool IMainWindowView.IsLocalAdjustment => LocalAdjustmentCheckBox.IsChecked == true;
+
+    MagickGeometry IMainWindowView.GetLocalAdjustmentRegion() => LocalAdjustmentRectangle.CropShape;
+
+    void IMainWindowView.SetBusy(bool busy)
+    {
+        if (busy)
+            SetUiForLongTask();
+        else
+            SetUiForCompletedTask();
+    }
+
+    Window IMainWindowView.OwnerWindow => this;
+
     private Point clickedPoint = new();
     private Size oldGridSize = new();
-    private Size originalImageSize = new();
-    private Size actualImageSize = new();
     private FrameworkElement? clickedElement;
 
     // Size input properties
@@ -43,9 +118,6 @@ public partial class MainWindow : FluentWindow
     private double aspectRatio = 1.0;
     private int pointDraggingIndex = -1;
     private Polygon? lines;
-    private string? imagePath;
-    private string? originalFilePath;
-    private string? savedPath;
     private readonly int ImageWidthConst = 700;
 
     // Quadrilateral detection parameters
@@ -54,11 +126,9 @@ public partial class MainWindow : FluentWindow
 
     private DraggingMode draggingMode = DraggingMode.None;
 
-    private string openedFileName = string.Empty;
-    private MagickCropMeasurementPackage? openedPackage;
     private readonly List<UIElement> _polygonElements;
 
-    public UndoRedo UndoRedo { get; } = new();
+    public UndoRedo UndoRedo => ViewModel.UndoRedo;
     private AspectRatioItem? selectedAspectRatio;
     private readonly ObservableCollection<DistanceMeasurementControl> measurementTools = [];
     private DistanceMeasurementControl? activeMeasureControl;
@@ -75,7 +145,6 @@ public partial class MainWindow : FluentWindow
     private readonly ObservableCollection<HorizontalLineControl> horizontalLineControls = [];
 
     private Services.RecentProjectsManager? recentProjectsManager;
-    private string? currentProjectId;
     private System.Timers.Timer? autoSaveTimer;
     private readonly int AutoSaveIntervalMs = (int)TimeSpan.FromSeconds(5).TotalMilliseconds;
 
@@ -155,6 +224,10 @@ public partial class MainWindow : FluentWindow
 
     public MainWindow()
     {
+        ViewModel = new MainWindowViewModel();
+        ViewModel.SetView(this);
+        DataContext = ViewModel;
+
         ThemeService themeService = new();
         themeService.SetTheme(ApplicationTheme.Dark);
 
@@ -976,25 +1049,6 @@ public partial class MainWindow : FluentWindow
         }
     }
 
-    private void CopyToClipboardButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (string.IsNullOrEmpty(imagePath) || MainImage.Source is not BitmapSource bitmapSource)
-            return;
-
-        try
-        {
-            ClipboardHelper.CopyImageToClipboard(bitmapSource);
-        }
-        catch (Exception ex)
-        {
-            System.Windows.MessageBox.Show(
-                ex.Message,
-                "Copy Error",
-                System.Windows.MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-    }
-
     private void SetUiForLongTask()
     {
         BottomPane.IsEnabled = false;
@@ -1027,72 +1081,70 @@ public partial class MainWindow : FluentWindow
     }
 
     /// <summary>
-    /// Applies an image adjustment either globally or to the local region defined by <see cref="LocalAdjustmentRectangle"/>.
+    /// Helper for code-behind methods that still need to apply image adjustments.
+    /// Delegates to the ViewModel's core adjustment logic via commands.
     /// </summary>
-    private async Task ApplyAdjustmentAsync(Action<MagickImage> adjustment)
+    private async Task ApplyAdjustmentViaViewModelAsync(Action<MagickImage> adjustment)
     {
         if (string.IsNullOrWhiteSpace(imagePath))
             return;
 
         SetUiForLongTask();
 
-        using MagickImage magickImage = new(imagePath);
-
-        if (LocalAdjustmentCheckBox.IsChecked == true)
+        try
         {
-            MagickGeometry region = LocalAdjustmentRectangle.CropShape;
+            using MagickImage magickImage = new(imagePath);
 
-            double displayWidth = MainImage.ActualWidth;
-            double displayHeight = MainImage.ActualHeight;
-            if (displayWidth == 0 || displayHeight == 0)
+            if (LocalAdjustmentCheckBox.IsChecked == true)
             {
-                SetUiForCompletedTask();
-                return;
+                MagickGeometry region = LocalAdjustmentRectangle.CropShape;
+
+                double displayWidth = MainImage.ActualWidth;
+                double displayHeight = MainImage.ActualHeight;
+                if (displayWidth == 0 || displayHeight == 0)
+                    return;
+
+                double factor = magickImage.Height / displayHeight;
+                region.ScaleAll(factor);
+
+                if (region.X < 0) region.X = 0;
+                if (region.Y < 0) region.Y = 0;
+                if (region.X + region.Width > magickImage.Width)
+                    region.Width = (uint)(magickImage.Width - region.X);
+                if (region.Y + region.Height > magickImage.Height)
+                    region.Height = (uint)(magickImage.Height - region.Y);
+
+                int regionX = region.X;
+                int regionY = region.Y;
+
+                await Task.Run(() =>
+                {
+                    using MagickImage cropped = (MagickImage)magickImage.Clone();
+                    cropped.Crop(region);
+                    cropped.Page = new MagickGeometry(0, 0, cropped.Width, cropped.Height);
+                    adjustment(cropped);
+                    magickImage.Composite(cropped, regionX, regionY, CompositeOperator.Over);
+                });
+            }
+            else
+            {
+                await Task.Run(() => adjustment(magickImage));
             }
 
-            double factor = magickImage.Height / displayHeight;
-            region.ScaleAll(factor);
+            string tempFileName = System.IO.Path.GetTempFileName();
+            await magickImage.WriteAsync(tempFileName);
 
-            // Clamp to image bounds
-            if (region.X < 0) region.X = 0;
-            if (region.Y < 0) region.Y = 0;
-            if (region.X + region.Width > magickImage.Width)
-                region.Width = (uint)(magickImage.Width - region.X);
-            if (region.Y + region.Height > magickImage.Height)
-                region.Height = (uint)(magickImage.Height - region.Y);
+            MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
+            UndoRedo.AddUndo(undoRedoItem);
 
-            int regionX = region.X;
-            int regionY = region.Y;
-
-            await Task.Run(() =>
-            {
-                using MagickImage cropped = (MagickImage)magickImage.Clone();
-                cropped.Crop(region);
-                cropped.Page = new MagickGeometry(0, 0, cropped.Width, cropped.Height);
-
-                adjustment(cropped);
-
-                magickImage.Composite(cropped, regionX, regionY, CompositeOperator.Over);
-            });
+            imagePath = tempFileName;
+            MainImage.Source = magickImage.ToBitmapSource();
+            actualImageSize = new Size(magickImage.Width, magickImage.Height);
         }
-        else
+        finally
         {
-            await Task.Run(() => adjustment(magickImage));
+            SetUiForCompletedTask();
         }
-
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
-
-        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        UndoRedo.AddUndo(undoRedoItem);
-
-        imagePath = tempFileName;
-
-        MainImage.Source = magickImage.ToBitmapSource();
-
-        actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-        SetUiForCompletedTask();
     }
 
     private async void OpenFileButton_Click(object sender, RoutedEventArgs e)
@@ -1323,16 +1375,6 @@ public partial class MainWindow : FluentWindow
 
         // Center and zoom to fit the image in the viewport
         CenterAndZoomToFit();
-    }
-
-    private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
-    {
-        string? folderPath = System.IO.Path.GetDirectoryName(savedPath);
-
-        if (folderPath is null || lines is null)
-            return;
-
-        Process.Start("explorer.exe", folderPath);
     }
 
     private static object? GetPrivatePropertyValue(object obj, string propName)
@@ -1918,16 +1960,6 @@ public partial class MainWindow : FluentWindow
         CenterAndZoomToFit();
     }
 
-    private async void AutoContrastMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        await ApplyAdjustmentAsync(img => img.SigmoidalContrast(10));
-    }
-
-    private async void WhiteBalanceMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        await ApplyAdjustmentAsync(img => img.WhiteBalance());
-    }
-
     private void WhitePointPickerToggle_Checked(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(imagePath))
@@ -2238,150 +2270,6 @@ public partial class MainWindow : FluentWindow
         {
             SetUiForCompletedTask();
         }
-    }
-
-    private async void BlackPointMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        await ApplyAdjustmentAsync(img => img.BlackThreshold(new Percentage(10)));
-    }
-
-    private async void WhitePointMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        await ApplyAdjustmentAsync(img => img.WhiteThreshold(new Percentage(90)));
-    }
-
-    private async void GrayscaleMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        await ApplyAdjustmentAsync(img => img.Grayscale());
-    }
-
-    private async void InvertMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        await ApplyAdjustmentAsync(img => img.Negate());
-    }
-
-    private async void AutoLevelsMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        await ApplyAdjustmentAsync(img => img.AutoLevel());
-    }
-
-    private async void AutoGammaMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        await ApplyAdjustmentAsync(img => img.AutoGamma());
-    }
-
-    private async void BlurMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        await ApplyAdjustmentAsync(img => img.Blur(20, 10));
-    }
-
-    private async void FindEdgesMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        await ApplyAdjustmentAsync(img => img.CannyEdge());
-    }
-
-    private async void Rotate90CwMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        SetUiForLongTask();
-
-        using MagickImage magickImage = new(imagePath);
-        await Task.Run(() => magickImage.Rotate(90));
-
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
-
-        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        UndoRedo.AddUndo(undoRedoItem);
-
-        imagePath = tempFileName;
-
-        MainImage.Source = magickImage.ToBitmapSource();
-
-        // Update actualImageSize to reflect current dimensions
-        actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-        SetUiForCompletedTask();
-    }
-
-    private async void Rotate90CcwMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        SetUiForLongTask();
-
-        using MagickImage magickImage = new(imagePath);
-        await Task.Run(() => magickImage.Rotate(-90));
-
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
-
-        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        UndoRedo.AddUndo(undoRedoItem);
-
-        imagePath = tempFileName;
-
-        MainImage.Source = magickImage.ToBitmapSource();
-
-        // Update actualImageSize to reflect current dimensions
-        actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-        SetUiForCompletedTask();
-    }
-
-    private async void FlipVertMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        SetUiForLongTask();
-
-        using MagickImage magickImage = new(imagePath);
-        await Task.Run(() => magickImage.Flip());
-
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
-
-        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        UndoRedo.AddUndo(undoRedoItem);
-
-        imagePath = tempFileName;
-
-        MainImage.Source = magickImage.ToBitmapSource();
-
-        // Update actualImageSize to reflect current dimensions
-        actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-        SetUiForCompletedTask();
-    }
-
-    private async void FlipHozMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(imagePath))
-            return;
-
-        SetUiForLongTask();
-
-        using MagickImage magickImage = new(imagePath);
-        await Task.Run(() => magickImage.Flop());
-
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
-
-        MagickImageUndoRedoItem undoRedoItem = new(MainImage, imagePath, tempFileName);
-        UndoRedo.AddUndo(undoRedoItem);
-
-        imagePath = tempFileName;
-
-        MainImage.Source = magickImage.ToBitmapSource();
-
-        // Update actualImageSize to reflect current dimensions
-        actualImageSize = new Size(magickImage.Width, magickImage.Height);
-
-        SetUiForCompletedTask();
     }
 
     private void StretchMenuItem_Click(object sender, RoutedEventArgs e)
@@ -3688,29 +3576,6 @@ public partial class MainWindow : FluentWindow
 
     #endregion Object Erase (AI)
 
-    private void UndoMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        string path = UndoRedo.Undo();
-        if (!string.IsNullOrWhiteSpace(path))
-            imagePath = path;
-    }
-
-    private void RedoMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        string path = UndoRedo.Redo();
-        if (!string.IsNullOrWhiteSpace(path))
-            imagePath = path;
-    }
-
-    private void InfoMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        AboutWindow aboutWindow = new()
-        {
-            Owner = this
-        };
-        aboutWindow.ShowDialog();
-    }
-
     private void MeasureDistanceMenuItem_Click(object sender, RoutedEventArgs e)
     {
         AddNewMeasurementToolToCanvas();
@@ -4616,29 +4481,6 @@ public partial class MainWindow : FluentWindow
         await OpenImagePath(filePath);
     }
 
-    private void ShareButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
-            return;
-
-        try
-        {
-            string title = string.IsNullOrEmpty(openedFileName)
-                ? "Shared Image"
-                : openedFileName;
-
-            ShareHelper.ShareImageFile(this, imagePath, title, openedFileName);
-        }
-        catch (Exception ex)
-        {
-            System.Windows.MessageBox.Show(
-                ex.Message,
-                "Share Error",
-                System.Windows.MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-    }
-
     private void SavePackageButton_Click(object sender, RoutedEventArgs e)
     {
         SaveMeasurementsPackageToFile();
@@ -5299,7 +5141,7 @@ public partial class MainWindow : FluentWindow
         {
             if (!string.IsNullOrEmpty(imagePath) && MainImage.Source is BitmapSource)
             {
-                CopyToClipboardButton_Click(sender, e);
+                ViewModel.CopyToClipboardCommand.Execute(null);
                 e.Handled = true;
                 return;
             }
@@ -5310,7 +5152,7 @@ public partial class MainWindow : FluentWindow
         {
             if (UndoRedo.CanUndo)
             {
-                UndoMenuItem_Click(sender, e);
+                ViewModel.UndoCommand.Execute(null);
                 e.Handled = true;
                 return;
             }
@@ -5321,7 +5163,7 @@ public partial class MainWindow : FluentWindow
         {
             if (UndoRedo.CanRedo)
             {
-                RedoMenuItem_Click(sender, e);
+                ViewModel.RedoCommand.Execute(null);
                 e.Handled = true;
                 return;
             }
