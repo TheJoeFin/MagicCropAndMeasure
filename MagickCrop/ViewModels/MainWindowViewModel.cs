@@ -64,6 +64,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(OpenedFileDisplayName))]
+    [NotifyPropertyChangedFor(nameof(HasOpenedFileName))]
     private string openedFileName = string.Empty;
 
     [ObservableProperty]
@@ -98,6 +99,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     public bool HasImage => !string.IsNullOrEmpty(ImagePath);
     public bool IsNotBusy => !IsBusy;
+    public bool HasOpenedFileName => !string.IsNullOrEmpty(OpenedFileName);
 
     public string OpenedFileDisplayName
     {
@@ -118,6 +120,19 @@ public partial class MainWindowViewModel : ObservableObject
     // ──────────────────────────────────────────────
 
     public UndoRedo UndoRedo { get; } = new();
+
+    // ──────────────────────────────────────────────
+    //  Static Data
+    // ──────────────────────────────────────────────
+
+    public static readonly List<FormatItem> Formats =
+    [
+        new FormatItem { Name = "JPEG Image", Format = MagickFormat.Jpg, Extension = ".jpg", SupportsQuality = true },
+        new FormatItem { Name = "PNG Image", Format = MagickFormat.Png, Extension = ".png", SupportsQuality = false },
+        new FormatItem { Name = "BMP Image", Format = MagickFormat.Bmp, Extension = ".bmp", SupportsQuality = false },
+        new FormatItem { Name = "TIFF Image", Format = MagickFormat.Tiff, Extension = ".tiff", SupportsQuality = false },
+        new FormatItem { Name = "WebP Image", Format = MagickFormat.WebP, Extension = ".webp", SupportsQuality = true },
+    ];
 
     // ──────────────────────────────────────────────
     //  Commands: Undo / Redo / Info
@@ -322,114 +337,14 @@ public partial class MainWindowViewModel : ObservableObject
     // ──────────────────────────────────────────────
 
     [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
-    private async Task Rotate90Cw()
-    {
-        if (_view is null || string.IsNullOrWhiteSpace(ImagePath))
-            return;
-
-        _view.SetBusy(true);
-        try
-        {
-            using MagickImage magickImage = new(ImagePath);
-            await Task.Run(() => magickImage.Rotate(90));
-
-            string tempFileName = Path.GetTempFileName();
-            await magickImage.WriteAsync(tempFileName);
-
-            MagickImageUndoRedoItem undoRedoItem = new(_view.MainImageControl, ImagePath, tempFileName);
-            UndoRedo.AddUndo(undoRedoItem);
-
-            ImagePath = tempFileName;
-            _view.ImageSource = magickImage.ToBitmapSource();
-            ActualImageSize = new Size(magickImage.Width, magickImage.Height);
-        }
-        finally
-        {
-            _view.SetBusy(false);
-        }
-    }
+    private Task Rotate90Cw() => ApplyAdjustmentAsync(img => img.Rotate(90));
 
     [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
-    private async Task Rotate90Ccw()
-    {
-        if (_view is null || string.IsNullOrWhiteSpace(ImagePath))
-            return;
-
-        _view.SetBusy(true);
-        try
-        {
-            using MagickImage magickImage = new(ImagePath);
-            await Task.Run(() => magickImage.Rotate(-90));
-
-            string tempFileName = Path.GetTempFileName();
-            await magickImage.WriteAsync(tempFileName);
-
-            MagickImageUndoRedoItem undoRedoItem = new(_view.MainImageControl, ImagePath, tempFileName);
-            UndoRedo.AddUndo(undoRedoItem);
-
-            ImagePath = tempFileName;
-            _view.ImageSource = magickImage.ToBitmapSource();
-            ActualImageSize = new Size(magickImage.Width, magickImage.Height);
-        }
-        finally
-        {
-            _view.SetBusy(false);
-        }
-    }
+    private Task Rotate90Ccw() => ApplyAdjustmentAsync(img => img.Rotate(-90));
 
     [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
-    private async Task FlipVertical()
-    {
-        if (_view is null || string.IsNullOrWhiteSpace(ImagePath))
-            return;
-
-        _view.SetBusy(true);
-        try
-        {
-            using MagickImage magickImage = new(ImagePath);
-            await Task.Run(() => magickImage.Flip());
-
-            string tempFileName = Path.GetTempFileName();
-            await magickImage.WriteAsync(tempFileName);
-
-            MagickImageUndoRedoItem undoRedoItem = new(_view.MainImageControl, ImagePath, tempFileName);
-            UndoRedo.AddUndo(undoRedoItem);
-
-            ImagePath = tempFileName;
-            _view.ImageSource = magickImage.ToBitmapSource();
-            ActualImageSize = new Size(magickImage.Width, magickImage.Height);
-        }
-        finally
-        {
-            _view.SetBusy(false);
-        }
-    }
+    private Task FlipVertical() => ApplyAdjustmentAsync(img => img.Flip());
 
     [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
-    private async Task FlipHorizontal()
-    {
-        if (_view is null || string.IsNullOrWhiteSpace(ImagePath))
-            return;
-
-        _view.SetBusy(true);
-        try
-        {
-            using MagickImage magickImage = new(ImagePath);
-            await Task.Run(() => magickImage.Flop());
-
-            string tempFileName = Path.GetTempFileName();
-            await magickImage.WriteAsync(tempFileName);
-
-            MagickImageUndoRedoItem undoRedoItem = new(_view.MainImageControl, ImagePath, tempFileName);
-            UndoRedo.AddUndo(undoRedoItem);
-
-            ImagePath = tempFileName;
-            _view.ImageSource = magickImage.ToBitmapSource();
-            ActualImageSize = new Size(magickImage.Width, magickImage.Height);
-        }
-        finally
-        {
-            _view.SetBusy(false);
-        }
-    }
+    private Task FlipHorizontal() => ApplyAdjustmentAsync(img => img.Flop());
 }

@@ -19,6 +19,7 @@
     PreviewKeyDown="FluentWindow_PreviewKeyDown"
     mc:Ignorable="d">
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
         <Style TargetType="Ellipse">
             <Setter Property="Height" Value="12" />
             <Setter Property="Width" Value="12" />
@@ -58,7 +59,7 @@
 
         <wpfui:TitleBar
             x:Name="wpfuiTitleBar"
-            Title="Magick Crop &amp; Measure by TheJoeFin"
+            Title="{Binding WindowTitle}"
             Grid.ColumnSpan="2"
             Height="32"
             Background="{wpfui:ThemeResource ApplicationBackgroundBrush}"
@@ -341,7 +342,7 @@
                                 x:Name="ReOpenFileText"
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
-                                Text="Image File Name"
+                                Text="{Binding OpenedFileDisplayName}"
                                 TextTrimming="CharacterEllipsis"
                                 ToolTip="Opened image file name" />
                             <wpfui:SymbolIcon
@@ -351,7 +352,7 @@
                                 MouseDown="CloseFileIcon_MouseDown"
                                 Symbol="Dismiss24"
                                 ToolTip="Click to close and show the welcome screen"
-                                Visibility="Collapsed" />
+                                Visibility="{Binding HasOpenedFileName, Converter={StaticResource BoolToVis}}" />
                         </Grid>
                         <StackPanel
                             x:Name="UndoRedoPanel"
@@ -1549,7 +1550,7 @@
             Foreground="#0066FF"
             IsIndeterminate="True"
             ToolTip="Processing..."
-            Visibility="Collapsed" />
+            Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
 
         <ContentPresenter
             x:Name="Presenter"
