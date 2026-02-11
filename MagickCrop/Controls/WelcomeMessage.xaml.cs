@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Windows.Devices.Enumeration;
 
 namespace MagickCrop.Controls;
 
@@ -40,6 +41,15 @@ public partial class WelcomeMessage : UserControl
     public static readonly DependencyProperty OverlayButtonEventProperty =
         DependencyProperty.Register(nameof(OverlayButtonEvent), typeof(RoutedEventHandler), typeof(WelcomeMessage), new PropertyMetadata(null));
 
+    public RoutedEventHandler CameraButtonEvent
+    {
+        get { return (RoutedEventHandler)GetValue(CameraButtonEventProperty); }
+        set { SetValue(CameraButtonEventProperty, value); }
+    }
+
+    public static readonly DependencyProperty CameraButtonEventProperty =
+        DependencyProperty.Register(nameof(CameraButtonEvent), typeof(RoutedEventHandler), typeof(WelcomeMessage), new PropertyMetadata(null));
+
     public WelcomeMessage()
     {
         InitializeComponent();
@@ -57,6 +67,7 @@ public partial class WelcomeMessage : UserControl
 
         // Use robust clipboard detection
         UpdatePasteButtonVisibility();
+        UpdateCameraButtonVisibility();
     }
 
     /// <summary>
@@ -178,6 +189,27 @@ public partial class WelcomeMessage : UserControl
     private void PasteButton_Click(object sender, RoutedEventArgs e)
     {
         PasteButtonEvent?.Invoke(sender, e);
+    }
+
+    private void CameraButton_Click(object sender, RoutedEventArgs e)
+    {
+        CameraButtonEvent?.Invoke(sender, e);
+    }
+
+    /// <summary>
+    /// Updates camera button visibility based on whether a camera device is available
+    /// </summary>
+    private async void UpdateCameraButtonVisibility()
+    {
+        try
+        {
+            DeviceInformationCollection devices = await DeviceInformation.FindAllAsync(DeviceClass.VideoCapture);
+            CameraButton.Visibility = devices.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        catch
+        {
+            CameraButton.Visibility = Visibility.Collapsed;
+        }
     }
 
     internal void UpdateRecentProjects()

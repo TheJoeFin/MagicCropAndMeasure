@@ -304,6 +304,7 @@
         <c:WelcomeMessage
             x:Name="WelcomeMessageModal"
             Grid.Row="1"
+            CameraButtonEvent="CameraButton_Click"
             OverlayButtonEvent="OverlayButton_Click"
             PasteButtonEvent="PasteButton_Click"
             PrimaryButtonEvent="OpenFileButton_Click" />

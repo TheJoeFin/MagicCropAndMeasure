@@ -1185,6 +1185,50 @@ public partial class MainWindow : FluentWindow
         }
     }
 
+    private async void CameraButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            SetUiForLongTask();
+            WelcomeMessageModal.Visibility = Visibility.Collapsed;
+
+            var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+
+            var cameraCaptureUI = new Microsoft.Windows.Media.Capture.CameraCaptureUI(windowId);
+            cameraCaptureUI.PhotoSettings.Format = Microsoft.Windows.Media.Capture.CameraCaptureUIPhotoFormat.Png;
+
+            var file = await cameraCaptureUI.CaptureFileAsync(Microsoft.Windows.Media.Capture.CameraCaptureUIMode.Photo);
+
+            if (file != null)
+            {
+                RemoveMeasurementControls();
+                await OpenImagePath(file.Path);
+                openedFileName = "CameraCapture-" + DateTime.Now.ToString("HH-mm-MMM-dd-yyyy");
+                UpdateOpenedFileNameText();
+                BottomBorder.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                WelcomeMessageModal.Visibility = Visibility.Visible;
+            }
+        }
+        catch (Exception ex)
+        {
+            WelcomeMessageModal.Visibility = Visibility.Visible;
+            Wpf.Ui.Controls.MessageBox uiMessageBox = new()
+            {
+                Title = "Camera Error",
+                Content = $"Error capturing image from camera: {ex.Message}",
+            };
+            await uiMessageBox.ShowDialogAsync();
+        }
+        finally
+        {
+            SetUiForCompletedTask();
+        }
+    }
+
     private void OverlayButton_Click(object sender, RoutedEventArgs e)
     {
         WelcomeMessageModal.Visibility = Visibility.Collapsed;
