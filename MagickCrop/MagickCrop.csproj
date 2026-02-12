@@ -15,6 +15,7 @@
     <RuntimeIdentifiers>win-arm64;win-x86;win-x64</RuntimeIdentifiers>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Version>1.11.0</Version>
+    <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
   <ItemGroup>
