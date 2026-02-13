@@ -20,8 +20,10 @@ internal static class ObjectEraseHelper
     {
         try
         {
-            _ = ImageObjectRemover.GetReadyState();
-            return true;
+            AIFeatureReadyState state = ImageObjectRemover.GetReadyState();
+            // Only consider it supported if the model is ready or can be downloaded.
+            // Other states (e.g. EvaluationNotReady, DisabledByUser) mean it's not usable.
+            return state is AIFeatureReadyState.Ready or AIFeatureReadyState.NotReady;
         }
         catch
         {
