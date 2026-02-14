@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Windows.ApplicationModel;
 using Windows.Devices.Enumeration;
 
 namespace MagickCrop.Controls;
@@ -201,6 +202,12 @@ public partial class WelcomeMessage : UserControl
     /// </summary>
     private async void UpdateCameraButtonVisibility()
     {
+        if (!IsPackaged())
+        {
+            CameraButton.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         try
         {
             DeviceInformationCollection devices = await DeviceInformation.FindAllAsync(DeviceClass.VideoCapture);
@@ -209,6 +216,19 @@ public partial class WelcomeMessage : UserControl
         catch
         {
             CameraButton.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private static bool IsPackaged()
+    {
+        try
+        {
+            _ = Package.Current.Id;
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
         }
     }
 
