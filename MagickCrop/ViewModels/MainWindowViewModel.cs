@@ -176,7 +176,7 @@ public partial class MainWindowViewModel : ObservableObject
     private bool CanCopyToClipboard() => HasImage;
 
     [RelayCommand(CanExecute = nameof(CanCopyToClipboard))]
-    private void CopyToClipboard()
+    private async Task CopyToClipboard()
     {
         if (_view?.ImageSource is not BitmapSource bitmapSource)
             return;
@@ -187,11 +187,13 @@ public partial class MainWindowViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
-                ex.Message,
-                "Copy Error",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            Wpf.Ui.Controls.MessageBox uiMessageBox = new()
+            {
+                Title = "Copy Error",
+                Content = ex.Message,
+                PrimaryButtonText = "OK",
+            };
+            await uiMessageBox.ShowDialogAsync();
         }
     }
 
@@ -210,7 +212,7 @@ public partial class MainWindowViewModel : ObservableObject
     private bool CanShare() => HasImage;
 
     [RelayCommand(CanExecute = nameof(CanShare))]
-    private void Share()
+    private async Task Share()
     {
         if (_view is null || string.IsNullOrEmpty(ImagePath) || !File.Exists(ImagePath))
             return;
@@ -225,11 +227,13 @@ public partial class MainWindowViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
-                ex.Message,
-                "Share Error",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            Wpf.Ui.Controls.MessageBox uiMessageBox = new()
+            {
+                Title = "Share Error",
+                Content = ex.Message,
+                PrimaryButtonText = "OK",
+            };
+            await uiMessageBox.ShowDialogAsync();
         }
     }
 
