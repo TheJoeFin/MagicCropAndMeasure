@@ -17,6 +17,7 @@
     PreviewDragOver="FluentWindow_PreviewDragOver"
     PreviewDrop="FluentWindow_PreviewDrop"
     PreviewKeyDown="FluentWindow_PreviewKeyDown"
+    PreviewKeyUp="FluentWindow_PreviewKeyUp"
     mc:Ignorable="d">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
@@ -567,6 +568,15 @@
                                         ToolTip="Remove barrel or curved-edge distortion using corner and edge midpoint markers">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Foreground="#00CC88" Symbol="BorderAll24" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem
+                                        Name="EdgeCorrectionMenuItem"
+                                        Click="EdgeCorrectionMenuItem_Click"
+                                        Header="Edge Correction"
+                                        ToolTip="Straighten wavy edges by placing points along the document boundary">
+                                        <MenuItem.Icon>
+                                            <wpfui:SymbolIcon Foreground="#CC6600" Symbol="LineHorizontal124" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                 </StackPanel>
@@ -1265,6 +1275,79 @@
                             </wpfui:Button.Icon>
                         </wpfui:Button>
                     </StackPanel>
+                </StackPanel>
+                <StackPanel
+                    x:Name="EdgeCorrectionButtonPanel"
+                    Grid.Row="1"
+                    HorizontalAlignment="Center"
+                    Orientation="Vertical"
+                    Visibility="Collapsed">
+                    <TextBlock
+                        Margin="0,4"
+                        FontWeight="SemiBold"
+                        Text="Edge Correction" />
+                    <TextBlock
+                        Width="170"
+                        Margin="0,0,0,8"
+                        FontSize="11"
+                        Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Click on the image near any wavy edge to place correction points. Points snap to the nearest edge."
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        x:Name="EdgeCorrectionPointCountText"
+                        Width="170"
+                        Margin="0,0,0,4"
+                        FontSize="11"
+                        Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Points placed: 0" />
+                    <wpfui:Button
+                        x:Name="UndoEdgePointButton"
+                        Width="180"
+                        Margin="0,4"
+                        Appearance="Secondary"
+                        Click="UndoEdgePointButton_Click"
+                        Content="Undo Last Point"
+                        ToolTip="Remove the last placed edge point">
+                        <wpfui:Button.Icon>
+                            <wpfui:SymbolIcon Symbol="ArrowUndo24" />
+                        </wpfui:Button.Icon>
+                    </wpfui:Button>
+                    <wpfui:Button
+                        x:Name="ClearEdgePointsButton"
+                        Width="180"
+                        Margin="0,4"
+                        Appearance="Secondary"
+                        Click="ClearEdgePointsButton_Click"
+                        Content="Clear All Points"
+                        ToolTip="Remove all placed edge points">
+                        <wpfui:Button.Icon>
+                            <wpfui:SymbolIcon Symbol="Delete24" />
+                        </wpfui:Button.Icon>
+                    </wpfui:Button>
+                    <wpfui:Button
+                        x:Name="ApplyEdgeCorrectionButton"
+                        Width="180"
+                        Margin="0,6"
+                        Appearance="Primary"
+                        Click="ApplyEdgeCorrectionButton_Click"
+                        Content="Apply Edge Correction"
+                        Foreground="White"
+                        ToolTip="Straighten the wavy edges using the placed points">
+                        <wpfui:Button.Icon>
+                            <wpfui:SymbolIcon Symbol="LineHorizontal124" />
+                        </wpfui:Button.Icon>
+                    </wpfui:Button>
+                    <wpfui:Button
+                        x:Name="CancelEdgeCorrectionButton"
+                        Width="180"
+                        Appearance="Danger"
+                        Click="CancelEdgeCorrectionButton_Click"
+                        Content="Cancel"
+                        ToolTip="Cancel edge correction">
+                        <wpfui:Button.Icon>
+                            <wpfui:SymbolIcon Symbol="Dismiss24" />
+                        </wpfui:Button.Icon>
+                    </wpfui:Button>
                 </StackPanel>
                 <StackPanel
                     x:Name="ObjectEraseButtonPanel"

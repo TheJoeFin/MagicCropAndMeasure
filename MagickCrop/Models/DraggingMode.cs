@@ -13,5 +13,6 @@ public enum DraggingMode
     MeasurePolygon,
     CreatingMeasurement,
     WhitePointPicker,
-    BlackPointPicker
+    BlackPointPicker,
+    EdgeCorrectionDragging
 }

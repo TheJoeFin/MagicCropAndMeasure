@@ -162,6 +162,14 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private System.Windows.Shapes.Path? unWarpPath;
     private readonly List<UIElement> _unWarpElements = [];
 
+    // --- Edge correction state ---
+    private bool isEdgeCorrectionMode = false;
+    private readonly List<Point> edgeCorrectionPoints = [];
+    private readonly List<Ellipse> edgeCorrectionMarkers = [];
+    private readonly List<Line> edgeCorrectionSnapLines = [];
+    private int edgeCorrectionDragIndex = -1;
+    private bool isEdgeCorrectionSpacePanning = false;
+
     public MainWindow()
     {
         ViewModel = new MainWindowViewModel();
@@ -430,6 +438,11 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 activeCircleMeasureControl = null;
             }
 
+            if (draggingMode == DraggingMode.EdgeCorrectionDragging)
+            {
+                edgeCorrectionDragIndex = -1;
+            }
+
             clickedElement = null;
             ReleaseMouseCapture();
             draggingMode = DraggingMode.None;
@@ -501,6 +514,14 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             {
                 activeCircleMeasureControl.MovePoint(pointIndex, movingPoint);
             }
+            e.Handled = true;
+            return;
+        }
+
+        if (draggingMode == DraggingMode.EdgeCorrectionDragging && edgeCorrectionDragIndex >= 0)
+        {
+            Point imagePoint = e.GetPosition(MainImage);
+            MoveEdgeCorrectionPoint(edgeCorrectionDragIndex, imagePoint);
             e.Handled = true;
             return;
         }
@@ -1337,6 +1358,30 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             }
         }
 
+        // Edge correction mode - place a point on click (not while space-panning)
+        if (isEdgeCorrectionMode && e.LeftButton == MouseButtonState.Pressed && !isEdgeCorrectionSpacePanning)
+        {
+            Point imagePoint = e.GetPosition(MainImage);
+            if (imagePoint.X >= 0 && imagePoint.Y >= 0
+                && imagePoint.X <= MainImage.ActualWidth
+                && imagePoint.Y <= MainImage.ActualHeight)
+            {
+                AddEdgeCorrectionPoint(imagePoint);
+                e.Handled = true;
+                return;
+            }
+        }
+
+        // Edge correction space-bar panning
+        if (isEdgeCorrectionMode && isEdgeCorrectionSpacePanning && e.LeftButton == MouseButtonState.Pressed)
+        {
+            draggingMode = DraggingMode.Panning;
+            clickedPoint = e.GetPosition(this);
+            ShapeCanvas.CaptureMouse();
+            e.Handled = true;
+            return;
+        }
+
         // Middle mouse always initiates panning regardless of tool (quick navigation)
         if (e.ChangedButton == MouseButton.Middle)
         {
@@ -2028,6 +2073,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideTriFoldControls();
         HideUnWarpControls();
         HideObjectEraseControls();
+        HideEdgeCorrectionControls();
 
         CropButtonPanel.Visibility = Visibility.Visible;
         CroppingRectangle.Visibility = Visibility.Visible;
@@ -2210,6 +2256,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideTriFoldControls();
         HideUnWarpControls();
         HideObjectEraseControls();
+        HideEdgeCorrectionControls();
 
         TransformButtonPanel.Visibility = Visibility.Visible;
 
@@ -2248,6 +2295,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideResizeControls();
         HideUnWarpControls();
         HideObjectEraseControls();
+        HideEdgeCorrectionControls();
 
         isTriFoldMode = true;
         TriFoldButtonPanel.Visibility = Visibility.Visible;
@@ -2575,6 +2623,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideResizeControls();
         HideTriFoldControls();
         HideObjectEraseControls();
+        HideEdgeCorrectionControls();
 
         isUnWarpMode = true;
         UnWarpButtonPanel.Visibility = Visibility.Visible;
@@ -2776,6 +2825,284 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     #endregion Un-Warp Correction
 
+    #region Edge Correction
+
+    private void EdgeCorrectionMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        ShowEdgeCorrectionControls();
+    }
+
+    private void CancelEdgeCorrectionButton_Click(object sender, RoutedEventArgs e)
+    {
+        HideEdgeCorrectionControls();
+    }
+
+    private void ShowEdgeCorrectionControls()
+    {
+        HideCroppingControls();
+        HideTransformControls();
+        HideResizeControls();
+        HideTriFoldControls();
+        HideUnWarpControls();
+        HideObjectEraseControls();
+
+        isEdgeCorrectionMode = true;
+        EdgeCorrectionButtonPanel.Visibility = Visibility.Visible;
+
+        ClearEdgeCorrectionPoints();
+        UpdateEdgeCorrectionPointCount();
+    }
+
+    private void HideEdgeCorrectionControls()
+    {
+        isEdgeCorrectionMode = false;
+        EdgeCorrectionButtonPanel.Visibility = Visibility.Collapsed;
+
+        ClearEdgeCorrectionPoints();
+    }
+
+    private void AddEdgeCorrectionPoint(Point displayPoint)
+    {
+        // Ensure the point is within image bounds
+        if (displayPoint.X < 0 || displayPoint.Y < 0
+            || displayPoint.X > MainImage.ActualWidth
+            || displayPoint.Y > MainImage.ActualHeight)
+            return;
+
+        int index = edgeCorrectionPoints.Count;
+        edgeCorrectionPoints.Add(displayPoint);
+
+        // Get edge snap info for visual feedback
+        (string edgeName, Point snappedPoint) = EdgeCorrectionHelper.GetEdgeSnapInfo(
+            displayPoint, MainImage.ActualWidth, MainImage.ActualHeight);
+
+        // Draw a snap line from the point to the edge
+        Color markerColor = (Color)ColorConverter.ConvertFromString("#CC6600");
+        Line snapLine = new()
+        {
+            X1 = displayPoint.X,
+            Y1 = displayPoint.Y,
+            X2 = snappedPoint.X,
+            Y2 = snappedPoint.Y,
+            Stroke = new SolidColorBrush(markerColor),
+            StrokeThickness = 1,
+            StrokeDashArray = [4, 2],
+            Opacity = 0.6,
+            IsHitTestVisible = false
+        };
+        ShapeCanvas.Children.Add(snapLine);
+        edgeCorrectionSnapLines.Add(snapLine);
+
+        // Create a marker at the user-placed point (interactive: drag to move, right-click to remove)
+        Ellipse marker = new()
+        {
+            Width = 12,
+            Height = 12,
+            Fill = new SolidColorBrush(markerColor),
+            Stroke = new SolidColorBrush(Colors.White),
+            StrokeThickness = 1,
+            Opacity = 0.9,
+            Cursor = Cursors.SizeAll,
+            IsHitTestVisible = true,
+            Tag = index,
+            ToolTip = $"{edgeName} edge – drag to move, right-click to remove"
+        };
+        marker.MouseDown += EdgeCorrectionMarker_MouseDown;
+        Canvas.SetLeft(marker, displayPoint.X - 6);
+        Canvas.SetTop(marker, displayPoint.Y - 6);
+        ShapeCanvas.Children.Add(marker);
+        edgeCorrectionMarkers.Add(marker);
+
+        UpdateEdgeCorrectionPointCount();
+    }
+
+    private void EdgeCorrectionMarker_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not Ellipse marker || marker.Tag is not int markerIndex)
+            return;
+
+        // Right-click removes the point
+        if (e.ChangedButton == MouseButton.Right)
+        {
+            RemoveEdgeCorrectionPointAt(markerIndex);
+            e.Handled = true;
+            return;
+        }
+
+        // Left-click starts dragging the point
+        if (e.ChangedButton == MouseButton.Left)
+        {
+            edgeCorrectionDragIndex = markerIndex;
+            draggingMode = DraggingMode.EdgeCorrectionDragging;
+            clickedPoint = e.GetPosition(ShapeCanvas);
+            CaptureMouse();
+            e.Handled = true;
+        }
+    }
+
+    private void RemoveEdgeCorrectionPointAt(int index)
+    {
+        if (index < 0 || index >= edgeCorrectionPoints.Count)
+            return;
+
+        edgeCorrectionPoints.RemoveAt(index);
+
+        // Remove the marker and snap line
+        Ellipse marker = edgeCorrectionMarkers[index];
+        marker.MouseDown -= EdgeCorrectionMarker_MouseDown;
+        ShapeCanvas.Children.Remove(marker);
+        edgeCorrectionMarkers.RemoveAt(index);
+
+        Line snapLine = edgeCorrectionSnapLines[index];
+        ShapeCanvas.Children.Remove(snapLine);
+        edgeCorrectionSnapLines.RemoveAt(index);
+
+        // Re-index remaining markers so Tag stays in sync
+        for (int i = 0; i < edgeCorrectionMarkers.Count; i++)
+        {
+            edgeCorrectionMarkers[i].Tag = i;
+            // Update tooltip with new edge classification
+            Point pt = edgeCorrectionPoints[i];
+            (string edgeName, _) = EdgeCorrectionHelper.GetEdgeSnapInfo(
+                pt, MainImage.ActualWidth, MainImage.ActualHeight);
+            edgeCorrectionMarkers[i].ToolTip = $"{edgeName} edge – drag to move, right-click to remove";
+        }
+
+        UpdateEdgeCorrectionPointCount();
+    }
+
+    private void MoveEdgeCorrectionPoint(int index, Point newPosition)
+    {
+        if (index < 0 || index >= edgeCorrectionPoints.Count)
+            return;
+
+        // Clamp to image bounds
+        newPosition = new Point(
+            Math.Clamp(newPosition.X, 0, MainImage.ActualWidth),
+            Math.Clamp(newPosition.Y, 0, MainImage.ActualHeight));
+
+        edgeCorrectionPoints[index] = newPosition;
+
+        // Update marker position
+        Ellipse marker = edgeCorrectionMarkers[index];
+        Canvas.SetLeft(marker, newPosition.X - 6);
+        Canvas.SetTop(marker, newPosition.Y - 6);
+
+        // Update snap line
+        (string edgeName, Point snappedPoint) = EdgeCorrectionHelper.GetEdgeSnapInfo(
+            newPosition, MainImage.ActualWidth, MainImage.ActualHeight);
+        Line snapLine = edgeCorrectionSnapLines[index];
+        snapLine.X1 = newPosition.X;
+        snapLine.Y1 = newPosition.Y;
+        snapLine.X2 = snappedPoint.X;
+        snapLine.Y2 = snappedPoint.Y;
+
+        marker.ToolTip = $"{edgeName} edge – drag to move, right-click to remove";
+    }
+
+    private void UndoEdgePointButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (edgeCorrectionPoints.Count == 0)
+            return;
+
+        RemoveEdgeCorrectionPointAt(edgeCorrectionPoints.Count - 1);
+    }
+
+    private void ClearEdgePointsButton_Click(object sender, RoutedEventArgs e)
+    {
+        ClearEdgeCorrectionPoints();
+        UpdateEdgeCorrectionPointCount();
+    }
+
+    private void ClearEdgeCorrectionPoints()
+    {
+        edgeCorrectionDragIndex = -1;
+
+        edgeCorrectionPoints.Clear();
+
+        foreach (Ellipse marker in edgeCorrectionMarkers)
+        {
+            marker.MouseDown -= EdgeCorrectionMarker_MouseDown;
+            ShapeCanvas.Children.Remove(marker);
+        }
+        edgeCorrectionMarkers.Clear();
+
+        foreach (Line snapLine in edgeCorrectionSnapLines)
+            ShapeCanvas.Children.Remove(snapLine);
+        edgeCorrectionSnapLines.Clear();
+    }
+
+    private void UpdateEdgeCorrectionPointCount()
+    {
+        EdgeCorrectionPointCountText.Text = $"Points placed: {edgeCorrectionPoints.Count}";
+    }
+
+    private async void ApplyEdgeCorrectionButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(ViewModel.ImagePath))
+            return;
+
+        if (edgeCorrectionPoints.Count == 0)
+        {
+            Wpf.Ui.Controls.MessageBox uiMessageBox = new()
+            {
+                Title = "Edge Correction",
+                Content = "Place at least one point near a wavy edge before applying.",
+                PrimaryButtonText = "OK",
+            };
+            await uiMessageBox.ShowDialogAsync();
+            return;
+        }
+
+        SetUiForLongTask();
+
+        try
+        {
+            using MagickImage sizeCheck = new(ViewModel.ImagePath);
+            double scaleFactor = sizeCheck.Width / MainImage.ActualWidth;
+
+            MagickImage? result = await EdgeCorrectionHelper.CorrectEdgesAsync(
+                ViewModel.ImagePath,
+                edgeCorrectionPoints,
+                MainImage.ActualWidth,
+                MainImage.ActualHeight,
+                scaleFactor);
+
+            if (result is null)
+            {
+                SetUiForCompletedTask();
+                return;
+            }
+
+            string tempFileName = System.IO.Path.GetTempFileName();
+            await result.WriteAsync(tempFileName);
+
+            MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, tempFileName);
+            UndoRedo.AddUndo(undoRedoItem);
+
+            ViewModel.ImagePath = tempFileName;
+            MainImage.Source = result.ToBitmapSource();
+
+            ViewModel.ActualImageSize = new Size(result.Width, result.Height);
+            result.Dispose();
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                ex.Message,
+                "Edge Correction Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            HideEdgeCorrectionControls();
+            SetUiForCompletedTask();
+        }
+    }
+
+    #endregion Edge Correction
+
     private async void DetectShapeButton_Click(object sender, RoutedEventArgs e)
     {
         await RunTransformDetectionAsync();
@@ -2963,6 +3290,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideTriFoldControls();
         HideUnWarpControls();
         HideObjectEraseControls();
+        HideEdgeCorrectionControls();
 
         // Initialize resize input controls
         InitializeResizeInputs();
@@ -3154,6 +3482,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideTriFoldControls();
         HideUnWarpControls();
         HideResizeControls();
+        HideEdgeCorrectionControls();
 
         isObjectEraseMode = true;
         ObjectEraseButtonPanel.Visibility = Visibility.Visible;
@@ -4762,6 +5091,38 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             isCreatingMeasurement = false;
             draggingMode = DraggingMode.None;
             ShapeCanvas.ReleaseMouseCapture();
+
+            // Cancel edge correction mode
+            if (isEdgeCorrectionMode)
+            {
+                HideEdgeCorrectionControls();
+            }
+        }
+
+        // Space bar enables pan mode while in edge correction
+        if (e.Key == Key.Space && isEdgeCorrectionMode && !isEdgeCorrectionSpacePanning)
+        {
+            isEdgeCorrectionSpacePanning = true;
+            Cursor = Cursors.Hand;
+            e.Handled = true;
+        }
+    }
+
+    private void FluentWindow_PreviewKeyUp(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Space && isEdgeCorrectionSpacePanning)
+        {
+            isEdgeCorrectionSpacePanning = false;
+
+            // If we were panning, release it
+            if (draggingMode == DraggingMode.Panning)
+            {
+                draggingMode = DraggingMode.None;
+                ShapeCanvas.ReleaseMouseCapture();
+            }
+
+            Cursor = null;
+            e.Handled = true;
         }
     }
 
