@@ -576,7 +576,16 @@
                                         Header="Edge Correction"
                                         ToolTip="Straighten wavy edges by placing points along the document boundary">
                                         <MenuItem.Icon>
-                                            <wpfui:SymbolIcon Foreground="#CC6600" Symbol="LineHorizontal124" />
+                                            <wpfui:SymbolIcon Foreground="#CC6600" Symbol="Square24" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem
+                                        Name="GridStraightenMenuItem"
+                                        Click="GridStraightenMenuItem_Click"
+                                        Header="Grid Straighten"
+                                        ToolTip="Straighten a skewed image by aligning a draggable grid to image features">
+                                        <MenuItem.Icon>
+                                            <wpfui:SymbolIcon Foreground="#9966FF" Symbol="Grid24" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                 </StackPanel>
@@ -1334,7 +1343,7 @@
                         Foreground="White"
                         ToolTip="Straighten the wavy edges using the placed points">
                         <wpfui:Button.Icon>
-                            <wpfui:SymbolIcon Symbol="LineHorizontal124" />
+                            <wpfui:SymbolIcon Symbol="Square24" />
                         </wpfui:Button.Icon>
                     </wpfui:Button>
                     <wpfui:Button
@@ -1344,6 +1353,89 @@
                         Click="CancelEdgeCorrectionButton_Click"
                         Content="Cancel"
                         ToolTip="Cancel edge correction">
+                        <wpfui:Button.Icon>
+                            <wpfui:SymbolIcon Symbol="Dismiss24" />
+                        </wpfui:Button.Icon>
+                    </wpfui:Button>
+                </StackPanel>
+                <StackPanel
+                    x:Name="GridStraightenButtonPanel"
+                    Grid.Row="1"
+                    HorizontalAlignment="Center"
+                    Orientation="Vertical"
+                    Visibility="Collapsed">
+                    <TextBlock
+                        Margin="0,4"
+                        FontWeight="SemiBold"
+                        Text="Grid Straighten" />
+                    <TextBlock
+                        Width="170"
+                        Margin="0,0,0,8"
+                        FontSize="11"
+                        Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Drag grid intersection points to align with features in the image, then click Apply to straighten."
+                        TextWrapping="Wrap" />
+                    <StackPanel Margin="0,0,0,8" Orientation="Horizontal">
+                        <TextBlock
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            Text="Grid:" />
+                        <wpfui:NumberBox
+                            x:Name="GridStraightenRowsBox"
+                            Width="60"
+                            Margin="0,0,4,0"
+                            Maximum="12"
+                            Minimum="3"
+                            SmallChange="1"
+                            ToolTip="Number of grid rows"
+                            ValueChanged="GridStraightenSizeChanged"
+                            Value="4" />
+                        <TextBlock
+                            Margin="0,0,4,0"
+                            VerticalAlignment="Center"
+                            Text="×" />
+                        <wpfui:NumberBox
+                            x:Name="GridStraightenColsBox"
+                            Width="60"
+                            Maximum="12"
+                            Minimum="3"
+                            SmallChange="1"
+                            ToolTip="Number of grid columns"
+                            ValueChanged="GridStraightenSizeChanged"
+                            Value="4" />
+                    </StackPanel>
+                    <wpfui:Button
+                        x:Name="ResetGridButton"
+                        Width="180"
+                        Margin="0,4"
+                        Appearance="Secondary"
+                        Click="ResetGridButton_Click"
+                        Content="Reset Grid"
+                        ToolTip="Reset all grid points to their original positions">
+                        <wpfui:Button.Icon>
+                            <wpfui:SymbolIcon Symbol="ArrowReset24" />
+                        </wpfui:Button.Icon>
+                    </wpfui:Button>
+                    <wpfui:Button
+                        x:Name="ApplyGridStraightenButton"
+                        Width="180"
+                        Margin="0,6"
+                        Appearance="Primary"
+                        Click="ApplyGridStraightenButton_Click"
+                        Content="Apply Straighten"
+                        Foreground="White"
+                        ToolTip="Straighten the image using the adjusted grid">
+                        <wpfui:Button.Icon>
+                            <wpfui:SymbolIcon Symbol="Grid24" />
+                        </wpfui:Button.Icon>
+                    </wpfui:Button>
+                    <wpfui:Button
+                        x:Name="CancelGridStraightenButton"
+                        Width="180"
+                        Appearance="Danger"
+                        Click="CancelGridStraightenButton_Click"
+                        Content="Cancel"
+                        ToolTip="Cancel grid straighten">
                         <wpfui:Button.Icon>
                             <wpfui:SymbolIcon Symbol="Dismiss24" />
                         </wpfui:Button.Icon>

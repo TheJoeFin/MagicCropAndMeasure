@@ -1,4 +1,4 @@
-using ImageMagick;
+﻿using ImageMagick;
 using MagickCrop.Controls;
 using MagickCrop.Helpers;
 using MagickCrop.ViewModels;
@@ -169,6 +169,16 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private readonly List<Line> edgeCorrectionSnapLines = [];
     private int edgeCorrectionDragIndex = -1;
     private bool isEdgeCorrectionSpacePanning = false;
+
+    // --- Grid straighten state ---
+    private bool isGridStraightenMode = false;
+    private List<Point> gridStraightenPoints = [];
+    private readonly List<Ellipse> gridStraightenMarkers = [];
+    private readonly List<Line> gridStraightenLines = [];
+    private int gridStraightenDragIndex = -1;
+    private int gridStraightenRows = 4;
+    private int gridStraightenCols = 4;
+    private bool isGridStraightenSpacePanning = false;
 
     public MainWindow()
     {
@@ -443,6 +453,11 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 edgeCorrectionDragIndex = -1;
             }
 
+            if (draggingMode == DraggingMode.GridStraightenDragging)
+            {
+                gridStraightenDragIndex = -1;
+            }
+
             clickedElement = null;
             ReleaseMouseCapture();
             draggingMode = DraggingMode.None;
@@ -522,6 +537,14 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         {
             Point imagePoint = e.GetPosition(MainImage);
             MoveEdgeCorrectionPoint(edgeCorrectionDragIndex, imagePoint);
+            e.Handled = true;
+            return;
+        }
+
+        if (draggingMode == DraggingMode.GridStraightenDragging && gridStraightenDragIndex >= 0)
+        {
+            Point imagePoint = e.GetPosition(MainImage);
+            MoveGridStraightenPoint(gridStraightenDragIndex, imagePoint);
             e.Handled = true;
             return;
         }
@@ -785,6 +808,13 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         string tempFileName = System.IO.Path.GetTempFileName();
         await image.WriteAsync(tempFileName);
         ViewModel.ImagePath = tempFileName;
+
+        // Reset ImageGrid so it auto-sizes to the new image's aspect ratio.
+        // This prevents letterboxing when the output has a different aspect ratio from
+        // the previous ImageGrid size, which would cause a vertical/horizontal offset
+        // when mapping subsequent detection coordinates.
+        ImageGrid.Width = ImageWidthConst;
+        ImageGrid.Height = double.NaN;
 
         MainImage.Source = image.ToBitmapSource();
 
@@ -1266,7 +1296,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         CenterAndZoomToFit();
     }
 
-    private const double ZoomFactor= 0.1;
+    private const double ZoomFactor = 0.1;
     private const double MinZoom = 0.1;
     private const double MaxZoom = 10.0;
 
@@ -1378,6 +1408,23 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             draggingMode = DraggingMode.Panning;
             clickedPoint = e.GetPosition(this);
             ShapeCanvas.CaptureMouse();
+            e.Handled = true;
+            return;
+        }
+
+        // Grid straighten space-bar panning
+        if (isGridStraightenMode && isGridStraightenSpacePanning && e.LeftButton == MouseButtonState.Pressed)
+        {
+            draggingMode = DraggingMode.Panning;
+            clickedPoint = e.GetPosition(this);
+            ShapeCanvas.CaptureMouse();
+            e.Handled = true;
+            return;
+        }
+
+        // In grid straighten mode, don't fall through to other tools
+        if (isGridStraightenMode && e.LeftButton == MouseButtonState.Pressed)
+        {
             e.Handled = true;
             return;
         }
@@ -2074,6 +2121,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideUnWarpControls();
         HideObjectEraseControls();
         HideEdgeCorrectionControls();
+        HideGridStraightenControls();
 
         CropButtonPanel.Visibility = Visibility.Visible;
         CroppingRectangle.Visibility = Visibility.Visible;
@@ -2113,6 +2161,13 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         UndoRedo.AddUndo(undoRedoItem);
 
         ViewModel.ImagePath = tempFileName;
+
+        // Reset ImageGrid dimensions so it auto-sizes to fit the newly cropped image.
+        // Without this, the pre-crop ImageGrid height stays in place; with Stretch="Uniform"
+        // the image renders centred inside the oversized grid, introducing a vertical (and
+        // possibly horizontal) offset that makes subsequent crop/edge-detection coordinates wrong.
+        ImageGrid.Width = ImageWidthConst;
+        ImageGrid.Height = double.NaN;
 
         MainImage.Source = magickImage.ToBitmapSource();
 
@@ -2257,6 +2312,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideUnWarpControls();
         HideObjectEraseControls();
         HideEdgeCorrectionControls();
+        HideGridStraightenControls();
 
         TransformButtonPanel.Visibility = Visibility.Visible;
 
@@ -2296,6 +2352,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideUnWarpControls();
         HideObjectEraseControls();
         HideEdgeCorrectionControls();
+        HideGridStraightenControls();
 
         isTriFoldMode = true;
         TriFoldButtonPanel.Visibility = Visibility.Visible;
@@ -2459,6 +2516,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             UndoRedo.AddUndo(undoRedoItem);
 
             ViewModel.ImagePath = tempFileName;
+            // Reset ImageGrid so it auto-sizes to the new image aspect ratio
+            ImageGrid.Width = ImageWidthConst;
+            ImageGrid.Height = double.NaN;
             MainImage.Source = result.ToBitmapSource();
 
             ViewModel.ActualImageSize = new Size(result.Width, result.Height);
@@ -2624,6 +2684,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideTriFoldControls();
         HideObjectEraseControls();
         HideEdgeCorrectionControls();
+        HideGridStraightenControls();
 
         isUnWarpMode = true;
         UnWarpButtonPanel.Visibility = Visibility.Visible;
@@ -2803,6 +2864,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             UndoRedo.AddUndo(undoRedoItem);
 
             ViewModel.ImagePath = tempFileName;
+            // Reset ImageGrid so it auto-sizes to the new image aspect ratio
+            ImageGrid.Width = ImageWidthConst;
+            ImageGrid.Height = double.NaN;
             MainImage.Source = result.ToBitmapSource();
 
             ViewModel.ActualImageSize = new Size(result.Width, result.Height);
@@ -2845,6 +2909,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideTriFoldControls();
         HideUnWarpControls();
         HideObjectEraseControls();
+        HideGridStraightenControls();
 
         isEdgeCorrectionMode = true;
         EdgeCorrectionButtonPanel.Visibility = Visibility.Visible;
@@ -3081,6 +3146,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             UndoRedo.AddUndo(undoRedoItem);
 
             ViewModel.ImagePath = tempFileName;
+            // Reset ImageGrid so it auto-sizes to the new image aspect ratio
+            ImageGrid.Width = ImageWidthConst;
+            ImageGrid.Height = double.NaN;
             MainImage.Source = result.ToBitmapSource();
 
             ViewModel.ActualImageSize = new Size(result.Width, result.Height);
@@ -3102,6 +3170,355 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     }
 
     #endregion Edge Correction
+
+    #region Grid Straighten
+
+    private void GridStraightenMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        ShowGridStraightenControls();
+    }
+
+    private void CancelGridStraightenButton_Click(object sender, RoutedEventArgs e)
+    {
+        HideGridStraightenControls();
+    }
+
+    private void ShowGridStraightenControls()
+    {
+        HideCroppingControls();
+        HideTransformControls();
+        HideResizeControls();
+        HideTriFoldControls();
+        HideUnWarpControls();
+        HideObjectEraseControls();
+        HideEdgeCorrectionControls();
+
+        isGridStraightenMode = true;
+        GridStraightenButtonPanel.Visibility = Visibility.Visible;
+
+        gridStraightenRows = (int)(GridStraightenRowsBox.Value ?? 4);
+        gridStraightenCols = (int)(GridStraightenColsBox.Value ?? 4);
+
+        BuildGridOverlay();
+    }
+
+    private void HideGridStraightenControls()
+    {
+        isGridStraightenMode = false;
+        isGridStraightenSpacePanning = false;
+        GridStraightenButtonPanel.Visibility = Visibility.Collapsed;
+
+        ClearGridOverlay();
+    }
+
+    private void GridStraightenSizeChanged(object sender, RoutedEventArgs e)
+    {
+        if (!isGridStraightenMode || GridStraightenRowsBox is null || GridStraightenColsBox is null)
+            return;
+
+        gridStraightenRows = (int)(GridStraightenRowsBox.Value ?? 4);
+        gridStraightenCols = (int)(GridStraightenColsBox.Value ?? 4);
+
+        BuildGridOverlay();
+    }
+
+    private void ResetGridButton_Click(object sender, RoutedEventArgs e)
+    {
+        BuildGridOverlay();
+    }
+
+    private void BuildGridOverlay()
+    {
+        ClearGridOverlay();
+
+        double imgW = MainImage.ActualWidth;
+        double imgH = MainImage.ActualHeight;
+
+        if (imgW <= 0 || imgH <= 0)
+            return;
+
+        gridStraightenPoints = GridStraightenHelper.GenerateRegularGrid(imgW, imgH, gridStraightenRows, gridStraightenCols);
+
+        Color gridColor = (Color)ColorConverter.ConvertFromString("#9966FF");
+        SolidColorBrush lineBrush = new(gridColor) { Opacity = 0.5 };
+
+        // Draw horizontal grid lines
+        for (int row = 0; row < gridStraightenRows; row++)
+        {
+            for (int col = 0; col < gridStraightenCols - 1; col++)
+            {
+                int idx = row * gridStraightenCols + col;
+                int nextIdx = idx + 1;
+                Line line = new()
+                {
+                    X1 = gridStraightenPoints[idx].X,
+                    Y1 = gridStraightenPoints[idx].Y,
+                    X2 = gridStraightenPoints[nextIdx].X,
+                    Y2 = gridStraightenPoints[nextIdx].Y,
+                    Stroke = lineBrush,
+                    StrokeThickness = 1.5,
+                    IsHitTestVisible = false
+                };
+                ShapeCanvas.Children.Add(line);
+                gridStraightenLines.Add(line);
+            }
+        }
+
+        // Draw vertical grid lines
+        for (int col = 0; col < gridStraightenCols; col++)
+        {
+            for (int row = 0; row < gridStraightenRows - 1; row++)
+            {
+                int idx = row * gridStraightenCols + col;
+                int nextIdx = (row + 1) * gridStraightenCols + col;
+                Line line = new()
+                {
+                    X1 = gridStraightenPoints[idx].X,
+                    Y1 = gridStraightenPoints[idx].Y,
+                    X2 = gridStraightenPoints[nextIdx].X,
+                    Y2 = gridStraightenPoints[nextIdx].Y,
+                    Stroke = lineBrush,
+                    StrokeThickness = 1.5,
+                    IsHitTestVisible = false
+                };
+                ShapeCanvas.Children.Add(line);
+                gridStraightenLines.Add(line);
+            }
+        }
+
+        // Create draggable markers at each grid intersection
+        Color markerColor = (Color)ColorConverter.ConvertFromString("#9966FF");
+        Color edgeColor = (Color)ColorConverter.ConvertFromString("#7744CC");
+        for (int i = 0; i < gridStraightenPoints.Count; i++)
+        {
+            Point pt = gridStraightenPoints[i];
+            int row = i / gridStraightenCols;
+            int col = i % gridStraightenCols;
+            bool isCorner = (row == 0 || row == gridStraightenRows - 1) && (col == 0 || col == gridStraightenCols - 1);
+            bool isEdge = !isCorner && (row == 0 || row == gridStraightenRows - 1 || col == 0 || col == gridStraightenCols - 1);
+
+            Cursor edgeCursor = row == 0 || row == gridStraightenRows - 1 ? Cursors.SizeWE : Cursors.SizeNS;
+
+            Ellipse marker = new()
+            {
+                Width = isCorner ? 10 : 12,
+                Height = isCorner ? 10 : 12,
+                Fill = new SolidColorBrush(isCorner ? Colors.Gray : isEdge ? edgeColor : markerColor),
+                Stroke = new SolidColorBrush(Colors.White),
+                StrokeThickness = 1,
+                Opacity = isCorner ? 0.5 : 0.9,
+                Cursor = isCorner ? Cursors.Arrow : isEdge ? edgeCursor : Cursors.SizeAll,
+                IsHitTestVisible = !isCorner,
+                Tag = i,
+                ToolTip = isCorner ? "Corner point (fixed)" : isEdge ? "Drag to slide along edge" : "Drag to adjust grid"
+            };
+
+            if (!isCorner)
+                marker.MouseDown += GridStraightenMarker_MouseDown;
+
+            Canvas.SetLeft(marker, pt.X - marker.Width / 2);
+            Canvas.SetTop(marker, pt.Y - marker.Height / 2);
+            ShapeCanvas.Children.Add(marker);
+            gridStraightenMarkers.Add(marker);
+        }
+    }
+
+    private void ClearGridOverlay()
+    {
+        gridStraightenDragIndex = -1;
+        gridStraightenPoints.Clear();
+
+        foreach (Ellipse marker in gridStraightenMarkers)
+        {
+            marker.MouseDown -= GridStraightenMarker_MouseDown;
+            ShapeCanvas.Children.Remove(marker);
+        }
+        gridStraightenMarkers.Clear();
+
+        foreach (Line line in gridStraightenLines)
+            ShapeCanvas.Children.Remove(line);
+        gridStraightenLines.Clear();
+    }
+
+    private void GridStraightenMarker_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not Ellipse marker || marker.Tag is not int markerIndex)
+            return;
+
+        if (e.ChangedButton == MouseButton.Left)
+        {
+            gridStraightenDragIndex = markerIndex;
+            draggingMode = DraggingMode.GridStraightenDragging;
+            clickedPoint = e.GetPosition(ShapeCanvas);
+            CaptureMouse();
+            e.Handled = true;
+        }
+    }
+
+    private void MoveGridStraightenPoint(int index, Point newPosition)
+    {
+        if (index < 0 || index >= gridStraightenPoints.Count)
+            return;
+
+        int row = index / gridStraightenCols;
+        int col = index % gridStraightenCols;
+        bool isCorner = (row == 0 || row == gridStraightenRows - 1) && (col == 0 || col == gridStraightenCols - 1);
+
+        // Don't move corner points
+        if (isCorner)
+            return;
+
+        // Clamp to image bounds
+        newPosition = new Point(
+            Math.Clamp(newPosition.X, 0, MainImage.ActualWidth),
+            Math.Clamp(newPosition.Y, 0, MainImage.ActualHeight));
+
+        // Constrain edge points to slide along their edge only
+        bool isTopEdge = row == 0;
+        bool isBottomEdge = row == gridStraightenRows - 1;
+        bool isLeftEdge = col == 0;
+        bool isRightEdge = col == gridStraightenCols - 1;
+
+        if (isTopEdge)
+            newPosition = new Point(newPosition.X, gridStraightenPoints[index].Y);
+        else if (isBottomEdge)
+            newPosition = new Point(newPosition.X, gridStraightenPoints[index].Y);
+        else if (isLeftEdge)
+            newPosition = new Point(gridStraightenPoints[index].X, newPosition.Y);
+        else if (isRightEdge)
+            newPosition = new Point(gridStraightenPoints[index].X, newPosition.Y);
+
+        gridStraightenPoints[index] = newPosition;
+
+        // Update marker position
+        Ellipse marker = gridStraightenMarkers[index];
+        Canvas.SetLeft(marker, newPosition.X - marker.Width / 2);
+        Canvas.SetTop(marker, newPosition.Y - marker.Height / 2);
+
+        // Update connected grid lines
+        UpdateGridLines();
+    }
+
+    private void UpdateGridLines()
+    {
+        int lineIdx = 0;
+
+        // Horizontal lines
+        for (int row = 0; row < gridStraightenRows; row++)
+        {
+            for (int col = 0; col < gridStraightenCols - 1; col++)
+            {
+                int idx = row * gridStraightenCols + col;
+                int nextIdx = idx + 1;
+                Line line = gridStraightenLines[lineIdx++];
+                line.X1 = gridStraightenPoints[idx].X;
+                line.Y1 = gridStraightenPoints[idx].Y;
+                line.X2 = gridStraightenPoints[nextIdx].X;
+                line.Y2 = gridStraightenPoints[nextIdx].Y;
+            }
+        }
+
+        // Vertical lines
+        for (int col = 0; col < gridStraightenCols; col++)
+        {
+            for (int row = 0; row < gridStraightenRows - 1; row++)
+            {
+                int idx = row * gridStraightenCols + col;
+                int nextIdx = (row + 1) * gridStraightenCols + col;
+                Line line = gridStraightenLines[lineIdx++];
+                line.X1 = gridStraightenPoints[idx].X;
+                line.Y1 = gridStraightenPoints[idx].Y;
+                line.X2 = gridStraightenPoints[nextIdx].X;
+                line.Y2 = gridStraightenPoints[nextIdx].Y;
+            }
+        }
+    }
+
+    private async void ApplyGridStraightenButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(ViewModel.ImagePath))
+            return;
+
+        // Check if any points have been moved
+        double imgW = MainImage.ActualWidth;
+        double imgH = MainImage.ActualHeight;
+        List<Point> regularGrid = GridStraightenHelper.GenerateRegularGrid(imgW, imgH, gridStraightenRows, gridStraightenCols);
+        bool anyMoved = false;
+        for (int i = 0; i < gridStraightenPoints.Count; i++)
+        {
+            if (Math.Abs(gridStraightenPoints[i].X - regularGrid[i].X) > 1.0
+                || Math.Abs(gridStraightenPoints[i].Y - regularGrid[i].Y) > 1.0)
+            {
+                anyMoved = true;
+                break;
+            }
+        }
+
+        if (!anyMoved)
+        {
+            Wpf.Ui.Controls.MessageBox uiMessageBox = new()
+            {
+                Title = "Grid Straighten",
+                Content = "Drag at least one interior grid point before applying.",
+                PrimaryButtonText = "OK",
+            };
+            await uiMessageBox.ShowDialogAsync();
+            return;
+        }
+
+        SetUiForLongTask();
+
+        try
+        {
+            using MagickImage sizeCheck = new(ViewModel.ImagePath);
+            double scaleFactor = sizeCheck.Width / MainImage.ActualWidth;
+
+            MagickImage? result = await GridStraightenHelper.StraightenAsync(
+                ViewModel.ImagePath,
+                gridStraightenPoints,
+                gridStraightenRows,
+                gridStraightenCols,
+                MainImage.ActualWidth,
+                MainImage.ActualHeight,
+                scaleFactor);
+
+            if (result is null)
+            {
+                SetUiForCompletedTask();
+                return;
+            }
+
+            string tempFileName = System.IO.Path.GetTempFileName();
+            await result.WriteAsync(tempFileName);
+
+            MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, tempFileName);
+            UndoRedo.AddUndo(undoRedoItem);
+
+            ViewModel.ImagePath = tempFileName;
+            // Reset ImageGrid so it auto-sizes to the new image aspect ratio
+            ImageGrid.Width = ImageWidthConst;
+            ImageGrid.Height = double.NaN;
+            MainImage.Source = result.ToBitmapSource();
+
+            ViewModel.ActualImageSize = new Size(result.Width, result.Height);
+            result.Dispose();
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                ex.Message,
+                "Grid Straighten Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            HideGridStraightenControls();
+            SetUiForCompletedTask();
+        }
+    }
+
+    #endregion Grid Straighten
 
     private async void DetectShapeButton_Click(object sender, RoutedEventArgs e)
     {
@@ -3291,6 +3708,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideUnWarpControls();
         HideObjectEraseControls();
         HideEdgeCorrectionControls();
+        HideGridStraightenControls();
 
         // Initialize resize input controls
         InitializeResizeInputs();
@@ -3483,6 +3901,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideUnWarpControls();
         HideResizeControls();
         HideEdgeCorrectionControls();
+        HideGridStraightenControls();
 
         isObjectEraseMode = true;
         ObjectEraseButtonPanel.Visibility = Visibility.Visible;
@@ -4263,6 +4682,26 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         // Restore the saved stretch mode
         MainImage.Stretch = package.Metadata.ImageStretch;
+
+        // Guard against stale saved dimensions: if Stretch is Uniform and the saved
+        // ImageGrid aspect ratio does not match the loaded image aspect ratio, the image
+        // would render letterboxed inside the grid, causing a vertical/horizontal offset
+        // for any subsequent crop-detection or edge-detection coordinate mapping.
+        // In that case reset to auto-size so the grid always tightly wraps the image.
+        if (MainImage.Stretch == Stretch.Uniform
+            && MainImage.Source is System.Windows.Media.Imaging.BitmapSource bmpSrc
+            && bmpSrc.PixelWidth > 0 && bmpSrc.PixelHeight > 0
+            && ImageGrid.Height > 0)
+        {
+            double savedAspect = ImageGrid.Width / ImageGrid.Height;
+            double imageAspect = (double)bmpSrc.PixelWidth / bmpSrc.PixelHeight;
+            // Allow a small tolerance for floating-point rounding
+            if (Math.Abs(savedAspect - imageAspect) > 0.01)
+            {
+                ImageGrid.Width = ImageWidthConst;
+                ImageGrid.Height = double.NaN;
+            }
+        }
 
         // Set global measurement properties
         ScaleInput.Value = package.Measurements.GlobalScaleFactor;
@@ -5097,12 +5536,26 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             {
                 HideEdgeCorrectionControls();
             }
+
+            // Cancel grid straighten mode
+            if (isGridStraightenMode)
+            {
+                HideGridStraightenControls();
+            }
         }
 
         // Space bar enables pan mode while in edge correction
         if (e.Key == Key.Space && isEdgeCorrectionMode && !isEdgeCorrectionSpacePanning)
         {
             isEdgeCorrectionSpacePanning = true;
+            Cursor = Cursors.Hand;
+            e.Handled = true;
+        }
+
+        // Space bar enables pan mode while in grid straighten
+        if (e.Key == Key.Space && isGridStraightenMode && !isGridStraightenSpacePanning)
+        {
+            isGridStraightenSpacePanning = true;
             Cursor = Cursors.Hand;
             e.Handled = true;
         }
@@ -5115,6 +5568,20 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             isEdgeCorrectionSpacePanning = false;
 
             // If we were panning, release it
+            if (draggingMode == DraggingMode.Panning)
+            {
+                draggingMode = DraggingMode.None;
+                ShapeCanvas.ReleaseMouseCapture();
+            }
+
+            Cursor = null;
+            e.Handled = true;
+        }
+
+        if (e.Key == Key.Space && isGridStraightenSpacePanning)
+        {
+            isGridStraightenSpacePanning = false;
+
             if (draggingMode == DraggingMode.Panning)
             {
                 draggingMode = DraggingMode.None;

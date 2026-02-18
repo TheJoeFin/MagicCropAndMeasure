@@ -14,5 +14,6 @@ public enum DraggingMode
     CreatingMeasurement,
     WhitePointPicker,
     BlackPointPicker,
-    EdgeCorrectionDragging
+    EdgeCorrectionDragging,
+    GridStraightenDragging
 }
