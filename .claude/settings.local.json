@@ -16,7 +16,8 @@
       "Bash(/mnt/c/Program\\ Files/dotnet/dotnet build)",
       "Bash(\"/mnt/c/Program Files/dotnet/dotnet\" build)",
       "PowerShell(git diff *)",
-      "PowerShell(dotnet build *)"
+      "PowerShell(dotnet build *)",
+      "Bash(gh issue list *)"
     ],
     "deny": []
   }
