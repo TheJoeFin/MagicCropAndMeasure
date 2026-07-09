@@ -49,6 +49,7 @@ public partial class MainWindowViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(ApplyAutoGammaCommand))]
     [NotifyCanExecuteChangedFor(nameof(ApplyBlurCommand))]
     [NotifyCanExecuteChangedFor(nameof(ApplyFindEdgesCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ApplyDespeckleCommand))]
     [NotifyCanExecuteChangedFor(nameof(Rotate90CwCommand))]
     [NotifyCanExecuteChangedFor(nameof(Rotate90CcwCommand))]
     [NotifyCanExecuteChangedFor(nameof(FlipVerticalCommand))]
@@ -273,6 +274,9 @@ public partial class MainWindowViewModel : ObservableObject
 
     [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
     private Task ApplyFindEdges() => ApplyAdjustmentAsync(img => img.CannyEdge());
+
+    [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
+    private Task ApplyDespeckle() => ApplyAdjustmentAsync(img => img.Despeckle());
 
     [ObservableProperty]
     private double thresholdValue = 128.0;

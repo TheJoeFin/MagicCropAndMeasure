@@ -779,6 +779,15 @@
                                         </MenuItem.Icon>
                                     </MenuItem>
                                     <MenuItem
+                                        Name="DespeckleMenuItem"
+                                        Command="{Binding ApplyDespeckleCommand}"
+                                        Header="Despeckle"
+                                        ToolTip="Reduce speckle noise in the image">
+                                        <MenuItem.Icon>
+                                            <wpfui:SymbolIcon Symbol="Sparkle24" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem
                                         Name="FindEdgesMenuItem"
                                         Command="{Binding ApplyFindEdgesCommand}"
                                         Header="Find Edges"
