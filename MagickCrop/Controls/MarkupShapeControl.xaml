@@ -1,0 +1,75 @@
+<UserControl
+    x:Class="MagickCrop.Controls.MarkupShapeControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <Canvas x:Name="MeasurementCanvas">
+        <Canvas.ContextMenu>
+            <ContextMenu>
+                <MenuItem Click="RemoveMenuItem_Click" Header="Remove" />
+            </ContextMenu>
+        </Canvas.ContextMenu>
+
+        <!--  Shared line element for Line and Arrow tools  -->
+        <Line
+            x:Name="ShapeLine"
+            Opacity="0.9"
+            Stroke="Red"
+            StrokeEndLineCap="Round"
+            StrokeStartLineCap="Round"
+            StrokeThickness="3" />
+
+        <!--  Arrowhead polygon (Arrow tool only)  -->
+        <Polygon
+            x:Name="ArrowHead"
+            Fill="Red"
+            Opacity="0.9"
+            Visibility="Collapsed" />
+
+        <!--  Rectangle outline  -->
+        <Rectangle
+            x:Name="ShapeRectangle"
+            Fill="Transparent"
+            Opacity="0.9"
+            Stroke="Red"
+            StrokeThickness="3"
+            Visibility="Collapsed" />
+
+        <!--  Ellipse outline  -->
+        <Ellipse
+            x:Name="ShapeEllipse"
+            Fill="Transparent"
+            Opacity="0.9"
+            Stroke="Red"
+            StrokeThickness="3"
+            Visibility="Collapsed" />
+
+        <!--  Drag handles  -->
+        <Ellipse
+            x:Name="Point1Handle"
+            Width="12"
+            Height="12"
+            Cursor="SizeAll"
+            Fill="Red"
+            MouseDown="HandlePoint_MouseDown"
+            Opacity="0.8"
+            Stroke="White"
+            StrokeThickness="1"
+            Tag="0"
+            ToolTip="Drag to move start point" />
+        <Ellipse
+            x:Name="Point2Handle"
+            Width="12"
+            Height="12"
+            Cursor="SizeAll"
+            Fill="Red"
+            MouseDown="HandlePoint_MouseDown"
+            Opacity="0.8"
+            Stroke="White"
+            StrokeThickness="1"
+            Tag="1"
+            ToolTip="Drag to move end point" />
+    </Canvas>
+</UserControl>

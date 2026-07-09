@@ -15,5 +15,7 @@ public enum DraggingMode
     WhitePointPicker,
     BlackPointPicker,
     EdgeCorrectionDragging,
-    GridStraightenDragging
+    GridStraightenDragging,
+    MarkupShape,
+    MarkupText
 }
