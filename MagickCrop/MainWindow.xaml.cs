@@ -1147,7 +1147,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         OpenFileDialog openFileDialog = new()
         {
-            Filter = "Image Files|*.png;*.jpg;*.jpeg;*.heic;*.bmp|All files (*.*)|*.*",
+            Filter = "Image Files|*.png;*.jpg;*.jpeg;*.heic;*.heif;*.bmp;*.gif;*.tif;*.tiff;*.webp|All files (*.*)|*.*",
             RestoreDirectory = true,
         };
 
