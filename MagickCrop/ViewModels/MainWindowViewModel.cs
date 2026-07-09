@@ -53,6 +53,7 @@ public partial class MainWindowViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(Rotate90CcwCommand))]
     [NotifyCanExecuteChangedFor(nameof(FlipVerticalCommand))]
     [NotifyCanExecuteChangedFor(nameof(FlipHorizontalCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ApplyThresholdCommand))]
     private string? imagePath;
 
     [ObservableProperty]
@@ -272,6 +273,12 @@ public partial class MainWindowViewModel : ObservableObject
 
     [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
     private Task ApplyFindEdges() => ApplyAdjustmentAsync(img => img.CannyEdge());
+
+    [ObservableProperty]
+    private double thresholdValue = 128.0;
+
+    [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
+    private Task ApplyThreshold() => ApplyAdjustmentAsync(img => img.Threshold(new Percentage(ThresholdValue / 255.0 * 100.0)));
 
     private async Task ApplyAdjustmentAsync(Action<MagickImage> adjustment)
     {

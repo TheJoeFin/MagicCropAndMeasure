@@ -1,0 +1,39 @@
+<UserControl
+    x:Class="MagickCrop.Controls.RgbHistogramControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    mc:Ignorable="d"
+    d:DesignHeight="100" d:DesignWidth="200">
+    <GroupBox Margin="8,4" Padding="0,4" Header="RGB Histogram">
+        <Border
+            Height="80"
+            Background="#111111"
+            CornerRadius="4"
+            ClipToBounds="True">
+            <Grid>
+                <TextBlock
+                    x:Name="NoImageText"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontSize="10"
+                    Foreground="#555555"
+                    Text="Load an image to view histogram" />
+                <Canvas
+                    x:Name="HistogramCanvas"
+                    ClipToBounds="True"
+                    SizeChanged="HistogramCanvas_SizeChanged" />
+                <Rectangle
+                    x:Name="ThresholdIndicator"
+                    Width="1.5"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Stretch"
+                    Fill="White"
+                    IsHitTestVisible="False"
+                    Opacity="0.85"
+                    Visibility="Collapsed" />
+            </Grid>
+        </Border>
+    </GroupBox>
+</UserControl>
