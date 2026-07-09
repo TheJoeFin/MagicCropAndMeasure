@@ -390,6 +390,16 @@
                                 </MenuItem.Icon>
                             </MenuItem>
                             <MenuItem
+                                x:Name="ResetMenuItem"
+                                Click="ResetToOriginalMenuItem_Click"
+                                Header=""
+                                IsEnabled="{Binding HasImage}"
+                                ToolTip="Reset to the original image, discarding all edits and measurements">
+                                <MenuItem.Icon>
+                                    <wpfui:SymbolIcon Symbol="ArrowReset24" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem
                                 x:Name="InfoMenuItem"
                                 Command="{Binding ShowAboutCommand}"
                                 Header=""

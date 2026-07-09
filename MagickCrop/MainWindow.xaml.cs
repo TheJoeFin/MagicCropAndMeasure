@@ -1367,6 +1367,34 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         CenterAndZoomToFit();
     }
 
+    private async void ResetToOriginalMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string? originalPath = ViewModel.OriginalFilePath;
+        if (string.IsNullOrWhiteSpace(originalPath) || !File.Exists(originalPath))
+        {
+            Wpf.Ui.Controls.MessageBox uiMessageBox = new()
+            {
+                Title = "Reset to Original",
+                Content = "The original image file could no longer be found, so the image cannot be reset.",
+            };
+            await uiMessageBox.ShowDialogAsync();
+            return;
+        }
+
+        Wpf.Ui.Controls.MessageBox confirmBox = new()
+        {
+            Title = "Reset to Original",
+            Content = "This will discard all edits and measurements and reload the original image. Continue?",
+            PrimaryButtonText = "Reset",
+            CloseButtonText = "Cancel",
+        };
+
+        if (await confirmBox.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
+            return;
+
+        await OpenImagePath(originalPath);
+    }
+
     private const double ZoomFactor = 0.1;
     private const double MinZoom = 0.1;
     private const double MaxZoom = 10.0;
