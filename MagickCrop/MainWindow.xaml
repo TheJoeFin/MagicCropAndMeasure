@@ -121,6 +121,17 @@
                         IsEnabled="False"
                         IsHitTestVisible="False"
                         Visibility="Collapsed" />
+                    <InkCanvas
+                        x:Name="MarkupCanvas"
+                        Background="Transparent"
+                        IsEnabled="False"
+                        IsHitTestVisible="False"
+                        SelectionMoved="MarkupCanvas_SelectionMoved"
+                        SelectionMoving="MarkupCanvas_SelectionMoving"
+                        SelectionResized="MarkupCanvas_SelectionResized"
+                        SelectionResizing="MarkupCanvas_SelectionResizing"
+                        StrokeCollected="MarkupCanvas_StrokeCollected"
+                        StrokeErasing="MarkupCanvas_StrokeErasing" />
                     <ResizeGrip
                         x:Name="ImageResizeGrip"
                         Grid.Row="1"
@@ -353,7 +364,8 @@
                                 MouseDown="CloseFileIcon_MouseDown"
                                 Symbol="Dismiss24"
                                 ToolTip="Click to close and show the welcome screen"
-                                Visibility="{Binding HasOpenedFileName, Converter={StaticResource BoolToVis}}" />
+                                Visibility="{Binding HasOpenedFileName,
+                                                     Converter={StaticResource BoolToVis}}" />
                         </Grid>
                         <StackPanel
                             x:Name="UndoRedoPanel"
@@ -388,7 +400,7 @@
                             </MenuItem>
                         </StackPanel>
                         <TextBlock Text="Tools" />
-                        <TabControl ItemContainerStyle="{StaticResource NarrowTabHeaderStyle}">
+                        <TabControl ItemContainerStyle="{StaticResource NarrowTabHeaderStyle}" SelectionChanged="ToolsTabControl_SelectionChanged">
                             <TabItem x:Name="TransformTabItem">
                                 <TabItem.Header>
                                     <wpfui:SymbolIcon Symbol="Crop24" ToolTip="Crop and transform" />
@@ -595,6 +607,51 @@
                                     <wpfui:SymbolIcon Symbol="ImageEdit24" ToolTip="Adjust image appearance" />
                                 </TabItem.Header>
                                 <StackPanel Orientation="Vertical">
+                                    <c:RgbHistogramControl
+                                        x:Name="EditHistogram"
+                                        ImagePath="{Binding ImagePath}"
+                                        ThresholdValue="{Binding ThresholdValue}" />
+                                    <GroupBox
+                                        x:Name="ThresholdPanel"
+                                        Margin="8,0,8,4"
+                                        Padding="4,4"
+                                        Header="Threshold"
+                                        Visibility="Collapsed">
+                                        <StackPanel>
+                                            <Slider
+                                                Margin="0,2"
+                                                IsSnapToTickEnabled="True"
+                                                Maximum="255"
+                                                Minimum="0"
+                                                TickFrequency="1"
+                                                Value="{Binding ThresholdValue,
+                                                                Mode=TwoWay}" />
+                                            <TextBlock
+                                                HorizontalAlignment="Center"
+                                                FontSize="11"
+                                                Text="{Binding ThresholdValue,
+                                                               StringFormat={}{0:F0}}" />
+                                            <StackPanel
+                                                Margin="0,4,0,0"
+                                                HorizontalAlignment="Center"
+                                                Orientation="Horizontal">
+                                                <wpfui:Button
+                                                    Margin="0,0,4,0"
+                                                    Appearance="Primary"
+                                                    Click="ApplyThresholdButton_Click"
+                                                    Content="Apply">
+                                                    <wpfui:Button.Icon>
+                                                        <wpfui:SymbolIcon Symbol="Checkmark24" />
+                                                    </wpfui:Button.Icon>
+                                                </wpfui:Button>
+                                                <wpfui:Button Click="CancelThresholdButton_Click" Content="Cancel">
+                                                    <wpfui:Button.Icon>
+                                                        <wpfui:SymbolIcon Symbol="Dismiss24" />
+                                                    </wpfui:Button.Icon>
+                                                </wpfui:Button>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </GroupBox>
                                     <CheckBox
                                         x:Name="LocalAdjustmentCheckBox"
                                         Margin="0,4"
@@ -728,6 +785,15 @@
                                         ToolTip="Detect edges in image">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Symbol="Triangle24" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem
+                                        Name="ThresholdMenuItem"
+                                        Click="ThresholdMenuItem_Click"
+                                        Header="Threshold"
+                                        ToolTip="Convert image to black and white at a chosen threshold">
+                                        <MenuItem.Icon>
+                                            <wpfui:SymbolIcon Symbol="CircleHalfFill24" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                     <Separator x:Name="ObjectEraseSeparator" Visibility="Collapsed" />
@@ -955,6 +1021,364 @@
                                     </StackPanel>
                                 </StackPanel>
                             </TabItem>
+                            <TabItem x:Name="MarkupTabItem">
+                                <TabItem.Header>
+                                    <wpfui:SymbolIcon Symbol="Edit24" ToolTip="Markup and annotation tools" />
+                                </TabItem.Header>
+                                <StackPanel Orientation="Vertical">
+                                    <GroupBox
+                                        Margin="8,0"
+                                        Padding="0,6"
+                                        Header="Drawing Tools">
+                                        <StackPanel x:Name="MarkupToolsPanel" HorizontalAlignment="Center">
+                                            <ToggleButton
+                                                x:Name="MarkupSelectToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="MarkupSelectToggle_Checked"
+                                                Click="MarkupToolToggle_Clicked"
+                                                ToolTip="Select ink strokes to move, delete, or change their color and size"
+                                                Unchecked="MarkupToolToggle_Unchecked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="SelectObject24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Select" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                            <ToggleButton
+                                                x:Name="MarkupPenToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="MarkupPenToggle_Checked"
+                                                Click="MarkupToolToggle_Clicked"
+                                                ToolTip="Freehand pen for drawing on the image"
+                                                Unchecked="MarkupToolToggle_Unchecked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Pen24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Pen" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                            <ToggleButton
+                                                x:Name="MarkupHighlighterToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="MarkupHighlighterToggle_Checked"
+                                                Click="MarkupToolToggle_Clicked"
+                                                ToolTip="Semi-transparent highlighter"
+                                                Unchecked="MarkupToolToggle_Unchecked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Highlight24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Highlighter" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                            <ToggleButton
+                                                x:Name="MarkupEraserToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="MarkupEraserToggle_Checked"
+                                                Click="MarkupToolToggle_Clicked"
+                                                ToolTip="Erase drawn strokes"
+                                                Unchecked="MarkupToolToggle_Unchecked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Eraser24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Eraser" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                        </StackPanel>
+                                    </GroupBox>
+
+                                    <GroupBox
+                                        Margin="8,4"
+                                        Padding="0,6"
+                                        Header="Shape Tools">
+                                        <StackPanel x:Name="MarkupShapeToolsPanel" HorizontalAlignment="Center">
+                                            <ToggleButton
+                                                x:Name="MarkupLineToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="MarkupLineToggle_Checked"
+                                                Click="MarkupToolToggle_Clicked"
+                                                ToolTip="Draw a straight line"
+                                                Unchecked="MarkupToolToggle_Unchecked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Line24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Line" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                            <ToggleButton
+                                                x:Name="MarkupArrowToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="MarkupArrowToggle_Checked"
+                                                Click="MarkupToolToggle_Clicked"
+                                                ToolTip="Draw an arrow"
+                                                Unchecked="MarkupToolToggle_Unchecked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="ArrowRight24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Arrow" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                            <ToggleButton
+                                                x:Name="MarkupRectangleToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="MarkupRectangleToggle_Checked"
+                                                Click="MarkupToolToggle_Clicked"
+                                                ToolTip="Draw a rectangle"
+                                                Unchecked="MarkupToolToggle_Unchecked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="RectangleLandscape24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Rectangle" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                            <ToggleButton
+                                                x:Name="MarkupEllipseToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="MarkupEllipseToggle_Checked"
+                                                Click="MarkupToolToggle_Clicked"
+                                                ToolTip="Draw an ellipse"
+                                                Unchecked="MarkupToolToggle_Unchecked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Circle24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Ellipse" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                            <ToggleButton
+                                                x:Name="MarkupTextToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="MarkupTextToggle_Checked"
+                                                Click="MarkupToolToggle_Clicked"
+                                                ToolTip="Add a text annotation"
+                                                Unchecked="MarkupToolToggle_Unchecked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="TextT24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Text" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                        </StackPanel>
+                                    </GroupBox>
+
+                                    <GroupBox
+                                        Margin="8,4"
+                                        Padding="0,6"
+                                        Header="Options">
+                                        <StackPanel>
+                                            <Label Content="Color:" />
+                                            <UniformGrid
+                                                x:Name="MarkupColorPalette"
+                                                Margin="4,0"
+                                                Columns="5"
+                                                Rows="2">
+                                                <ToggleButton
+                                                    x:Name="ColorRed"
+                                                    Width="28"
+                                                    Height="28"
+                                                    Margin="2"
+                                                    Background="Red"
+                                                    Checked="MarkupColorButton_Checked"
+                                                    IsChecked="True"
+                                                    Tag="Red"
+                                                    ToolTip="Red" />
+                                                <ToggleButton
+                                                    x:Name="ColorOrangeRed"
+                                                    Width="28"
+                                                    Height="28"
+                                                    Margin="2"
+                                                    Background="OrangeRed"
+                                                    Checked="MarkupColorButton_Checked"
+                                                    Tag="OrangeRed"
+                                                    ToolTip="Orange Red" />
+                                                <ToggleButton
+                                                    x:Name="ColorYellow"
+                                                    Width="28"
+                                                    Height="28"
+                                                    Margin="2"
+                                                    Background="Yellow"
+                                                    Checked="MarkupColorButton_Checked"
+                                                    Tag="Yellow"
+                                                    ToolTip="Yellow" />
+                                                <ToggleButton
+                                                    x:Name="ColorLime"
+                                                    Width="28"
+                                                    Height="28"
+                                                    Margin="2"
+                                                    Background="LimeGreen"
+                                                    Checked="MarkupColorButton_Checked"
+                                                    Tag="LimeGreen"
+                                                    ToolTip="Lime Green" />
+                                                <ToggleButton
+                                                    x:Name="ColorCyan"
+                                                    Width="28"
+                                                    Height="28"
+                                                    Margin="2"
+                                                    Background="Cyan"
+                                                    Checked="MarkupColorButton_Checked"
+                                                    Tag="Cyan"
+                                                    ToolTip="Cyan" />
+                                                <ToggleButton
+                                                    x:Name="ColorBlue"
+                                                    Width="28"
+                                                    Height="28"
+                                                    Margin="2"
+                                                    Background="DodgerBlue"
+                                                    Checked="MarkupColorButton_Checked"
+                                                    Tag="DodgerBlue"
+                                                    ToolTip="Blue" />
+                                                <ToggleButton
+                                                    x:Name="ColorPurple"
+                                                    Width="28"
+                                                    Height="28"
+                                                    Margin="2"
+                                                    Background="MediumPurple"
+                                                    Checked="MarkupColorButton_Checked"
+                                                    Tag="MediumPurple"
+                                                    ToolTip="Purple" />
+                                                <ToggleButton
+                                                    x:Name="ColorPink"
+                                                    Width="28"
+                                                    Height="28"
+                                                    Margin="2"
+                                                    Background="DeepPink"
+                                                    Checked="MarkupColorButton_Checked"
+                                                    Tag="DeepPink"
+                                                    ToolTip="Pink" />
+                                                <ToggleButton
+                                                    x:Name="ColorWhite"
+                                                    Width="28"
+                                                    Height="28"
+                                                    Margin="2"
+                                                    Background="White"
+                                                    Checked="MarkupColorButton_Checked"
+                                                    Tag="White"
+                                                    ToolTip="White" />
+                                                <ToggleButton
+                                                    x:Name="ColorBlack"
+                                                    Width="28"
+                                                    Height="28"
+                                                    Margin="2"
+                                                    Background="Black"
+                                                    Checked="MarkupColorButton_Checked"
+                                                    Tag="Black"
+                                                    ToolTip="Black" />
+                                            </UniformGrid>
+                                            <Label Margin="0,6,0,0" Content="Size:" />
+                                            <Slider
+                                                x:Name="MarkupSizeSlider"
+                                                Width="150"
+                                                Maximum="20"
+                                                Minimum="1"
+                                                ToolTip="Stroke and text size"
+                                                ValueChanged="MarkupSizeSlider_ValueChanged"
+                                                Value="3" />
+                                        </StackPanel>
+                                    </GroupBox>
+                                    <Button
+                                        x:Name="CleanWhiteboardButton"
+                                        Width="150"
+                                        Margin="0,4"
+                                        HorizontalAlignment="Center"
+                                        Click="CleanWhiteboardButton_Click"
+                                        ToolTip="Remove small dirty marks and speckles from the whiteboard image">
+                                        <StackPanel Orientation="Horizontal">
+                                            <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Eraser24" />
+                                            <TextBlock VerticalAlignment="Center" Text="Clean Whiteboard" />
+                                        </StackPanel>
+                                    </Button>
+                                    <wpfui:ProgressRing
+                                        x:Name="CleanWhiteboardProgressRing"
+                                        Width="24"
+                                        Height="24"
+                                        Margin="0,4"
+                                        HorizontalAlignment="Center"
+                                        Visibility="Collapsed" />
+                                    <Button
+                                        x:Name="FillHollowStrokesButton"
+                                        Width="150"
+                                        Margin="0,4"
+                                        HorizontalAlignment="Center"
+                                        Click="FillHollowStrokesButton_Click"
+                                        ToolTip="Fill hollow interiors of thick marker strokes so skeletonization finds the correct centerline">
+                                        <StackPanel Orientation="Horizontal">
+                                            <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="PaintBucket24" />
+                                            <TextBlock VerticalAlignment="Center" Text="Fill Hollow Strokes" />
+                                        </StackPanel>
+                                    </Button>
+                                    <wpfui:ProgressRing
+                                        x:Name="FillHollowStrokesProgressRing"
+                                        Width="24"
+                                        Height="24"
+                                        Margin="0,4"
+                                        HorizontalAlignment="Center"
+                                        Visibility="Collapsed" />
+                                    <Button
+                                        x:Name="ConvertToInkButton"
+                                        Width="150"
+                                        Margin="0,4"
+                                        HorizontalAlignment="Center"
+                                        Click="ConvertToInkButton_Click"
+                                        ToolTip="Detect whiteboard pen strokes and convert them to editable ink strokes">
+                                        <StackPanel Orientation="Horizontal">
+                                            <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Wand24" />
+                                            <TextBlock VerticalAlignment="Center" Text="Convert to Ink" />
+                                        </StackPanel>
+                                    </Button>
+                                    <wpfui:ProgressRing
+                                        x:Name="ConvertToInkProgressRing"
+                                        Width="24"
+                                        Height="24"
+                                        Margin="0,4"
+                                        HorizontalAlignment="Center"
+                                        Visibility="Collapsed" />
+
+                                    <ToggleButton
+                                        x:Name="HideMarkupToggle"
+                                        Width="150"
+                                        Margin="0,4"
+                                        HorizontalAlignment="Center"
+                                        Checked="HideMarkupToggle_Checked"
+                                        ToolTip="Hide all markup on the image"
+                                        Unchecked="HideMarkupToggle_Unchecked">
+                                        <ToggleButton.Content>
+                                            <StackPanel Orientation="Horizontal">
+                                                <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="EyeOff24" />
+                                                <TextBlock VerticalAlignment="Center" Text="Hide All" />
+                                            </StackPanel>
+                                        </ToggleButton.Content>
+                                    </ToggleButton>
+
+                                    <wpfui:HyperlinkButton
+                                        x:Name="ClearMarkupButton"
+                                        HorizontalAlignment="Center"
+                                        Appearance="Danger"
+                                        Click="ClearMarkupButton_Click"
+                                        Content="Clear all"
+                                        Foreground="Red"
+                                        ToolTip="Remove all markup from the image">
+                                        <wpfui:HyperlinkButton.Icon>
+                                            <wpfui:SymbolIcon Symbol="Dismiss24" />
+                                        </wpfui:HyperlinkButton.Icon>
+                                    </wpfui:HyperlinkButton>
+                                </StackPanel>
+                            </TabItem>
                         </TabControl>
 
                     </StackPanel>
@@ -1032,7 +1456,9 @@
                         Visibility="Collapsed">
                         <wpfui:Flyout
                             Margin="0,0,0,20"
-                            IsOpen="{Binding ElementName=EditToggleButton, Path=IsChecked, Mode=TwoWay}"
+                            IsOpen="{Binding ElementName=EditToggleButton,
+                                             Path=IsChecked,
+                                             Mode=TwoWay}"
                             Placement="Top">
                             <Grid x:Name="CustomSizeStackPanel">
                                 <Grid.ColumnDefinitions>
@@ -1725,7 +2151,8 @@
             Foreground="#0066FF"
             IsIndeterminate="True"
             ToolTip="Processing..."
-            Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
+            Visibility="{Binding IsBusy,
+                                 Converter={StaticResource BoolToVis}}" />
 
         <ContentPresenter
             x:Name="Presenter"
