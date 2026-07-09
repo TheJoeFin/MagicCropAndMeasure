@@ -49,10 +49,12 @@ public partial class MainWindowViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(ApplyAutoGammaCommand))]
     [NotifyCanExecuteChangedFor(nameof(ApplyBlurCommand))]
     [NotifyCanExecuteChangedFor(nameof(ApplyFindEdgesCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ApplyDespeckleCommand))]
     [NotifyCanExecuteChangedFor(nameof(Rotate90CwCommand))]
     [NotifyCanExecuteChangedFor(nameof(Rotate90CcwCommand))]
     [NotifyCanExecuteChangedFor(nameof(FlipVerticalCommand))]
     [NotifyCanExecuteChangedFor(nameof(FlipHorizontalCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ApplyThresholdCommand))]
     private string? imagePath;
 
     [ObservableProperty]
@@ -272,6 +274,15 @@ public partial class MainWindowViewModel : ObservableObject
 
     [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
     private Task ApplyFindEdges() => ApplyAdjustmentAsync(img => img.CannyEdge());
+
+    [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
+    private Task ApplyDespeckle() => ApplyAdjustmentAsync(img => img.Despeckle());
+
+    [ObservableProperty]
+    private double thresholdValue = 128.0;
+
+    [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
+    private Task ApplyThreshold() => ApplyAdjustmentAsync(img => img.Threshold(new Percentage(ThresholdValue / 255.0 * 100.0)));
 
     private async Task ApplyAdjustmentAsync(Action<MagickImage> adjustment)
     {

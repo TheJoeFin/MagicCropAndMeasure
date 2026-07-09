@@ -57,6 +57,21 @@ public class MeasurementCollection
     public List<StrokeInfoDto> StrokeInfos { get; set; } = [];
 
     /// <summary>
+    /// Collection of markup shape overlay controls
+    /// </summary>
+    public List<MarkupShapeDto> MarkupShapes { get; set; } = [];
+
+    /// <summary>
+    /// Collection of markup text annotation controls
+    /// </summary>
+    public List<MarkupTextDto> MarkupTexts { get; set; } = [];
+
+    /// <summary>
+    /// Collection of markup canvas ink strokes (pen and highlighter)
+    /// </summary>
+    public List<MarkupStrokeDto> MarkupStrokes { get; set; } = [];
+
+    /// <summary>
     /// Global scale factor applied to all distance measurements
     /// </summary>
     public double GlobalScaleFactor { get; set; } = 1.0;

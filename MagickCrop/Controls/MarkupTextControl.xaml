@@ -1,0 +1,52 @@
+<UserControl
+    x:Class="MagickCrop.Controls.MarkupTextControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Cursor="SizeAll"
+    mc:Ignorable="d">
+    <UserControl.ContextMenu>
+        <ContextMenu>
+            <MenuItem Click="RemoveMenuItem_Click" Header="Remove" />
+        </ContextMenu>
+    </UserControl.ContextMenu>
+    <Border
+        Padding="4,2"
+        Background="#44000000"
+        BorderBrush="#88FFFFFF"
+        BorderThickness="1"
+        CornerRadius="2"
+        LostMouseCapture="Border_LostMouseCapture"
+        MouseDown="Border_MouseDown"
+        MouseMove="Border_MouseMove"
+        MouseUp="Border_MouseUp">
+        <Grid>
+            <TextBlock
+                x:Name="DisplayText"
+                FontSize="16"
+                FontWeight="SemiBold"
+                Foreground="Red"
+                Text="Text"
+                TextWrapping="NoWrap" />
+            <!--  Style is nulled so the WPF-UI TextBox template (dark card, min height,
+                  padding, accent underline) doesn't make the editor larger than the label  -->
+            <TextBox
+                x:Name="EditBox"
+                MinWidth="40"
+                Padding="0"
+                Background="Transparent"
+                BorderThickness="0"
+                Cursor="IBeam"
+                FontSize="16"
+                FontWeight="SemiBold"
+                Foreground="Red"
+                KeyDown="EditBox_KeyDown"
+                LostFocus="EditBox_LostFocus"
+                Style="{x:Null}"
+                Text="Text"
+                TextWrapping="NoWrap"
+                Visibility="Collapsed" />
+        </Grid>
+    </Border>
+</UserControl>

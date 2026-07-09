@@ -1,12 +1,12 @@
 ﻿using ImageMagick;
 using MagickCrop.Controls;
 using MagickCrop.Helpers;
-using MagickCrop.ViewModels;
 using MagickCrop.Models;
 using MagickCrop.Models.MeasurementControls;
 using MagickCrop.Services;
-using MagickCrop.Windows;
+using MagickCrop.ViewModels;
 using Microsoft.Win32;
+using Microsoft.Windows.Media.Capture;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -20,6 +20,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using Windows.ApplicationModel;
+using Windows.Storage;
 using Wpf.Ui;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
@@ -94,6 +95,27 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private readonly ObservableCollection<VerticalLineControl> verticalLineControls = [];
     private readonly ObservableCollection<HorizontalLineControl> horizontalLineControls = [];
 
+    // --- Markup state ---
+    private readonly ObservableCollection<MarkupShapeControl> markupShapeControls = [];
+    private MarkupShapeControl? activeMarkupShapeControl;
+    private readonly ObservableCollection<MarkupTextControl> markupTextControls = [];
+    private System.Windows.Media.Color markupColor = System.Windows.Media.Colors.Red;
+    private double markupSize = 3.0;
+    private bool isMarkupPenMode = false;
+    private bool isMarkupHighlighterMode = false;
+    private bool isMarkupSelectMode = false;
+    private bool isMarkupShapeMode = false;
+    private bool isMarkupTextMode = false;
+    private Rect? _selectionBoundsBeforeMove = null;
+    private StrokeCollection? _strokesBeforeMove = null;
+    private Rect? _selectionBoundsBeforeResize = null;
+    private StrokeCollection? _strokesBeforeResize = null;
+    private MagickCrop.Models.MarkupShapeType activeMarkupShapeType = MagickCrop.Models.MarkupShapeType.Rectangle;
+    private bool isMarkupShapeDragCreation = false;
+    private Point markupShapeBeforePoint1;
+    private Point markupShapeBeforePoint2;
+    private int markupShapeBeforeDragIndex = -1;
+
     private Services.RecentProjectsManager? recentProjectsManager;
     private System.Timers.Timer? autoSaveTimer;
     private readonly int AutoSaveIntervalMs = (int)TimeSpan.FromSeconds(5).TotalMilliseconds;
@@ -139,7 +161,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private bool isFreeRotatingDrag = false;
 
     // runtime reference to angle overlay
-    private WpfTextBlock? rotationOverlayLabel;
+    private readonly WpfTextBlock? rotationOverlayLabel;
     private long lastRotateUpdateTicks = 0;
     private double lastAppliedAdornerAngle = 0.0;
     private const int RotateUpdateMinIntervalMs = 12; // throttle to reduce UI thrash
@@ -197,6 +219,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         PreviewMouseWheel += ShapeCanvas_PreviewMouseWheel;
 
         DrawPolyLine();
+
+        lines ??= new();
+
         _polygonElements = [lines, TopLeft, TopRight, BottomRight, BottomLeft];
 
         foreach (UIElement element in _polygonElements)
@@ -458,6 +483,43 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 gridStraightenDragIndex = -1;
             }
 
+            if (draggingMode == DraggingMode.MarkupShape && activeMarkupShapeControl is not null)
+            {
+                if (isMarkupShapeDragCreation)
+                {
+                    // New shape added — record undo for the whole addition
+                    MarkupShapeControl ctrl = activeMarkupShapeControl;
+                    UndoRedo.AddUndo(new MarkupShapeAddedItem(
+                        ctrl, markupShapeControls, ShapeCanvas,
+                        wireEvents: () =>
+                        {
+                            ctrl.MeasurementPointMouseDown += MarkupShapePoint_MouseDown;
+                            ctrl.RemoveControlRequested += MarkupShapeControl_RemoveControlRequested;
+                        },
+                        unwireEvents: () =>
+                        {
+                            ctrl.MeasurementPointMouseDown -= MarkupShapePoint_MouseDown;
+                            ctrl.RemoveControlRequested -= MarkupShapeControl_RemoveControlRequested;
+                        }));
+                }
+                else if (markupShapeBeforeDragIndex >= 0)
+                {
+                    // Existing handle dragged — record undo for the point move
+                    var (afterP1, afterP2) = activeMarkupShapeControl.GetPoints();
+                    Point before = markupShapeBeforeDragIndex == 0 ? markupShapeBeforePoint1 : markupShapeBeforePoint2;
+                    Point after  = markupShapeBeforeDragIndex == 0 ? afterP1 : afterP2;
+                    if (before != after)
+                    {
+                        MarkupShapeControl ctrl = activeMarkupShapeControl;
+                        UndoRedo.AddUndo(new MarkupShapePointMovedItem(ctrl, markupShapeBeforeDragIndex, before, after));
+                    }
+                }
+
+                activeMarkupShapeControl.ResetActivePoint();
+                activeMarkupShapeControl = null;
+                isMarkupShapeDragCreation = false;
+            }
+
             clickedElement = null;
             ReleaseMouseCapture();
             draggingMode = DraggingMode.None;
@@ -545,6 +607,15 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         {
             Point imagePoint = e.GetPosition(MainImage);
             MoveGridStraightenPoint(gridStraightenDragIndex, imagePoint);
+            e.Handled = true;
+            return;
+        }
+
+        if (draggingMode == DraggingMode.MarkupShape && activeMarkupShapeControl is not null)
+        {
+            int idx = activeMarkupShapeControl.GetActivePointIndex();
+            if (idx >= 0)
+                activeMarkupShapeControl.MovePoint(idx, movingPoint);
             e.Handled = true;
             return;
         }
@@ -1076,7 +1147,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         OpenFileDialog openFileDialog = new()
         {
-            Filter = "Image Files|*.png;*.jpg;*.jpeg;*.heic;*.bmp|All files (*.*)|*.*",
+            Filter = "Image Files|*.png;*.jpg;*.jpeg;*.heic;*.heif;*.bmp;*.gif;*.tif;*.tiff;*.webp|All files (*.*)|*.*",
             RestoreDirectory = true,
         };
 
@@ -1167,13 +1238,13 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             SetUiForLongTask();
             WelcomeMessageModal.Visibility = Visibility.Collapsed;
 
-            var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
-            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+            nint hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            Microsoft.UI.WindowId windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
 
-            var cameraCaptureUI = new Microsoft.Windows.Media.Capture.CameraCaptureUI(windowId);
-            cameraCaptureUI.PhotoSettings.Format = Microsoft.Windows.Media.Capture.CameraCaptureUIPhotoFormat.Png;
+            CameraCaptureUI cameraCaptureUI = new(windowId);
+            cameraCaptureUI.PhotoSettings.Format = CameraCaptureUIPhotoFormat.Png;
 
-            var file = await cameraCaptureUI.CaptureFileAsync(Microsoft.Windows.Media.Capture.CameraCaptureUIMode.Photo);
+            StorageFile file = await cameraCaptureUI.CaptureFileAsync(CameraCaptureUIMode.Photo);
 
             if (file != null)
             {
@@ -1294,6 +1365,34 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         // Center and zoom to fit the image in the viewport
         CenterAndZoomToFit();
+    }
+
+    private async void ResetToOriginalMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        string? originalPath = ViewModel.OriginalFilePath;
+        if (string.IsNullOrWhiteSpace(originalPath) || !File.Exists(originalPath))
+        {
+            Wpf.Ui.Controls.MessageBox uiMessageBox = new()
+            {
+                Title = "Reset to Original",
+                Content = "The original image file could no longer be found, so the image cannot be reset.",
+            };
+            await uiMessageBox.ShowDialogAsync();
+            return;
+        }
+
+        Wpf.Ui.Controls.MessageBox confirmBox = new()
+        {
+            Title = "Reset to Original",
+            Content = "This will discard all edits and measurements and reload the original image. Continue?",
+            PrimaryButtonText = "Reset",
+            CloseButtonText = "Cancel",
+        };
+
+        if (await confirmBox.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
+            return;
+
+        await OpenImagePath(originalPath);
     }
 
     private const double ZoomFactor = 0.1;
@@ -1448,6 +1547,15 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         clickedPoint = e.GetPosition(ShapeCanvas);
 
+        // A markup text edit in progress absorbs this click: commit it instead of
+        // starting a new tool action (otherwise clicking away to accept the text
+        // would immediately place another text box)
+        if (CommitPendingMarkupTextEdit())
+        {
+            e.Handled = true;
+            return;
+        }
+
         // --- ANGLE MEASUREMENT PLACEMENT LOGIC ---
         if (isPlacingAngleMeasurement && anglePlacementStep == AnglePlacementStep.PlacingThirdPoint && activeAnglePlacementControl != null)
         {
@@ -1464,6 +1572,73 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             isCreatingMeasurement = false;
             draggingMode = DraggingMode.None;
             ShapeCanvas.ReleaseMouseCapture();
+            e.Handled = true;
+            return;
+        }
+
+        // --- MARKUP SHAPE PLACEMENT ---
+        if (isMarkupShapeMode && e.LeftButton == MouseButtonState.Pressed)
+        {
+            MarkupShapeControl shapeControl = new()
+            {
+                ShapeType = activeMarkupShapeType,
+                StrokeColor = markupColor,
+                StrokeThickness = markupSize
+            };
+            shapeControl.MeasurementPointMouseDown += MarkupShapePoint_MouseDown;
+            shapeControl.RemoveControlRequested += MarkupShapeControl_RemoveControlRequested;
+            markupShapeControls.Add(shapeControl);
+            ShapeCanvas.Children.Add(shapeControl);
+            shapeControl.MovePoint(0, clickedPoint);
+            shapeControl.StartDraggingPoint(1); // fires MarkupShapePoint_MouseDown → CaptureMouse
+            isMarkupShapeDragCreation = true;   // distinguishes creation from handle move for undo
+            draggingMode = DraggingMode.MarkupShape;
+            e.Handled = true;
+            return;
+        }
+
+        // --- MARKUP TEXT PLACEMENT ---
+        if (isMarkupTextMode && e.LeftButton == MouseButtonState.Pressed)
+        {
+            MarkupTextControl textControl = new()
+            {
+                TextColor = markupColor,
+                MarkupFontSize = markupSize * 4
+            };
+            textControl.RemoveControlRequested += MarkupTextControl_RemoveControlRequested;
+            Canvas.SetLeft(textControl, clickedPoint.X);
+            Canvas.SetTop(textControl, clickedPoint.Y);
+            markupTextControls.Add(textControl);
+            ShapeCanvas.Children.Add(textControl);
+
+            // Push the undo item only once the initial edit is committed; cancelling
+            // (Escape, or committing empty text) discards the control entirely
+            MarkupTextControl ctrl = textControl;
+            void OnFirstCommit(object? s, EventArgs args)
+            {
+                ctrl.EditCommitted -= OnFirstCommit;
+                ctrl.EditCancelled -= OnFirstCancel;
+                UndoRedo.AddUndo(new MarkupTextAddedItem(
+                    ctrl, markupTextControls, ShapeCanvas,
+                    wireEvents: () => ctrl.RemoveControlRequested += MarkupTextControl_RemoveControlRequested,
+                    unwireEvents: () => ctrl.RemoveControlRequested -= MarkupTextControl_RemoveControlRequested));
+
+                // From now on, edits and drags of this label get their own undo items
+                ctrl.EditCommitted += MarkupTextControl_EditCommitted;
+                ctrl.TextMoved += MarkupTextControl_TextMoved;
+            }
+            void OnFirstCancel(object? s, EventArgs args)
+            {
+                ctrl.EditCommitted -= OnFirstCommit;
+                ctrl.EditCancelled -= OnFirstCancel;
+                ctrl.RemoveControlRequested -= MarkupTextControl_RemoveControlRequested;
+                markupTextControls.Remove(ctrl);
+                ShapeCanvas.Children.Remove(ctrl);
+            }
+            ctrl.EditCommitted += OnFirstCommit;
+            ctrl.EditCancelled += OnFirstCancel;
+
+            textControl.EnterEditMode();
             e.Handled = true;
             return;
         }
@@ -3903,6 +4078,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideEdgeCorrectionControls();
         HideGridStraightenControls();
 
+        HideThresholdControls();
         isObjectEraseMode = true;
         ObjectEraseButtonPanel.Visibility = Visibility.Visible;
 
@@ -3931,6 +4107,38 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         EraseMaskCanvas.Visibility = Visibility.Collapsed;
         EraseMaskCanvas.IsEnabled = false;
         EraseMaskCanvas.IsHitTestVisible = false;
+    }
+
+    private void ThresholdMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(ViewModel.ImagePath))
+            return;
+
+        ShowThresholdControls();
+    }
+
+    private void ShowThresholdControls()
+    {
+        HideObjectEraseControls();
+        ThresholdPanel.Visibility = Visibility.Visible;
+        EditHistogram.IsThresholdActive = true;
+    }
+
+    private void HideThresholdControls()
+    {
+        ThresholdPanel.Visibility = Visibility.Collapsed;
+        EditHistogram.IsThresholdActive = false;
+    }
+
+    private async void ApplyThresholdButton_Click(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.ApplyThresholdCommand.ExecuteAsync(null);
+        HideThresholdControls();
+    }
+
+    private void CancelThresholdButton_Click(object sender, RoutedEventArgs e)
+    {
+        HideThresholdControls();
     }
 
     private void EraseBrushSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -4117,7 +4325,6 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         };
 
         // Show the dialog and handle the result
-        ContentDialogService dialogService = new();
         dialog.DialogHost = Presenter;
         dialog.Closing += (s, args) =>
         {
@@ -4205,6 +4412,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         horizontalLineControls.Clear();
 
         ClearAllStrokesAndLengths();
+        ClearAllMarkup();
         draggingMode = DraggingMode.None;
     }
 
@@ -4213,7 +4421,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     {
         if (isAdornerRotatingDrag)
         {
-            if (e is not null) e.Handled = true;
+            e?.Handled = true;
             return false;
         }
         if (sender is Ellipse senderEllipse
@@ -4247,6 +4455,20 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private void CircleMeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e) =>
         HandleMeasurementMouseDown<CircleMeasurementControl>(sender, e, DraggingMode.MeasureCircle, c => activeCircleMeasureControl = c);
+
+    private void MarkupShapePoint_MouseDown(object sender, MouseButtonEventArgs? e)
+    {
+        if (HandleMeasurementMouseDown<MarkupShapeControl>(sender, e, DraggingMode.MarkupShape, c => activeMarkupShapeControl = c))
+        {
+            // Capture before-state for point-move undo (overridden to true by creation caller if needed)
+            isMarkupShapeDragCreation = false;
+            if (activeMarkupShapeControl is not null)
+            {
+                (markupShapeBeforePoint1, markupShapeBeforePoint2) = activeMarkupShapeControl.GetPoints();
+                markupShapeBeforeDragIndex = activeMarkupShapeControl.GetActivePointIndex();
+            }
+        }
+    }
 
     private async void SetImageScaleButton_Click(object sender, RoutedEventArgs e)
     {
@@ -4551,6 +4773,15 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             package.Measurements.StrokeInfos.Add(StrokeInfoDto.FromStrokeInfo(info, displayX, displayY));
         }
 
+        foreach (MarkupShapeControl control in markupShapeControls)
+            package.Measurements.MarkupShapes.Add(control.ToDto());
+
+        foreach (MarkupTextControl control in markupTextControls)
+            package.Measurements.MarkupTexts.Add(control.ToDto());
+
+        foreach (Stroke stroke in MarkupCanvas.Strokes)
+            package.Measurements.MarkupStrokes.Add(MarkupStrokeDto.FromStroke(stroke));
+
         return package;
     }
 
@@ -4818,6 +5049,36 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             strokeMeasurements.Add(stroke, infoDto.ToStrokeInfo());
         }
 
+        // Restore markup shapes
+        foreach (MarkupShapeDto dto in package.Measurements.MarkupShapes)
+        {
+            MarkupShapeControl control = new();
+            control.FromDto(dto);
+            control.MeasurementPointMouseDown += MarkupShapePoint_MouseDown;
+            control.RemoveControlRequested += MarkupShapeControl_RemoveControlRequested;
+            markupShapeControls.Add(control);
+            ShapeCanvas.Children.Add(control);
+        }
+
+        // Restore markup text annotations
+        foreach (MarkupTextDto dto in package.Measurements.MarkupTexts)
+        {
+            MarkupTextControl control = new();
+            control.FromDto(dto);
+            control.RemoveControlRequested += MarkupTextControl_RemoveControlRequested;
+            control.EditCommitted += MarkupTextControl_EditCommitted;
+            control.TextMoved += MarkupTextControl_TextMoved;
+            Canvas.SetLeft(control, dto.PositionX);
+            Canvas.SetTop(control, dto.PositionY);
+            markupTextControls.Add(control);
+            ShapeCanvas.Children.Add(control);
+        }
+
+        // Restore markup canvas strokes
+        MarkupCanvas.Strokes.Clear();
+        foreach (MarkupStrokeDto dto in package.Measurements.MarkupStrokes)
+            MarkupCanvas.Strokes.Add(dto.ToStroke());
+
         if (package?.Metadata?.ProjectId is not null)
             ViewModel.CurrentProjectId = package.Metadata.ProjectId;
         else
@@ -5082,6 +5343,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideCroppingControls();
         HideResizeControls();
         HideObjectEraseControls();
+        HideThresholdControls();
         BottomBorder.Visibility = Visibility.Collapsed;
         WelcomeMessageModal.Visibility = Visibility.Visible;
         OpenFolderButton.IsEnabled = false;
@@ -5464,8 +5726,12 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             }
         }
 
+        // While a text box has keyboard focus (e.g. editing a markup text),
+        // leave Ctrl+Z/Ctrl+Y to the text box's own undo
+        bool typingInTextBox = Keyboard.FocusedElement is System.Windows.Controls.Primitives.TextBoxBase;
+
         // Handle Ctrl+Z for undo
-        if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && e.Key == Key.Z)
+        if (!typingInTextBox && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && e.Key == Key.Z)
         {
             if (UndoRedo.CanUndo)
             {
@@ -5476,7 +5742,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         }
 
         // Handle Ctrl+Y for redo
-        if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && e.Key == Key.Y)
+        if (!typingInTextBox && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && e.Key == Key.Y)
         {
             if (UndoRedo.CanRedo)
             {
@@ -5486,8 +5752,31 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             }
         }
 
+        // Handle Delete key for selected markup ink strokes
+        if (e.Key == Key.Delete && isMarkupSelectMode)
+        {
+            StrokeCollection selected = MarkupCanvas.GetSelectedStrokes();
+            if (selected.Count > 0)
+            {
+                DeleteSelectedMarkupStrokes();
+                e.Handled = true;
+                return;
+            }
+        }
+
         if (e.Key == Key.Escape)
         {
+            // Escape while editing a markup text cancels just that edit
+            foreach (MarkupTextControl control in markupTextControls.ToList())
+            {
+                if (control.IsEditing)
+                {
+                    control.CancelEdit();
+                    e.Handled = true;
+                    return;
+                }
+            }
+
             UncheckAllBut();
 
             // Cancel white point picker mode
@@ -6112,6 +6401,609 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     }
 
     #endregion Pixel Precision Zoom
+
+    #region Markup Tab
+
+    private void ToolsTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.Source is not TabControl)
+            return;
+
+        bool markupTabActive = MarkupTabItem?.IsSelected == true;
+        if (!markupTabActive)
+            DeactivateAllMarkupTools();
+    }
+
+    private void DeactivateAllMarkupTools()
+    {
+        isMarkupPenMode = false;
+        isMarkupHighlighterMode = false;
+        isMarkupSelectMode = false;
+        isMarkupShapeMode = false;
+        isMarkupTextMode = false;
+        if (MarkupCanvas is not null)
+        {
+            MarkupCanvas.IsEnabled = false;
+            MarkupCanvas.IsHitTestVisible = false;
+        }
+        UncheckMarkupAllBut();
+    }
+
+    private void UncheckMarkupAllBut(ToggleButton? keep = null)
+    {
+        if (MarkupToolsPanel is null || MarkupShapeToolsPanel is null) return;
+        foreach (ToggleButton btn in MarkupToolsPanel.Children.OfType<ToggleButton>())
+            if (btn != keep) btn.IsChecked = false;
+        foreach (ToggleButton btn in MarkupShapeToolsPanel.Children.OfType<ToggleButton>())
+            if (btn != keep) btn.IsChecked = false;
+    }
+
+    private void UpdateMarkupCanvasForPen()
+    {
+        MarkupCanvas.IsEnabled = true;
+        MarkupCanvas.IsHitTestVisible = true;
+        MarkupCanvas.EditingMode = InkCanvasEditingMode.Ink;
+        DrawingAttributes attrs = new()
+        {
+            Color = markupColor,
+            Width = markupSize,
+            Height = markupSize,
+            IsHighlighter = false,
+            StylusTip = StylusTip.Ellipse
+        };
+        MarkupCanvas.DefaultDrawingAttributes = attrs;
+    }
+
+    private void UpdateMarkupCanvasForHighlighter()
+    {
+        MarkupCanvas.IsEnabled = true;
+        MarkupCanvas.IsHitTestVisible = true;
+        MarkupCanvas.EditingMode = InkCanvasEditingMode.Ink;
+        System.Windows.Media.Color highlightColor = markupColor;
+        highlightColor.A = 100;
+        DrawingAttributes attrs = new()
+        {
+            Color = highlightColor,
+            Width = markupSize * 6,
+            Height = markupSize * 6,
+            IsHighlighter = true,
+            StylusTip = StylusTip.Rectangle
+        };
+        MarkupCanvas.DefaultDrawingAttributes = attrs;
+    }
+
+    private void DisableMarkupCanvas()
+    {
+        MarkupCanvas.IsEnabled = false;
+        MarkupCanvas.IsHitTestVisible = false;
+    }
+
+    private void MarkupPenToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        isMarkupPenMode = true;
+        isMarkupHighlighterMode = false;
+        isMarkupSelectMode = false;
+        isMarkupShapeMode = false;
+        isMarkupTextMode = false;
+        UpdateMarkupCanvasForPen();
+        UncheckMarkupAllBut(sender as ToggleButton);
+    }
+
+    private void MarkupHighlighterToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        isMarkupHighlighterMode = true;
+        isMarkupPenMode = false;
+        isMarkupSelectMode = false;
+        isMarkupShapeMode = false;
+        isMarkupTextMode = false;
+        UpdateMarkupCanvasForHighlighter();
+        UncheckMarkupAllBut(sender as ToggleButton);
+    }
+
+    private void MarkupEraserToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        isMarkupPenMode = false;
+        isMarkupHighlighterMode = false;
+        isMarkupSelectMode = false;
+        isMarkupShapeMode = false;
+        isMarkupTextMode = false;
+        MarkupCanvas.IsEnabled = true;
+        MarkupCanvas.IsHitTestVisible = true;
+        MarkupCanvas.EditingMode = InkCanvasEditingMode.EraseByStroke;
+        UncheckMarkupAllBut(sender as ToggleButton);
+    }
+
+    private void MarkupSelectToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        isMarkupSelectMode = true;
+        isMarkupPenMode = false;
+        isMarkupHighlighterMode = false;
+        isMarkupShapeMode = false;
+        isMarkupTextMode = false;
+        MarkupCanvas.IsEnabled = true;
+        MarkupCanvas.IsHitTestVisible = true;
+        MarkupCanvas.EditingMode = InkCanvasEditingMode.Select;
+        UncheckMarkupAllBut(sender as ToggleButton);
+    }
+
+    private void MarkupLineToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        activeMarkupShapeType = MagickCrop.Models.MarkupShapeType.Line;
+        isMarkupShapeMode = true;
+        isMarkupPenMode = false;
+        isMarkupHighlighterMode = false;
+        isMarkupSelectMode = false;
+        isMarkupTextMode = false;
+        DisableMarkupCanvas();
+        UncheckMarkupAllBut(sender as ToggleButton);
+    }
+
+    private void MarkupArrowToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        activeMarkupShapeType = MagickCrop.Models.MarkupShapeType.Arrow;
+        isMarkupShapeMode = true;
+        isMarkupPenMode = false;
+        isMarkupHighlighterMode = false;
+        isMarkupSelectMode = false;
+        isMarkupTextMode = false;
+        DisableMarkupCanvas();
+        UncheckMarkupAllBut(sender as ToggleButton);
+    }
+
+    private void MarkupRectangleToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        activeMarkupShapeType = MagickCrop.Models.MarkupShapeType.Rectangle;
+        isMarkupShapeMode = true;
+        isMarkupPenMode = false;
+        isMarkupHighlighterMode = false;
+        isMarkupSelectMode = false;
+        isMarkupTextMode = false;
+        DisableMarkupCanvas();
+        UncheckMarkupAllBut(sender as ToggleButton);
+    }
+
+    private void MarkupEllipseToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        activeMarkupShapeType = MagickCrop.Models.MarkupShapeType.Ellipse;
+        isMarkupShapeMode = true;
+        isMarkupPenMode = false;
+        isMarkupHighlighterMode = false;
+        isMarkupSelectMode = false;
+        isMarkupTextMode = false;
+        DisableMarkupCanvas();
+        UncheckMarkupAllBut(sender as ToggleButton);
+    }
+
+    private void MarkupTextToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        isMarkupTextMode = true;
+        isMarkupPenMode = false;
+        isMarkupHighlighterMode = false;
+        isMarkupSelectMode = false;
+        isMarkupShapeMode = false;
+        DisableMarkupCanvas();
+        UncheckMarkupAllBut(sender as ToggleButton);
+    }
+
+    private void MarkupToolToggle_Clicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ToggleButton toggle || toggle.IsChecked is true)
+            return;
+
+        isMarkupPenMode = false;
+        isMarkupHighlighterMode = false;
+        isMarkupSelectMode = false;
+        isMarkupShapeMode = false;
+        isMarkupTextMode = false;
+        DisableMarkupCanvas();
+        draggingMode = DraggingMode.None;
+    }
+
+    private void MarkupToolToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        // Handled by MarkupToolToggle_Clicked
+    }
+
+    private void MarkupColorButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ToggleButton btn || btn.Tag is not string colorName)
+            return;
+
+        // Uncheck other color buttons
+        foreach (ToggleButton other in MarkupColorPalette.Children.OfType<ToggleButton>())
+            if (other != btn) other.IsChecked = false;
+
+        try
+        {
+            markupColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(colorName);
+        }
+        catch
+        {
+            markupColor = System.Windows.Media.Colors.Red;
+        }
+
+        // Apply color to active ink tool immediately
+        if (isMarkupPenMode) UpdateMarkupCanvasForPen();
+        else if (isMarkupHighlighterMode) UpdateMarkupCanvasForHighlighter();
+        else if (isMarkupSelectMode) ApplyColorToSelectedStrokes();
+    }
+
+    private void MarkupSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        markupSize = e.NewValue;
+
+        if (isMarkupPenMode) UpdateMarkupCanvasForPen();
+        else if (isMarkupHighlighterMode) UpdateMarkupCanvasForHighlighter();
+        else if (isMarkupSelectMode) ApplySizeToSelectedStrokes();
+    }
+
+    private void ApplyColorToSelectedStrokes()
+    {
+        StrokeCollection selected = MarkupCanvas.GetSelectedStrokes();
+        if (selected.Count == 0) return;
+
+        List<(Stroke, DrawingAttributes, DrawingAttributes)> changes = [];
+        foreach (Stroke stroke in selected)
+        {
+            DrawingAttributes before = stroke.DrawingAttributes.Clone();
+            System.Windows.Media.Color color = markupColor;
+            if (stroke.DrawingAttributes.IsHighlighter)
+                color.A = 100;
+            DrawingAttributes after = stroke.DrawingAttributes.Clone();
+            after.Color = color;
+            stroke.DrawingAttributes = after;
+            changes.Add((stroke, before, after));
+        }
+        UndoRedo.AddUndo(new MarkupStrokePropertiesChangedItem(changes));
+    }
+
+    private void ApplySizeToSelectedStrokes()
+    {
+        StrokeCollection selected = MarkupCanvas.GetSelectedStrokes();
+        if (selected.Count == 0) return;
+
+        List<(Stroke, DrawingAttributes, DrawingAttributes)> changes = [];
+        foreach (Stroke stroke in selected)
+        {
+            DrawingAttributes before = stroke.DrawingAttributes.Clone();
+            double size = stroke.DrawingAttributes.IsHighlighter ? markupSize * 6 : markupSize;
+            DrawingAttributes after = stroke.DrawingAttributes.Clone();
+            after.Width = size;
+            after.Height = size;
+            stroke.DrawingAttributes = after;
+            changes.Add((stroke, before, after));
+        }
+        UndoRedo.AddUndo(new MarkupStrokePropertiesChangedItem(changes));
+    }
+
+    private void MarkupCanvas_StrokeCollected(object sender, InkCanvasStrokeCollectedEventArgs e)
+    {
+        UndoRedo.AddUndo(new MarkupStrokeAddedItem(MarkupCanvas, e.Stroke));
+    }
+
+    private void MarkupCanvas_StrokeErasing(object sender, InkCanvasStrokeErasingEventArgs e)
+    {
+        UndoRedo.AddUndo(new MarkupStrokeDeletedItem(MarkupCanvas, [e.Stroke]));
+    }
+
+    private void MarkupCanvas_SelectionMoving(object sender, InkCanvasSelectionEditingEventArgs e)
+    {
+        _selectionBoundsBeforeMove = e.OldRectangle;
+        _strokesBeforeMove = new StrokeCollection(MarkupCanvas.GetSelectedStrokes());
+    }
+
+    private void MarkupCanvas_SelectionMoved(object sender, EventArgs e)
+    {
+        if (_strokesBeforeMove is null || _selectionBoundsBeforeMove is null) return;
+
+        Rect newBounds = MarkupCanvas.GetSelectionBounds();
+        double deltaX = newBounds.X - _selectionBoundsBeforeMove.Value.X;
+        double deltaY = newBounds.Y - _selectionBoundsBeforeMove.Value.Y;
+
+        if (Math.Abs(deltaX) > 0.01 || Math.Abs(deltaY) > 0.01)
+            UndoRedo.AddUndo(new MarkupStrokeMovedItem(_strokesBeforeMove, deltaX, deltaY));
+
+        _strokesBeforeMove = null;
+        _selectionBoundsBeforeMove = null;
+    }
+
+    private void MarkupCanvas_SelectionResizing(object sender, InkCanvasSelectionEditingEventArgs e)
+    {
+        _selectionBoundsBeforeResize = e.OldRectangle;
+        _strokesBeforeResize = new StrokeCollection(MarkupCanvas.GetSelectedStrokes());
+    }
+
+    private void MarkupCanvas_SelectionResized(object sender, EventArgs e)
+    {
+        if (_strokesBeforeResize is null || _selectionBoundsBeforeResize is null) return;
+
+        Rect oldBounds = _selectionBoundsBeforeResize.Value;
+        Rect newBounds = MarkupCanvas.GetSelectionBounds();
+
+        if (oldBounds.Width > 0 && oldBounds.Height > 0
+            && (Math.Abs(newBounds.X - oldBounds.X) > 0.01
+                || Math.Abs(newBounds.Y - oldBounds.Y) > 0.01
+                || Math.Abs(newBounds.Width - oldBounds.Width) > 0.01
+                || Math.Abs(newBounds.Height - oldBounds.Height) > 0.01))
+        {
+            UndoRedo.AddUndo(new MarkupStrokeResizedItem(_strokesBeforeResize, oldBounds, newBounds));
+        }
+
+        _strokesBeforeResize = null;
+        _selectionBoundsBeforeResize = null;
+    }
+
+    private void DeleteSelectedMarkupStrokes()
+    {
+        StrokeCollection selected = MarkupCanvas.GetSelectedStrokes();
+        if (selected.Count == 0) return;
+        UndoRedo.AddUndo(new MarkupStrokeDeletedItem(MarkupCanvas, selected));
+        foreach (Stroke stroke in selected.ToList())
+            MarkupCanvas.Strokes.Remove(stroke);
+    }
+
+    private async void FillHollowStrokesButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(ViewModel.ImagePath)) return;
+
+        FillHollowStrokesButton.IsEnabled = false;
+        FillHollowStrokesProgressRing.Visibility = Visibility.Visible;
+
+        try
+        {
+            string? resultPath = await WhiteboardInkConverter.FillHollowStrokesAsync(ViewModel.ImagePath);
+
+            if (resultPath is null)
+            {
+                System.Windows.MessageBox.Show(
+                    "No hollow stroke interiors were found in the image.",
+                    "Fill Hollow Strokes",
+                    System.Windows.MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, resultPath);
+            UndoRedo.AddUndo(undoRedoItem);
+
+            ViewModel.ImagePath = resultPath;
+            using MagickImage resultImage = new(resultPath);
+            MainImage.Source = resultImage.ToBitmapSource();
+            ViewModel.ActualImageSize = new Size(resultImage.Width, resultImage.Height);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                $"Fill Hollow Strokes failed: {ex.Message}",
+                "Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            FillHollowStrokesButton.IsEnabled = true;
+            FillHollowStrokesProgressRing.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private async void ConvertToInkButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(ViewModel.ImagePath)) return;
+
+        ConvertToInkButton.IsEnabled = false;
+        ConvertToInkProgressRing.Visibility = Visibility.Visible;
+
+        try
+        {
+            List<Stroke> strokes = await WhiteboardInkConverter.ConvertToStrokesAsync(
+                ViewModel.ImagePath,
+                MarkupCanvas.ActualWidth,
+                MarkupCanvas.ActualHeight);
+
+            if (strokes.Count == 0) return;
+
+            foreach (Stroke stroke in strokes)
+                MarkupCanvas.Strokes.Add(stroke);
+
+            UndoRedo.AddUndo(new MarkupStrokeBatchAddedItem(MarkupCanvas, strokes));
+        }
+        finally
+        {
+            ConvertToInkButton.IsEnabled = true;
+            ConvertToInkProgressRing.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private async void CleanWhiteboardButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(ViewModel.ImagePath)) return;
+
+        CleanWhiteboardButton.IsEnabled = false;
+        CleanWhiteboardProgressRing.Visibility = Visibility.Visible;
+
+        try
+        {
+            string? resultPath = await WhiteboardInkConverter.RemoveSpecklesAsync(ViewModel.ImagePath);
+
+            if (resultPath is null)
+            {
+                System.Windows.MessageBox.Show(
+                    "No small speckles were found in the image.",
+                    "Clean Whiteboard",
+                    System.Windows.MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, resultPath);
+            UndoRedo.AddUndo(undoRedoItem);
+
+            ViewModel.ImagePath = resultPath;
+            using MagickImage resultImage = new(resultPath);
+            MainImage.Source = resultImage.ToBitmapSource();
+            ViewModel.ActualImageSize = new Size(resultImage.Width, resultImage.Height);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                $"Clean Whiteboard failed: {ex.Message}",
+                "Error",
+                System.Windows.MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            CleanWhiteboardButton.IsEnabled = true;
+            CleanWhiteboardProgressRing.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void MarkupShapeControl_RemoveControlRequested(object sender, EventArgs e)
+    {
+        if (sender is not MarkupShapeControl control) return;
+        control.MeasurementPointMouseDown -= MarkupShapePoint_MouseDown;
+        control.RemoveControlRequested -= MarkupShapeControl_RemoveControlRequested;
+        markupShapeControls.Remove(control);
+        ShapeCanvas.Children.Remove(control);
+
+        UndoRedo.AddUndo(new MarkupControlRemovedItem<MarkupShapeControl>(
+            control, markupShapeControls, ShapeCanvas,
+            wireEvents: () =>
+            {
+                control.MeasurementPointMouseDown += MarkupShapePoint_MouseDown;
+                control.RemoveControlRequested += MarkupShapeControl_RemoveControlRequested;
+            },
+            unwireEvents: () =>
+            {
+                control.MeasurementPointMouseDown -= MarkupShapePoint_MouseDown;
+                control.RemoveControlRequested -= MarkupShapeControl_RemoveControlRequested;
+            }));
+    }
+
+    private void MarkupTextControl_EditCommitted(object? sender, EventArgs e)
+    {
+        if (sender is not MarkupTextControl control) return;
+        if (control.TextBeforeEdit != control.MarkupText)
+            UndoRedo.AddUndo(new MarkupTextChangedItem(control, control.TextBeforeEdit, control.MarkupText));
+    }
+
+    private void MarkupTextControl_TextMoved(object sender, Point before, Point after)
+    {
+        if (sender is not MarkupTextControl control) return;
+        UndoRedo.AddUndo(new MarkupTextMovedItem(control, before, after));
+    }
+
+    /// <summary>
+    /// Commits any markup text control still in edit mode. Returns true if one was open.
+    /// </summary>
+    private bool CommitPendingMarkupTextEdit()
+    {
+        bool committed = false;
+        // Committing empty text cancels the edit, which can remove the control
+        // from the collection — iterate over a copy
+        foreach (MarkupTextControl control in markupTextControls.ToList())
+        {
+            if (control.IsEditing)
+            {
+                control.CommitEdit();
+                committed = true;
+            }
+        }
+
+        return committed;
+    }
+
+    private void MarkupTextControl_RemoveControlRequested(object sender, EventArgs e)
+    {
+        if (sender is not MarkupTextControl control) return;
+        control.RemoveControlRequested -= MarkupTextControl_RemoveControlRequested;
+        markupTextControls.Remove(control);
+        ShapeCanvas.Children.Remove(control);
+
+        UndoRedo.AddUndo(new MarkupControlRemovedItem<MarkupTextControl>(
+            control, markupTextControls, ShapeCanvas,
+            wireEvents: () => control.RemoveControlRequested += MarkupTextControl_RemoveControlRequested,
+            unwireEvents: () => control.RemoveControlRequested -= MarkupTextControl_RemoveControlRequested));
+    }
+
+    private void ClearAllMarkup()
+    {
+        foreach (MarkupShapeControl control in markupShapeControls.ToList())
+        {
+            control.MeasurementPointMouseDown -= MarkupShapePoint_MouseDown;
+            control.RemoveControlRequested -= MarkupShapeControl_RemoveControlRequested;
+            ShapeCanvas.Children.Remove(control);
+        }
+        markupShapeControls.Clear();
+
+        foreach (MarkupTextControl control in markupTextControls.ToList())
+        {
+            control.RemoveControlRequested -= MarkupTextControl_RemoveControlRequested;
+            ShapeCanvas.Children.Remove(control);
+        }
+        markupTextControls.Clear();
+
+        MarkupCanvas.Strokes.Clear();
+    }
+
+    private void ClearMarkupButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (markupShapeControls.Count == 0 && markupTextControls.Count == 0 && MarkupCanvas.Strokes.Count == 0)
+            return;
+
+        List<MarkupShapeControl> shapes = [.. markupShapeControls];
+        List<MarkupTextControl> texts = [.. markupTextControls];
+        List<System.Windows.Ink.Stroke> strokes = [.. MarkupCanvas.Strokes];
+
+        UndoRedo.AddUndo(new MarkupClearedItem(
+            shapes, texts, strokes,
+            markupShapeControls, markupTextControls,
+            ShapeCanvas, MarkupCanvas,
+            wireEvents: () =>
+            {
+                foreach (MarkupShapeControl shape in shapes)
+                {
+                    shape.MeasurementPointMouseDown += MarkupShapePoint_MouseDown;
+                    shape.RemoveControlRequested += MarkupShapeControl_RemoveControlRequested;
+                }
+                foreach (MarkupTextControl text in texts)
+                    text.RemoveControlRequested += MarkupTextControl_RemoveControlRequested;
+            },
+            unwireEvents: () =>
+            {
+                foreach (MarkupShapeControl shape in shapes)
+                {
+                    shape.MeasurementPointMouseDown -= MarkupShapePoint_MouseDown;
+                    shape.RemoveControlRequested -= MarkupShapeControl_RemoveControlRequested;
+                }
+                foreach (MarkupTextControl text in texts)
+                    text.RemoveControlRequested -= MarkupTextControl_RemoveControlRequested;
+            }));
+
+        ClearAllMarkup();
+    }
+
+    private void HideMarkupToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        SetMarkupVisibility(false);
+    }
+
+    private void HideMarkupToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        SetMarkupVisibility(true);
+    }
+
+    private void SetMarkupVisibility(bool visible)
+    {
+        Visibility v = visible ? Visibility.Visible : Visibility.Collapsed;
+        foreach (MarkupShapeControl control in markupShapeControls)
+            control.Visibility = v;
+        foreach (MarkupTextControl control in markupTextControls)
+            control.Visibility = v;
+        MarkupCanvas.Visibility = v;
+    }
+
+    #endregion Markup Tab
 }
 internal enum AnglePlacementStep
 {
