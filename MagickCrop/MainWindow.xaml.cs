@@ -1069,8 +1069,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
             string correctedImageFileName = saveFileDialog.FileName;
 
-            // Load image and apply options
-            using MagickImage image = new(ViewModel.ImagePath);
+            using MagickImage image = CreateImageForSave(options, (int)width, (int)height);
 
             // Resize if requested
             if (options.Resize)
@@ -1107,6 +1106,133 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         finally
         {
             SetUiForCompletedTask();
+        }
+    }
+
+    private MagickImage CreateImageForSave(SaveOptions options, int imageWidth, int imageHeight)
+    {
+        if (!options.IncludeMarkup && !options.IncludeMeasurements)
+            return new MagickImage(ViewModel.ImagePath);
+
+        BitmapSource renderedImage = RenderImageWithSelectedOverlays(
+            imageWidth,
+            imageHeight,
+            options.IncludeMarkup,
+            options.IncludeMeasurements);
+
+        PngBitmapEncoder encoder = new();
+        encoder.Frames.Add(BitmapFrame.Create(renderedImage));
+        using MemoryStream stream = new();
+        encoder.Save(stream);
+        stream.Position = 0;
+        return new MagickImage(stream);
+    }
+
+    private BitmapSource RenderImageWithSelectedOverlays(
+        int imageWidth,
+        int imageHeight,
+        bool includeMarkup,
+        bool includeMeasurements)
+    {
+        if (MainImage.ActualWidth <= 0 || MainImage.ActualHeight <= 0)
+            throw new InvalidOperationException("The image must be loaded before annotations can be saved.");
+
+        HashSet<UIElement> includedElements = [ImageGrid];
+
+        if (includeMeasurements)
+        {
+            includedElements.UnionWith(measurementTools);
+            includedElements.UnionWith(angleMeasurementTools);
+            includedElements.UnionWith(rectangleMeasurementTools);
+            includedElements.UnionWith(polygonMeasurementTools);
+            includedElements.UnionWith(circleMeasurementTools);
+            includedElements.UnionWith(verticalLineControls);
+            includedElements.UnionWith(horizontalLineControls);
+            includedElements.UnionWith(ShapeCanvas.Children.OfType<StrokeLengthDisplay>());
+        }
+
+        if (includeMarkup)
+        {
+            includedElements.UnionWith(markupShapeControls);
+            includedElements.UnionWith(markupTextControls);
+        }
+
+        Dictionary<UIElement, Visibility> visibilityBeforeRender = [];
+        void SetVisibilityForRender(UIElement element, Visibility visibility)
+        {
+            visibilityBeforeRender.TryAdd(element, element.Visibility);
+            element.Visibility = visibility;
+        }
+
+        Dictionary<MarkupShapeControl, bool> markupGizmoVisibility = [];
+        double originalScaleX = canvasScale.ScaleX;
+        double originalScaleY = canvasScale.ScaleY;
+        double originalTranslateX = canvasTranslate.X;
+        double originalTranslateY = canvasTranslate.Y;
+
+        try
+        {
+            foreach (UIElement element in ShapeCanvas.Children)
+            {
+                SetVisibilityForRender(
+                    element,
+                    includedElements.Contains(element) ? Visibility.Visible : Visibility.Collapsed);
+            }
+
+            SetVisibilityForRender(DrawingCanvas, includeMeasurements ? Visibility.Visible : Visibility.Collapsed);
+            SetVisibilityForRender(MarkupCanvas, includeMarkup ? Visibility.Visible : Visibility.Collapsed);
+            SetVisibilityForRender(EraseMaskCanvas, Visibility.Collapsed);
+            SetVisibilityForRender(ImageResizeGrip, Visibility.Collapsed);
+
+            foreach (MarkupShapeControl control in markupShapeControls)
+            {
+                markupGizmoVisibility[control] = control.IsDragGizmoVisible;
+                control.IsDragGizmoVisible = false;
+            }
+
+            canvasScale.ScaleX = 1;
+            canvasScale.ScaleY = 1;
+            canvasTranslate.X = 0;
+            canvasTranslate.Y = 0;
+
+            ShapeCanvas.UpdateLayout();
+
+            DrawingVisual visual = new();
+            using (DrawingContext context = visual.RenderOpen())
+            {
+                VisualBrush imageBrush = new(ShapeCanvas)
+                {
+                    Stretch = Stretch.Fill,
+                    Viewbox = new Rect(0, 0, MainImage.ActualWidth, MainImage.ActualHeight),
+                    ViewboxUnits = BrushMappingMode.Absolute,
+                    Viewport = new Rect(0, 0, imageWidth, imageHeight),
+                    ViewportUnits = BrushMappingMode.Absolute
+                };
+                context.DrawRectangle(imageBrush, null, new Rect(0, 0, imageWidth, imageHeight));
+            }
+
+            RenderTargetBitmap renderedImage = new(
+                imageWidth,
+                imageHeight,
+                96,
+                96,
+                PixelFormats.Pbgra32);
+            renderedImage.Render(visual);
+            renderedImage.Freeze();
+            return renderedImage;
+        }
+        finally
+        {
+            foreach ((UIElement element, Visibility visibility) in visibilityBeforeRender)
+                element.Visibility = visibility;
+
+            foreach ((MarkupShapeControl control, bool visible) in markupGizmoVisibility)
+                control.IsDragGizmoVisible = visible;
+
+            canvasScale.ScaleX = originalScaleX;
+            canvasScale.ScaleY = originalScaleY;
+            canvasTranslate.X = originalTranslateX;
+            canvasTranslate.Y = originalTranslateY;
         }
     }
 

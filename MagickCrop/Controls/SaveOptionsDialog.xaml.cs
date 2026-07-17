@@ -49,7 +49,9 @@ public partial class SaveOptionsDialog : UserControl
             Resize = false,
             Width = (int)originalWidth,
             Height = (int)originalHeight,
-            MaintainAspectRatio = true
+            MaintainAspectRatio = true,
+            IncludeMarkup = false,
+            IncludeMeasurements = false
         };
     }
 
@@ -129,6 +131,8 @@ public partial class SaveOptionsDialog : UserControl
     {
         // Update final options
         Options.MaintainAspectRatio = MaintainAspectRatioCheckBox.IsChecked == true;
+        Options.IncludeMarkup = IncludeMarkupCheckBox.IsChecked == true;
+        Options.IncludeMeasurements = IncludeMeasurementsCheckBox.IsChecked == true;
 
         if (WidthBox.Value is 0 || HeightBox.Value is 0)
         {

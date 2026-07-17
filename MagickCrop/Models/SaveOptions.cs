@@ -11,4 +11,6 @@ public class SaveOptions
     public int Width { get; set; }
     public int Height { get; set; }
     public bool MaintainAspectRatio { get; set; }
+    public bool IncludeMarkup { get; set; }
+    public bool IncludeMeasurements { get; set; }
 }
