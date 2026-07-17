@@ -46,6 +46,30 @@ public partial class CircleMeasurementControl : UserControl
         UpdatePositions();
     }
 
+    public bool IsDragGizmoVisible
+    {
+        get => CenterPoint.Visibility == Visibility.Visible;
+        set
+        {
+            Visibility visibility = value ? Visibility.Visible : Visibility.Collapsed;
+            CenterPoint.Visibility = visibility;
+            EdgePoint.Visibility = visibility;
+        }
+    }
+
+    public bool IsEndpointCapVisible
+    {
+        set
+        {
+            double size = value ? 6 : 12;
+            CenterPoint.Width = size;
+            CenterPoint.Height = size;
+            EdgePoint.Width = size;
+            EdgePoint.Height = size;
+            UpdatePositions();
+        }
+    }
+
     public void InitializePositions(double canvasWidth, double canvasHeight)
     {
         center = new Point(canvasWidth * 0.5, canvasHeight * 0.5);
@@ -106,7 +130,7 @@ public partial class CircleMeasurementControl : UserControl
         double scaledCircumference = circumference * ScaleFactor;
         double scaledArea = area * ScaleFactor * ScaleFactor; // Area scales by factor squared
 
-        CircleTextBlock.Text = $"r: {scaledRadius:N2} {Units}, C: {scaledCircumference:N2} {Units}, A: {scaledArea:N2} {Units}²";
+        CircleTextBlock.Text = $"r: {scaledRadius:N2} {Units}, C: {scaledCircumference:N2} {Units}, A: {scaledArea:N2} {Units}\u00B2";
     }
 
     private void MeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)

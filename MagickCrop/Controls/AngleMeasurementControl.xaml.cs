@@ -27,6 +27,33 @@ public partial class AngleMeasurementControl : UserControl
         UpdatePositions();
     }
 
+    public bool IsDragGizmoVisible
+    {
+        get => Point1.Visibility == Visibility.Visible;
+        set
+        {
+            Visibility visibility = value ? Visibility.Visible : Visibility.Collapsed;
+            Point1.Visibility = visibility;
+            VertexPoint.Visibility = visibility;
+            Point3.Visibility = visibility;
+        }
+    }
+
+    public bool IsEndpointCapVisible
+    {
+        set
+        {
+            double size = value ? 6 : 12;
+            Point1.Width = size;
+            Point1.Height = size;
+            VertexPoint.Width = size;
+            VertexPoint.Height = size;
+            Point3.Width = size;
+            Point3.Height = size;
+            UpdatePositions();
+        }
+    }
+
     public void InitializePositions(double canvasWidth, double canvasHeight)
     {
         // Place points at reasonable starting positions
@@ -72,7 +99,7 @@ public partial class AngleMeasurementControl : UserControl
         double angle = CalculateAngle();
         UpdateAngleArc();
 
-        AngleTextBlock.Text = $"{angle:F1}°";
+        AngleTextBlock.Text = $"{angle:F1}\u00B0";
 
         // Position the measurement text near the vertex
         Canvas.SetLeft(MeasurementText, vertexPosition.X + 15);

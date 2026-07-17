@@ -1709,8 +1709,10 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             {
                 ShapeType = activeMarkupShapeType,
                 StrokeColor = markupColor,
-                StrokeThickness = markupSize
+                StrokeThickness = markupSize,
+                IsDragGizmoVisible = MarkupTabItem?.IsSelected == true
             };
+            shapeControl.IsHitTestVisible = MarkupTabItem?.IsSelected == true;
             shapeControl.MeasurementPointMouseDown += MarkupShapePoint_MouseDown;
             shapeControl.RemoveControlRequested += MarkupShapeControl_RemoveControlRequested;
             markupShapeControls.Add(shapeControl);
@@ -1729,7 +1731,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             MarkupTextControl textControl = new()
             {
                 TextColor = markupColor,
-                MarkupFontSize = markupSize * 4
+                MarkupFontSize = markupSize * 4,
+                IsHitTestVisible = MarkupTabItem?.IsSelected == true
             };
             textControl.RemoveControlRequested += MarkupTextControl_RemoveControlRequested;
             Canvas.SetLeft(textControl, clickedPoint.X);
@@ -5180,6 +5183,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         {
             MarkupShapeControl control = new();
             control.FromDto(dto);
+            control.IsDragGizmoVisible = MarkupTabItem?.IsSelected == true;
+            control.IsHitTestVisible = MarkupTabItem?.IsSelected == true;
             control.MeasurementPointMouseDown += MarkupShapePoint_MouseDown;
             control.RemoveControlRequested += MarkupShapeControl_RemoveControlRequested;
             markupShapeControls.Add(control);
@@ -5191,6 +5196,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         {
             MarkupTextControl control = new();
             control.FromDto(dto);
+            control.IsHitTestVisible = MarkupTabItem?.IsSelected == true;
             control.RemoveControlRequested += MarkupTextControl_RemoveControlRequested;
             control.EditCommitted += MarkupTextControl_EditCommitted;
             control.TextMoved += MarkupTextControl_TextMoved;
@@ -6535,9 +6541,13 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (e.Source is not TabControl)
             return;
 
+        bool measurementTabActive = MeasureTabItem?.IsSelected == true;
         bool markupTabActive = MarkupTabItem?.IsSelected == true;
         if (!markupTabActive)
             DeactivateAllMarkupTools();
+
+        SetMeasurementDragGizmosVisibility(measurementTabActive);
+        SetMarkupDragGizmosVisibility(markupTabActive);
     }
 
     private void DeactivateAllMarkupTools()
@@ -6553,6 +6563,94 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             MarkupCanvas.IsHitTestVisible = false;
         }
         UncheckMarkupAllBut();
+    }
+
+    private void SetMarkupDragGizmosVisibility(bool visible)
+    {
+        if (!visible)
+            MarkupCanvas.Select(new StrokeCollection());
+
+        foreach (MarkupShapeControl control in markupShapeControls)
+        {
+            control.IsDragGizmoVisible = visible;
+            control.IsHitTestVisible = visible;
+        }
+
+        foreach (MarkupTextControl control in markupTextControls)
+            control.IsHitTestVisible = visible;
+    }
+
+    private void SetMeasurementDragGizmosVisibility(bool visible)
+    {
+        if (!visible)
+            DrawingCanvas.Select(new StrokeCollection());
+
+        foreach (DistanceMeasurementControl control in measurementTools)
+        {
+            SetMeasurementGizmoState(control, visible);
+            control.IsHitTestVisible = visible;
+        }
+
+        foreach (AngleMeasurementControl control in angleMeasurementTools)
+        {
+            SetMeasurementGizmoState(control, visible);
+            control.IsHitTestVisible = visible;
+        }
+
+        foreach (RectangleMeasurementControl control in rectangleMeasurementTools)
+        {
+            SetMeasurementGizmoState(control, visible);
+            control.IsHitTestVisible = visible;
+        }
+
+        foreach (PolygonMeasurementControl control in polygonMeasurementTools)
+        {
+            SetMeasurementGizmoState(control, visible);
+            control.IsHitTestVisible = visible;
+        }
+
+        foreach (CircleMeasurementControl control in circleMeasurementTools)
+        {
+            SetMeasurementGizmoState(control, visible);
+            control.IsHitTestVisible = visible;
+        }
+
+        foreach (VerticalLineControl control in verticalLineControls)
+            control.IsHitTestVisible = visible;
+
+        foreach (HorizontalLineControl control in horizontalLineControls)
+            control.IsHitTestVisible = visible;
+
+        foreach (StrokeLengthDisplay control in ShapeCanvas.Children.OfType<StrokeLengthDisplay>())
+            control.IsHitTestVisible = visible;
+    }
+
+    private static void SetMeasurementGizmoState<T>(T control, bool visible)
+        where T : class
+    {
+        switch (control)
+        {
+            case DistanceMeasurementControl distance:
+                distance.IsEndpointCapVisible = !visible;
+                distance.IsDragGizmoVisible = true;
+                break;
+            case AngleMeasurementControl angle:
+                angle.IsEndpointCapVisible = !visible;
+                angle.IsDragGizmoVisible = true;
+                break;
+            case RectangleMeasurementControl rectangle:
+                rectangle.IsEndpointCapVisible = !visible;
+                rectangle.IsDragGizmoVisible = true;
+                break;
+            case PolygonMeasurementControl polygon:
+                polygon.IsEndpointCapVisible = !visible;
+                polygon.IsDragGizmoVisible = true;
+                break;
+            case CircleMeasurementControl circle:
+                circle.IsEndpointCapVisible = !visible;
+                circle.IsDragGizmoVisible = true;
+                break;
+        }
     }
 
     private void UncheckMarkupAllBut(ToggleButton? keep = null)

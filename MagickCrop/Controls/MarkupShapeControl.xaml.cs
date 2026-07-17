@@ -54,6 +54,17 @@ public partial class MarkupShapeControl : UserControl
         }
     }
 
+    public bool IsDragGizmoVisible
+    {
+        get => Point1Handle.Visibility == Visibility.Visible;
+        set
+        {
+            Visibility visibility = value ? Visibility.Visible : Visibility.Collapsed;
+            Point1Handle.Visibility = visibility;
+            Point2Handle.Visibility = visibility;
+        }
+    }
+
     public MarkupShapeControl()
     {
         InitializeComponent();

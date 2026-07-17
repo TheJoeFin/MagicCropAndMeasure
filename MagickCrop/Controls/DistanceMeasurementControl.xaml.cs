@@ -51,6 +51,30 @@ public partial class DistanceMeasurementControl : UserControl
         UpdatePositions();
     }
 
+    public bool IsDragGizmoVisible
+    {
+        get => StartPoint.Visibility == Visibility.Visible;
+        set
+        {
+            Visibility visibility = value ? Visibility.Visible : Visibility.Collapsed;
+            StartPoint.Visibility = visibility;
+            EndPoint.Visibility = visibility;
+        }
+    }
+
+    public bool IsEndpointCapVisible
+    {
+        set
+        {
+            double size = value ? 6 : 12;
+            StartPoint.Width = size;
+            StartPoint.Height = size;
+            EndPoint.Width = size;
+            EndPoint.Height = size;
+            UpdatePositions();
+        }
+    }
+
     public void InitializePositions(double canvasWidth, double canvasHeight)
     {
         // Place points at reasonable starting positions

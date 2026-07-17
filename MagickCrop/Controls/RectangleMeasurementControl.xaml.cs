@@ -45,6 +45,30 @@ public partial class RectangleMeasurementControl : UserControl
         UpdatePositions();
     }
 
+    public bool IsDragGizmoVisible
+    {
+        get => TopLeftPoint.Visibility == Visibility.Visible;
+        set
+        {
+            Visibility visibility = value ? Visibility.Visible : Visibility.Collapsed;
+            TopLeftPoint.Visibility = visibility;
+            BottomRightPoint.Visibility = visibility;
+        }
+    }
+
+    public bool IsEndpointCapVisible
+    {
+        set
+        {
+            double size = value ? 6 : 12;
+            TopLeftPoint.Width = size;
+            TopLeftPoint.Height = size;
+            BottomRightPoint.Width = size;
+            BottomRightPoint.Height = size;
+            UpdatePositions();
+        }
+    }
+
     public void InitializePositions(double canvasWidth, double canvasHeight)
     {
         topLeft = new Point(canvasWidth * 0.3, canvasHeight * 0.3);
@@ -88,7 +112,7 @@ public partial class RectangleMeasurementControl : UserControl
         double scaledHeight = height * ScaleFactor;
         double scaledArea = area * ScaleFactor * ScaleFactor; // Area scales by factor squared
 
-        RectangleTextBlock.Text = $"{scaledWidth:N2} \u00D7 {scaledHeight:N2} {Units} (A: {scaledArea:N2} {Units}²)";
+        RectangleTextBlock.Text = $"{scaledWidth:N2} \u00D7 {scaledHeight:N2} {Units} (A: {scaledArea:N2} {Units}\u00B2)";
     }
 
     private void MeasurementPoint_MouseDown(object sender, MouseButtonEventArgs e)
