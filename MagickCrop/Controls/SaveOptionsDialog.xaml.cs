@@ -1,7 +1,9 @@
 using ImageMagick;
 using MagickCrop.Models;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace MagickCrop.Controls;
 
@@ -21,12 +23,28 @@ public partial class SaveOptionsDialog : UserControl
     private double originalHeight;
     private double aspectRatio;
     private bool updatingDimensions = false;
+    private readonly Func<SaveOptions, CancellationToken, Task<long>> estimateFileSizeAsync;
+    private readonly DispatcherTimer estimateDebounceTimer;
+    private readonly SemaphoreSlim estimateGate = new(1, 1);
+    private CancellationTokenSource? estimateCancellation;
+    private int estimateRequestId;
 
     public SaveOptions Options { get; private set; }
 
-    public SaveOptionsDialog(double imageWidth, double imageHeight)
+    public SaveOptionsDialog(
+        double imageWidth,
+        double imageHeight,
+        Func<SaveOptions, CancellationToken, Task<long>> estimateFileSizeAsync)
     {
         InitializeComponent();
+        this.estimateFileSizeAsync = estimateFileSizeAsync;
+        estimateDebounceTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(350)
+        };
+        estimateDebounceTimer.Tick += EstimateDebounceTimer_Tick;
+        Loaded += SaveOptionsDialog_Loaded;
+        Unloaded += SaveOptionsDialog_Unloaded;
 
         // Store original dimensions and calculate aspect ratio
         originalWidth = imageWidth;
@@ -46,6 +64,7 @@ public partial class SaveOptionsDialog : UserControl
         {
             Format = MagickFormat.Png,
             Extension = ".png",
+            Quality = (int)QualitySlider.Value,
             Resize = false,
             Width = (int)originalWidth,
             Height = (int)originalHeight,
@@ -53,6 +72,14 @@ public partial class SaveOptionsDialog : UserControl
             IncludeMarkup = false,
             IncludeMeasurements = false
         };
+    }
+
+    private void SaveOptionsDialog_Loaded(object sender, RoutedEventArgs e) => ScheduleSizeEstimate();
+
+    private void SaveOptionsDialog_Unloaded(object sender, RoutedEventArgs e)
+    {
+        estimateDebounceTimer.Stop();
+        estimateCancellation?.Cancel();
     }
 
     private void FormatComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -66,6 +93,7 @@ public partial class SaveOptionsDialog : UserControl
 
             // Show/hide quality slider based on format
             QualityGrid.Visibility = selectedFormat.SupportsQuality ? Visibility.Visible : Visibility.Collapsed;
+            ScheduleSizeEstimate();
         }
     }
 
@@ -76,6 +104,7 @@ public partial class SaveOptionsDialog : UserControl
         int quality = (int)QualitySlider.Value;
         QualityValueText.Text = $"{quality}%";
         Options.Quality = quality;
+        ScheduleSizeEstimate();
     }
 
     private void ResizeCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
@@ -89,6 +118,7 @@ public partial class SaveOptionsDialog : UserControl
         MaintainAspectRatioCheckBox.IsEnabled = isChecked;
 
         Options.Resize = isChecked;
+        ScheduleSizeEstimate();
     }
 
     private void WidthBox_ValueChanged(object sender, RoutedEventArgs e)
@@ -107,6 +137,8 @@ public partial class SaveOptionsDialog : UserControl
             Options.Height = (int)HeightBox.Value.Value;
             updatingDimensions = false;
         }
+
+        ScheduleSizeEstimate();
     }
 
     private void HeightBox_ValueChanged(object sender, RoutedEventArgs e)
@@ -125,6 +157,89 @@ public partial class SaveOptionsDialog : UserControl
             Options.Width = (int)WidthBox.Value.Value;
             updatingDimensions = false;
         }
+
+        ScheduleSizeEstimate();
+    }
+
+    private void IncludeMarkupCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded) return;
+
+        Options.IncludeMarkup = IncludeMarkupCheckBox.IsChecked == true;
+        ScheduleSizeEstimate();
+    }
+
+    private void IncludeMeasurementsCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded) return;
+
+        Options.IncludeMeasurements = IncludeMeasurementsCheckBox.IsChecked == true;
+        ScheduleSizeEstimate();
+    }
+
+    private void ScheduleSizeEstimate()
+    {
+        if (!IsLoaded)
+            return;
+
+        estimateCancellation?.Cancel();
+        estimateDebounceTimer.Stop();
+        estimateDebounceTimer.Start();
+        EstimatedSizeText.Text = "Estimated file size: Calculating...";
+    }
+
+    private async void EstimateDebounceTimer_Tick(object? sender, EventArgs e)
+    {
+        estimateDebounceTimer.Stop();
+        estimateCancellation?.Cancel();
+
+        CancellationTokenSource cancellation = new();
+        estimateCancellation = cancellation;
+        int requestId = ++estimateRequestId;
+        bool enteredEstimateGate = false;
+
+        try
+        {
+            await estimateGate.WaitAsync(cancellation.Token);
+            enteredEstimateGate = true;
+            long size = await estimateFileSizeAsync(Options.Clone(), cancellation.Token);
+            if (!cancellation.IsCancellationRequested && requestId == estimateRequestId && IsLoaded)
+                EstimatedSizeText.Text = $"Estimated file size: {FormatFileSize(size)}";
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Unable to estimate saved image size: {ex}");
+            if (requestId == estimateRequestId && IsLoaded)
+                EstimatedSizeText.Text = "Estimated file size: Unavailable";
+        }
+        finally
+        {
+            if (enteredEstimateGate)
+                estimateGate.Release();
+
+            if (ReferenceEquals(estimateCancellation, cancellation))
+                estimateCancellation = null;
+
+            cancellation.Dispose();
+        }
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        string[] units = ["B", "KB", "MB", "GB"];
+        double size = bytes;
+        int unitIndex = 0;
+
+        while (size >= 1024 && unitIndex < units.Length - 1)
+        {
+            size /= 1024;
+            unitIndex++;
+        }
+
+        return unitIndex == 0 ? $"{size:N0} {units[unitIndex]}" : $"{size:N1} {units[unitIndex]}";
     }
 
     private async void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -133,6 +248,7 @@ public partial class SaveOptionsDialog : UserControl
         Options.MaintainAspectRatio = MaintainAspectRatioCheckBox.IsChecked == true;
         Options.IncludeMarkup = IncludeMarkupCheckBox.IsChecked == true;
         Options.IncludeMeasurements = IncludeMeasurementsCheckBox.IsChecked == true;
+        estimateCancellation?.Cancel();
 
         if (WidthBox.Value is 0 || HeightBox.Value is 0)
         {
@@ -152,6 +268,7 @@ public partial class SaveOptionsDialog : UserControl
 
     private void CancelButton_Click(object sender, RoutedEventArgs e)
     {
+        estimateCancellation?.Cancel();
         Window.GetWindow(this).DialogResult = false;
         Window.GetWindow(this).Close();
     }

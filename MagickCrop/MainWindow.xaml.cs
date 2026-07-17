@@ -1027,7 +1027,14 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             magickImage.Dispose();
 
             // Create and show save options dialog in a window
-            SaveOptionsDialog saveOptionsDialog = new(width, height);
+            SaveOptionsDialog saveOptionsDialog = new(
+                width,
+                height,
+                (options, cancellationToken) => EstimateSavedImageSizeAsync(
+                    options,
+                    (int)width,
+                    (int)height,
+                    cancellationToken));
             Window dialogWindow = new()
             {
                 Title = "Save Options",
@@ -1070,19 +1077,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             string correctedImageFileName = saveFileDialog.FileName;
 
             using MagickImage image = CreateImageForSave(options, (int)width, (int)height);
-
-            // Resize if requested
-            if (options.Resize)
-            {
-                MagickGeometry resizeGeometry = new((uint)options.Width, (uint)options.Height)
-                {
-                    IgnoreAspectRatio = !options.MaintainAspectRatio
-                };
-                image.Resize(resizeGeometry);
-            }
-
-            // Set quality for formats that support it
-            image.Quality = (uint)options.Quality;
+            ApplySaveOptions(image, options);
 
             // Save with the selected format
             await image.WriteAsync(correctedImageFileName, options.Format);
@@ -1120,12 +1115,73 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             options.IncludeMarkup,
             options.IncludeMeasurements);
 
+        return new MagickImage(EncodeBitmapAsPng(renderedImage));
+    }
+
+    private async Task<long> EstimateSavedImageSizeAsync(
+        SaveOptions options,
+        int imageWidth,
+        int imageHeight,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!options.IncludeMarkup && !options.IncludeMeasurements)
+        {
+            string imagePath = ViewModel.ImagePath;
+            return await Task.Run(
+                () => EncodeImageForSave(new MagickImage(imagePath), options, cancellationToken),
+                cancellationToken);
+        }
+
+        BitmapSource renderedImage = RenderImageWithSelectedOverlays(
+            imageWidth,
+            imageHeight,
+            options.IncludeMarkup,
+            options.IncludeMeasurements);
+        byte[] renderedImageBytes = EncodeBitmapAsPng(renderedImage);
+
+        return await Task.Run(
+            () => EncodeImageForSave(new MagickImage(renderedImageBytes), options, cancellationToken),
+            cancellationToken);
+    }
+
+    private static long EncodeImageForSave(
+        MagickImage image,
+        SaveOptions options,
+        CancellationToken cancellationToken)
+    {
+        using (image)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ApplySaveOptions(image, options);
+            cancellationToken.ThrowIfCancellationRequested();
+            return image.ToByteArray(options.Format).LongLength;
+        }
+    }
+
+    private static byte[] EncodeBitmapAsPng(BitmapSource image)
+    {
         PngBitmapEncoder encoder = new();
-        encoder.Frames.Add(BitmapFrame.Create(renderedImage));
+        encoder.Frames.Add(BitmapFrame.Create(image));
         using MemoryStream stream = new();
         encoder.Save(stream);
-        stream.Position = 0;
-        return new MagickImage(stream);
+        return stream.ToArray();
+    }
+
+    private static void ApplySaveOptions(MagickImage image, SaveOptions options)
+    {
+        if (options.Resize)
+        {
+            MagickGeometry resizeGeometry = new((uint)options.Width, (uint)options.Height)
+            {
+                IgnoreAspectRatio = !options.MaintainAspectRatio
+            };
+            image.Resize(resizeGeometry);
+        }
+
+        if (options.Format is MagickFormat.Jpg or MagickFormat.WebP)
+            image.Quality = (uint)options.Quality;
     }
 
     private BitmapSource RenderImageWithSelectedOverlays(
