@@ -17,5 +17,7 @@ public enum DraggingMode
     EdgeCorrectionDragging,
     GridStraightenDragging,
     MarkupShape,
-    MarkupText
+    MarkupText,
+    MarkupGroupSelect,
+    MarkupGroupMove
 }

@@ -18,6 +18,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!--  Format Selection  -->
@@ -132,16 +133,34 @@
 
         </Grid>
 
-        <CheckBox
-            x:Name="MaintainAspectRatioCheckBox"
-            Grid.Row="5"
-            Content="Maintain aspect ratio"
-            IsChecked="True"
-            IsEnabled="False" />
+        <StackPanel Grid.Row="5">
+            <CheckBox
+                x:Name="MaintainAspectRatioCheckBox"
+                Content="Maintain aspect ratio"
+                IsChecked="True"
+                IsEnabled="False" />
+            <CheckBox
+                x:Name="IncludeMarkupCheckBox"
+                Margin="0,10,0,0"
+                Checked="IncludeMarkupCheckBox_CheckedChanged"
+                Content="Include markup"
+                Unchecked="IncludeMarkupCheckBox_CheckedChanged" />
+            <CheckBox
+                x:Name="IncludeMeasurementsCheckBox"
+                Checked="IncludeMeasurementsCheckBox_CheckedChanged"
+                Unchecked="IncludeMeasurementsCheckBox_CheckedChanged"
+                Content="Include measurements" />
+        </StackPanel>
+
+        <TextBlock
+            x:Name="EstimatedSizeText"
+            Grid.Row="6"
+            Margin="0,12,0,0"
+            Text="Estimated file size: Calculating..." />
 
         <!--  Buttons  -->
         <StackPanel
-            Grid.Row="6"
+            Grid.Row="7"
             Margin="0,15,0,0"
             HorizontalAlignment="Right"
             Orientation="Horizontal">

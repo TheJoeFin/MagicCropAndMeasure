@@ -8,6 +8,7 @@ using MagickCrop.ViewModels;
 using Microsoft.Win32;
 using Microsoft.Windows.Media.Capture;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -45,6 +46,13 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     bool IMainWindowView.IsLocalAdjustment => LocalAdjustmentCheckBox.IsChecked == true;
 
+    bool IMainWindowView.HasMeasurements =>
+        measurementTools.Count > 0
+        || angleMeasurementTools.Count > 0
+        || rectangleMeasurementTools.Count > 0
+        || polygonMeasurementTools.Count > 0
+        || circleMeasurementTools.Count > 0;
+
     MagickGeometry IMainWindowView.GetLocalAdjustmentRegion() => LocalAdjustmentRectangle.CropShape;
 
     void IMainWindowView.SetBusy(bool busy)
@@ -58,8 +66,14 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     Window IMainWindowView.OwnerWindow => this;
 
     private Point clickedPoint = new();
+    private Vector handleGrabOffset = new();
     private Size oldGridSize = new();
     private FrameworkElement? clickedElement;
+    private bool allowHandlesOutsideImage = true;
+    private bool isUpdatingCanvasNavigation;
+    private bool showMiniMap = true;
+    private const double CanvasOriginOffset = 50;
+    private const double DefaultSidebarWidth = 240;
 
     // Size input properties
     private bool isUpdatingFromCode = false;
@@ -115,6 +129,18 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private Point markupShapeBeforePoint1;
     private Point markupShapeBeforePoint2;
     private int markupShapeBeforeDragIndex = -1;
+
+    // --- Markup group selection (Select tool: ink + shapes + text together) ---
+    private readonly HashSet<MarkupShapeControl> selectedMarkupShapes = [];
+    private readonly HashSet<MarkupTextControl> selectedMarkupTexts = [];
+    private readonly List<System.Windows.Shapes.Rectangle> markupSelectionHighlights = [];
+    private Point? markupMarqueeStartPoint;
+    private Point markupGroupDragLastPoint;
+    private double markupGroupDragTotalDeltaX;
+    private double markupGroupDragTotalDeltaY;
+    private StrokeCollection? markupGroupMoveStrokes;
+    private List<MarkupShapeControl>? markupGroupMoveShapes;
+    private List<MarkupTextControl>? markupGroupMoveTexts;
 
     private Services.RecentProjectsManager? recentProjectsManager;
     private System.Timers.Timer? autoSaveTimer;
@@ -215,6 +241,14 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         ApplicationAccentColorManager.Apply(teal);
 
         InitializeComponent();
+        canvasScale.Changed += CanvasScale_Changed;
+        canvasTranslate.Changed += CanvasTranslate_Changed;
+        CanvasMiniMap.ViewportCenterRequested += CanvasMiniMap_ViewportCenterRequested;
+        MainGrid.SizeChanged += (_, _) => UpdateMiniMap();
+        MainImage.SizeChanged += (_, _) => UpdateMiniMap();
+        DependencyPropertyDescriptor
+            .FromProperty(System.Windows.Controls.Image.SourceProperty, typeof(System.Windows.Controls.Image))
+            ?.AddValueChanged(MainImage, (_, _) => UpdateMiniMap());
         // Ensure zoom still works if mouse wheel fires at window level (after a pan or when mouse over other element)
         PreviewMouseWheel += ShapeCanvas_PreviewMouseWheel;
 
@@ -267,7 +301,10 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         ShapeCanvas.MouseUp += ShapeCanvas_MouseUp;
         ShapeCanvas.LostMouseCapture += ShapeCanvas_LostMouseCapture; // safety to ensure capture released
+        MainGrid.LostMouseCapture += MainGrid_LostMouseCapture;
         rotationOverlayLabel = FindName("RotationOverlayLabel") as WpfTextBlock; // cache
+        UpdateCanvasNavigationUi();
+        UpdateTransformVisualScale();
 
         CheckObjectEraseAvailability();
     }
@@ -292,7 +329,19 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private void ShapeCanvas_LostMouseCapture(object sender, MouseEventArgs e)
     {
         if (draggingMode == DraggingMode.Panning)
+        {
             draggingMode = DraggingMode.None;
+            Cursor = null;
+        }
+    }
+
+    private void MainGrid_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (draggingMode == DraggingMode.Panning)
+        {
+            draggingMode = DraggingMode.None;
+            Cursor = null;
+        }
     }
 
     private void DrawPolyLine()
@@ -326,6 +375,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         // Keep _polygonElements in sync with the new lines reference
         if (_polygonElements is not null && _polygonElements.Count > 0)
             _polygonElements[0] = lines;
+
+        UpdateTransformVisualScale();
     }
 
     private void TopLeft_MouseDown(object sender, MouseButtonEventArgs e)
@@ -342,6 +393,10 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         clickedElement = ellipse;
         draggingMode = DraggingMode.MoveElement;
         clickedPoint = e.GetPosition(ShapeCanvas);
+        Point handleCenter = new(
+            Canvas.GetLeft(ellipse) + (ellipse.Width / 2),
+            Canvas.GetTop(ellipse) + (ellipse.Height / 2));
+        handleGrabOffset = clickedPoint - handleCenter;
         CaptureMouse();
 
         // Show pixel zoom for precise corner placement
@@ -505,9 +560,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 else if (markupShapeBeforeDragIndex >= 0)
                 {
                     // Existing handle dragged — record undo for the point move
-                    var (afterP1, afterP2) = activeMarkupShapeControl.GetPoints();
+                    (Point afterP1, Point afterP2) = activeMarkupShapeControl.GetPoints();
                     Point before = markupShapeBeforeDragIndex == 0 ? markupShapeBeforePoint1 : markupShapeBeforePoint2;
-                    Point after  = markupShapeBeforeDragIndex == 0 ? afterP1 : afterP2;
+                    Point after = markupShapeBeforeDragIndex == 0 ? afterP1 : afterP2;
                     if (before != after)
                     {
                         MarkupShapeControl ctrl = activeMarkupShapeControl;
@@ -520,7 +575,18 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 isMarkupShapeDragCreation = false;
             }
 
+            if (draggingMode == DraggingMode.MarkupGroupSelect)
+            {
+                FinishMarkupMarquee(e.GetPosition(ShapeCanvas));
+            }
+
+            if (draggingMode == DraggingMode.MarkupGroupMove)
+            {
+                FinishMarkupGroupMove();
+            }
+
             clickedElement = null;
+            pointDraggingIndex = -1;
             ReleaseMouseCapture();
             draggingMode = DraggingMode.None;
 
@@ -540,6 +606,29 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         }
 
         Point movingPoint = e.GetPosition(ShapeCanvas);
+
+        if (draggingMode == DraggingMode.MarkupGroupSelect)
+        {
+            UpdateMarkupMarqueeVisual(movingPoint);
+            e.Handled = true;
+            return;
+        }
+
+        if (draggingMode == DraggingMode.MarkupGroupMove)
+        {
+            double groupDeltaX = movingPoint.X - markupGroupDragLastPoint.X;
+            double groupDeltaY = movingPoint.Y - markupGroupDragLastPoint.Y;
+            if (groupDeltaX != 0 || groupDeltaY != 0)
+            {
+                ApplyMarkupGroupDelta(groupDeltaX, groupDeltaY);
+                markupGroupDragTotalDeltaX += groupDeltaX;
+                markupGroupDragTotalDeltaY += groupDeltaY;
+                markupGroupDragLastPoint = movingPoint;
+            }
+            e.Handled = true;
+            return;
+        }
+
         if (draggingMode == DraggingMode.MeasureDistance && activeMeasureControl is not null)
         {
             int pointIndex = activeMeasureControl.GetActivePointIndex();
@@ -623,10 +712,15 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (draggingMode != DraggingMode.MoveElement || clickedElement is null)
             return;
 
-        Canvas.SetTop(clickedElement, movingPoint.Y - (clickedElement.Height / 2));
-        Canvas.SetLeft(clickedElement, movingPoint.X - (clickedElement.Width / 2));
+        Point newHandleCenter = new(
+            movingPoint.X - handleGrabOffset.X,
+            movingPoint.Y - handleGrabOffset.Y);
+        newHandleCenter = ConstrainHandlePosition(newHandleCenter);
+        Canvas.SetTop(clickedElement, newHandleCenter.Y - (clickedElement.Height / 2));
+        Canvas.SetLeft(clickedElement, newHandleCenter.X - (clickedElement.Width / 2));
 
-        MovePolyline(movingPoint);
+        MovePolyline(newHandleCenter);
+        UpdateCornerNavButtons();
 
         if (draggingMode == DraggingMode.CreatingMeasurement && isCreatingMeasurement)
         {
@@ -709,6 +803,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private void PanCanvas(MouseEventArgs e)
     {
+        StopCanvasTranslateAnimation();
+
         Point currentPosition = e.GetPosition(this);
         Vector delta = currentPosition - clickedPoint;
 
@@ -717,6 +813,48 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         canvasTranslate.Y += delta.Y;
 
         clickedPoint = currentPosition;
+    }
+
+    private Point ConstrainHandlePosition(Point position)
+    {
+        if (allowHandlesOutsideImage || MainImage.ActualWidth <= 0 || MainImage.ActualHeight <= 0)
+            return position;
+
+        return new Point(
+            Math.Clamp(position.X, 0, MainImage.ActualWidth),
+            Math.Clamp(position.Y, 0, MainImage.ActualHeight));
+    }
+
+    private IEnumerable<Ellipse> GetTransformHandles()
+    {
+        yield return TopLeft;
+        yield return TopRight;
+        yield return BottomRight;
+        yield return BottomLeft;
+        yield return UpperFoldLeft;
+        yield return UpperFoldRight;
+        yield return LowerFoldLeft;
+        yield return LowerFoldRight;
+        yield return UnWarpMidTop;
+        yield return UnWarpMidRight;
+        yield return UnWarpMidBottom;
+        yield return UnWarpMidLeft;
+    }
+
+    private void UpdateTransformVisualScale()
+    {
+        double scale = Math.Max(MinZoom, canvasScale.ScaleX);
+        double inverseScale = 1.0 / scale;
+
+        foreach (Ellipse handle in GetTransformHandles())
+        {
+            handle.RenderTransformOrigin = new Point(0.5, 0.5);
+            handle.RenderTransform = new ScaleTransform(inverseScale, inverseScale);
+        }
+
+        lines?.StrokeThickness = 2 * inverseScale;
+
+        UpdateCornerNavButtons();
     }
 
     private void MovePolyline(Point newPoint)
@@ -1027,7 +1165,14 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             magickImage.Dispose();
 
             // Create and show save options dialog in a window
-            SaveOptionsDialog saveOptionsDialog = new(width, height);
+            SaveOptionsDialog saveOptionsDialog = new(
+                width,
+                height,
+                (options, cancellationToken) => EstimateSavedImageSizeAsync(
+                    options,
+                    (int)width,
+                    (int)height,
+                    cancellationToken));
             Window dialogWindow = new()
             {
                 Title = "Save Options",
@@ -1069,21 +1214,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
             string correctedImageFileName = saveFileDialog.FileName;
 
-            // Load image and apply options
-            using MagickImage image = new(ViewModel.ImagePath);
-
-            // Resize if requested
-            if (options.Resize)
-            {
-                MagickGeometry resizeGeometry = new((uint)options.Width, (uint)options.Height)
-                {
-                    IgnoreAspectRatio = !options.MaintainAspectRatio
-                };
-                image.Resize(resizeGeometry);
-            }
-
-            // Set quality for formats that support it
-            image.Quality = (uint)options.Quality;
+            using MagickImage image = CreateImageForSave(options, (int)width, (int)height);
+            ApplySaveOptions(image, options);
 
             // Save with the selected format
             await image.WriteAsync(correctedImageFileName, options.Format);
@@ -1107,6 +1239,195 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         finally
         {
             SetUiForCompletedTask();
+        }
+    }
+
+    private MagickImage CreateImageForSave(SaveOptions options, int imageWidth, int imageHeight)
+    {
+        if (!options.IncludeMarkup && !options.IncludeMeasurements)
+            return new MagickImage(ViewModel.ImagePath);
+
+        BitmapSource renderedImage = RenderImageWithSelectedOverlays(
+            imageWidth,
+            imageHeight,
+            options.IncludeMarkup,
+            options.IncludeMeasurements);
+
+        return new MagickImage(EncodeBitmapAsPng(renderedImage));
+    }
+
+    private async Task<long> EstimateSavedImageSizeAsync(
+        SaveOptions options,
+        int imageWidth,
+        int imageHeight,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!options.IncludeMarkup && !options.IncludeMeasurements)
+        {
+            string imagePath = ViewModel.ImagePath;
+            return await Task.Run(
+                () => EncodeImageForSave(new MagickImage(imagePath), options, cancellationToken),
+                cancellationToken);
+        }
+
+        BitmapSource renderedImage = RenderImageWithSelectedOverlays(
+            imageWidth,
+            imageHeight,
+            options.IncludeMarkup,
+            options.IncludeMeasurements);
+        byte[] renderedImageBytes = EncodeBitmapAsPng(renderedImage);
+
+        return await Task.Run(
+            () => EncodeImageForSave(new MagickImage(renderedImageBytes), options, cancellationToken),
+            cancellationToken);
+    }
+
+    private static long EncodeImageForSave(
+        MagickImage image,
+        SaveOptions options,
+        CancellationToken cancellationToken)
+    {
+        using (image)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ApplySaveOptions(image, options);
+            cancellationToken.ThrowIfCancellationRequested();
+            return image.ToByteArray(options.Format).LongLength;
+        }
+    }
+
+    private static byte[] EncodeBitmapAsPng(BitmapSource image)
+    {
+        PngBitmapEncoder encoder = new();
+        encoder.Frames.Add(BitmapFrame.Create(image));
+        using MemoryStream stream = new();
+        encoder.Save(stream);
+        return stream.ToArray();
+    }
+
+    private static void ApplySaveOptions(MagickImage image, SaveOptions options)
+    {
+        if (options.Resize)
+        {
+            MagickGeometry resizeGeometry = new((uint)options.Width, (uint)options.Height)
+            {
+                IgnoreAspectRatio = !options.MaintainAspectRatio
+            };
+            image.Resize(resizeGeometry);
+        }
+
+        if (options.Format is MagickFormat.Jpg or MagickFormat.WebP)
+            image.Quality = (uint)options.Quality;
+    }
+
+    private BitmapSource RenderImageWithSelectedOverlays(
+        int imageWidth,
+        int imageHeight,
+        bool includeMarkup,
+        bool includeMeasurements)
+    {
+        if (MainImage.ActualWidth <= 0 || MainImage.ActualHeight <= 0)
+            throw new InvalidOperationException("The image must be loaded before annotations can be saved.");
+
+        HashSet<UIElement> includedElements = [ImageGrid];
+
+        if (includeMeasurements)
+        {
+            includedElements.UnionWith(measurementTools);
+            includedElements.UnionWith(angleMeasurementTools);
+            includedElements.UnionWith(rectangleMeasurementTools);
+            includedElements.UnionWith(polygonMeasurementTools);
+            includedElements.UnionWith(circleMeasurementTools);
+            includedElements.UnionWith(verticalLineControls);
+            includedElements.UnionWith(horizontalLineControls);
+            includedElements.UnionWith(ShapeCanvas.Children.OfType<StrokeLengthDisplay>());
+        }
+
+        if (includeMarkup)
+        {
+            includedElements.UnionWith(markupShapeControls);
+            includedElements.UnionWith(markupTextControls);
+        }
+
+        Dictionary<UIElement, Visibility> visibilityBeforeRender = [];
+        void SetVisibilityForRender(UIElement element, Visibility visibility)
+        {
+            visibilityBeforeRender.TryAdd(element, element.Visibility);
+            element.Visibility = visibility;
+        }
+
+        Dictionary<MarkupShapeControl, bool> markupGizmoVisibility = [];
+        StopCanvasTranslateAnimation();
+        double originalScaleX = canvasScale.ScaleX;
+        double originalScaleY = canvasScale.ScaleY;
+        double originalTranslateX = canvasTranslate.X;
+        double originalTranslateY = canvasTranslate.Y;
+
+        try
+        {
+            foreach (UIElement element in ShapeCanvas.Children)
+            {
+                SetVisibilityForRender(
+                    element,
+                    includedElements.Contains(element) ? Visibility.Visible : Visibility.Collapsed);
+            }
+
+            SetVisibilityForRender(DrawingCanvas, includeMeasurements ? Visibility.Visible : Visibility.Collapsed);
+            SetVisibilityForRender(MarkupCanvas, includeMarkup ? Visibility.Visible : Visibility.Collapsed);
+            SetVisibilityForRender(EraseMaskCanvas, Visibility.Collapsed);
+            SetVisibilityForRender(ImageResizeGrip, Visibility.Collapsed);
+
+            foreach (MarkupShapeControl control in markupShapeControls)
+            {
+                markupGizmoVisibility[control] = control.IsDragGizmoVisible;
+                control.IsDragGizmoVisible = false;
+            }
+
+            canvasScale.ScaleX = 1;
+            canvasScale.ScaleY = 1;
+            canvasTranslate.X = 0;
+            canvasTranslate.Y = 0;
+
+            ShapeCanvas.UpdateLayout();
+
+            DrawingVisual visual = new();
+            using (DrawingContext context = visual.RenderOpen())
+            {
+                VisualBrush imageBrush = new(ShapeCanvas)
+                {
+                    Stretch = Stretch.Fill,
+                    Viewbox = new Rect(0, 0, MainImage.ActualWidth, MainImage.ActualHeight),
+                    ViewboxUnits = BrushMappingMode.Absolute,
+                    Viewport = new Rect(0, 0, imageWidth, imageHeight),
+                    ViewportUnits = BrushMappingMode.Absolute
+                };
+                context.DrawRectangle(imageBrush, null, new Rect(0, 0, imageWidth, imageHeight));
+            }
+
+            RenderTargetBitmap renderedImage = new(
+                imageWidth,
+                imageHeight,
+                96,
+                96,
+                PixelFormats.Pbgra32);
+            renderedImage.Render(visual);
+            renderedImage.Freeze();
+            return renderedImage;
+        }
+        finally
+        {
+            foreach ((UIElement element, Visibility visibility) in visibilityBeforeRender)
+                element.Visibility = visibility;
+
+            foreach ((MarkupShapeControl control, bool visible) in markupGizmoVisibility)
+                control.IsDragGizmoVisible = visible;
+
+            canvasScale.ScaleX = originalScaleX;
+            canvasScale.ScaleY = originalScaleY;
+            canvasTranslate.X = originalTranslateX;
+            canvasTranslate.Y = originalTranslateY;
         }
     }
 
@@ -1212,7 +1533,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             await OpenImagePath(tempFileName);
 
             // Update UI
-            BottomBorder.Visibility = Visibility.Visible;
+            ShowSidebar();
         }
         catch (Exception ex)
         {
@@ -1251,7 +1572,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 RemoveMeasurementControls();
                 await OpenImagePath(file.Path);
                 ViewModel.OpenedFileName = "CameraCapture-" + DateTime.Now.ToString("HH-mm-MMM-dd-yyyy");
-                BottomBorder.Visibility = Visibility.Visible;
+                ShowSidebar();
             }
             else
             {
@@ -1277,7 +1598,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private void OverlayButton_Click(object sender, RoutedEventArgs e)
     {
         WelcomeMessageModal.Visibility = Visibility.Collapsed;
-        BottomBorder.Visibility = Visibility.Visible;
+        ShowSidebar();
         MainGrid.Background = new SolidColorBrush(Colors.Transparent);
         Background = new SolidColorBrush(Colors.Transparent);
         ShapeCanvas.Background = new SolidColorBrush(Color.FromArgb(10, 255, 255, 255));
@@ -1357,7 +1678,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (selectedAspectRatio?.AspectRatioEnum == AspectRatio.Original)
             UpdateOriginalAspectRatioPreview();
 
-        BottomBorder.Visibility = Visibility.Visible;
+        ShowSidebar();
         SetUiForCompletedTask();
 
         // Create a new project ID for this image
@@ -1402,35 +1723,14 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private void ShapeCanvas_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         // Only zoom when the mouse is over the canvas area so ScrollViewers elsewhere still work
-        if (!MainGrid.IsMouseOver)
+        if (!MainGrid.IsMouseOver || IsOverMiniMap(e))
             return;
 
         // Get the current mouse position relative to the canvas
         Point mousePosition = e.GetPosition(ShapeCanvas);
 
-        // Calculate new scale based on wheel delta
         double zoomChange = e.Delta > 0 ? ZoomFactor : -ZoomFactor;
-        double newScaleX = canvasScale.ScaleX + (canvasScale.ScaleX * zoomChange);
-        double newScaleY = canvasScale.ScaleY + (canvasScale.ScaleY * zoomChange);
-
-        // Limit zoom to min/max values
-        newScaleX = Math.Clamp(newScaleX, MinZoom, MaxZoom);
-        newScaleY = Math.Clamp(newScaleY, MinZoom, MaxZoom);
-
-        // Adjust the zoom center to the mouse position
-        Point relativePt = mousePosition;
-
-        // Calculate new transform origin
-        double absoluteX = (relativePt.X * canvasScale.ScaleX) + canvasTranslate.X;
-        double absoluteY = (relativePt.Y * canvasScale.ScaleY) + canvasTranslate.Y;
-
-        // Calculate the new translate values to maintain mouse position
-        canvasTranslate.X = absoluteX - (relativePt.X * newScaleX);
-        canvasTranslate.Y = absoluteY - (relativePt.Y * newScaleY);
-
-        // Apply new scale
-        canvasScale.ScaleX = newScaleX;
-        canvasScale.ScaleY = newScaleY;
+        ZoomAtCanvasPoint(canvasScale.ScaleX + (canvasScale.ScaleX * zoomChange), mousePosition);
 
         e.Handled = true;
     }
@@ -1528,16 +1828,6 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
-        // Middle mouse always initiates panning regardless of tool (quick navigation)
-        if (e.ChangedButton == MouseButton.Middle)
-        {
-            draggingMode = DraggingMode.Panning;
-            clickedPoint = e.GetPosition(this);
-            ShapeCanvas.CaptureMouse();
-            e.Handled = true;
-            return;
-        }
-
         // Check if we're in the measure tab and starting a measurement
         if (Mouse.LeftButton != MouseButtonState.Pressed)
         {
@@ -1583,7 +1873,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             {
                 ShapeType = activeMarkupShapeType,
                 StrokeColor = markupColor,
-                StrokeThickness = markupSize
+                StrokeThickness = markupSize,
+                IsDragGizmoVisible = MarkupTabItem?.IsSelected == true,
+                IsHitTestVisible = MarkupTabItem?.IsSelected == true
             };
             shapeControl.MeasurementPointMouseDown += MarkupShapePoint_MouseDown;
             shapeControl.RemoveControlRequested += MarkupShapeControl_RemoveControlRequested;
@@ -1603,7 +1895,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             MarkupTextControl textControl = new()
             {
                 TextColor = markupColor,
-                MarkupFontSize = markupSize * 4
+                MarkupFontSize = markupSize * 4,
+                IsHitTestVisible = MarkupTabItem?.IsSelected == true
             };
             textControl.RemoveControlRequested += MarkupTextControl_RemoveControlRequested;
             Canvas.SetLeft(textControl, clickedPoint.X);
@@ -2010,6 +2303,18 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private void ResetMenuItem_Click(object sender, RoutedEventArgs e)
     {
+        ResetCanvasNavigation();
+    }
+
+    private void ResetCanvasNavigationButton_Click(object sender, RoutedEventArgs e)
+    {
+        ResetCanvasNavigation();
+    }
+
+    private void ResetCanvasNavigation()
+    {
+        StopCanvasTranslateAnimation();
+
         canvasScale.ScaleX = 1;
         canvasScale.ScaleY = 1;
 
@@ -2018,6 +2323,163 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         canvasTranslate.X = 0;
         canvasTranslate.Y = 0;
+        UpdateCanvasNavigationUi();
+    }
+
+    private void FitImageButton_Click(object sender, RoutedEventArgs e)
+    {
+        CenterAndZoomToFit();
+    }
+
+    private void FitTransformButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (TryGetActiveTransformBounds(out Rect bounds))
+            ZoomToFitBounds(bounds);
+        else
+            CenterAndZoomToFit();
+    }
+
+    private void AllowOutsideImageToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        allowHandlesOutsideImage = AllowOutsideImageToggle.IsChecked == true;
+    }
+
+    private void CanvasZoomSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!IsLoaded || isUpdatingCanvasNavigation)
+            return;
+
+        double scale = Math.Clamp(e.NewValue, MinZoom, MaxZoom);
+        if (Math.Abs(scale - canvasScale.ScaleX) < double.Epsilon)
+            return;
+
+        Point viewportCenter = new(MainGrid.ActualWidth / 2, MainGrid.ActualHeight / 2);
+        ZoomAtViewportPoint(scale, viewportCenter);
+    }
+
+    private void CanvasScale_Changed(object? sender, EventArgs e)
+    {
+        if (!IsInitialized)
+            return;
+
+        UpdateTransformVisualScale();
+        UpdateCanvasNavigationUi();
+        UpdateMiniMap();
+    }
+
+    private void CanvasTranslate_Changed(object? sender, EventArgs e)
+    {
+        if (!IsInitialized)
+            return;
+
+        UpdateMiniMap();
+    }
+
+    /// <summary>
+    /// Recomputes the visible canvas region and pushes it to the mini map overlay.
+    /// </summary>
+    private void UpdateMiniMap()
+    {
+        if (!IsInitialized)
+            return;
+
+        bool hasContent = false;
+        double scale = canvasScale.ScaleX;
+
+        if (showMiniMap
+            && scale > 0
+            && MainImage.Source is not null
+            && MainImage.ActualWidth > 0
+            && MainImage.ActualHeight > 0
+            && MainGrid.ActualWidth > 0
+            && MainGrid.ActualHeight > 0)
+        {
+            Rect viewportInCanvas = new(
+                (-CanvasOriginOffset - canvasTranslate.X) / scale,
+                (-CanvasOriginOffset - canvasTranslate.Y) / scale,
+                MainGrid.ActualWidth / scale,
+                MainGrid.ActualHeight / scale);
+
+            hasContent = CanvasMiniMap.UpdateMap(
+                MainImage.Source,
+                new Size(MainImage.ActualWidth, MainImage.ActualHeight),
+                viewportInCanvas);
+        }
+
+        CanvasMiniMap.Visibility = hasContent ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void CanvasMiniMap_ViewportCenterRequested(object? sender, Point canvasPoint)
+    {
+        CenterViewportOnCanvasPoint(canvasPoint, animate: false);
+    }
+
+    private void UpdateCanvasNavigationUi()
+    {
+        if (!IsInitialized)
+            return;
+
+        isUpdatingCanvasNavigation = true;
+        try
+        {
+            double scale = Math.Clamp(canvasScale.ScaleX, MinZoom, MaxZoom);
+            CanvasZoomSlider.Value = scale;
+            CanvasZoomText.Text = $"{scale:P0}";
+        }
+        finally
+        {
+            isUpdatingCanvasNavigation = false;
+        }
+    }
+
+    private bool TryGetActiveTransformBounds(out Rect bounds)
+    {
+        Ellipse[] corners = [TopLeft, TopRight, BottomRight, BottomLeft];
+        if (corners.All(handle => handle.Visibility == Visibility.Visible))
+        {
+            double minX = corners.Min(handle => Canvas.GetLeft(handle) + (handle.Width / 2));
+            double minY = corners.Min(handle => Canvas.GetTop(handle) + (handle.Height / 2));
+            double maxX = corners.Max(handle => Canvas.GetLeft(handle) + (handle.Width / 2));
+            double maxY = corners.Max(handle => Canvas.GetTop(handle) + (handle.Height / 2));
+            bounds = new Rect(new Point(minX, minY), new Point(maxX, maxY));
+            return bounds.Width > 0 && bounds.Height > 0;
+        }
+
+        if (CroppingRectangle.Visibility == Visibility.Visible
+            && CroppingRectangle.ActualWidth > 0
+            && CroppingRectangle.ActualHeight > 0)
+        {
+            bounds = new Rect(
+                Canvas.GetLeft(CroppingRectangle),
+                Canvas.GetTop(CroppingRectangle),
+                CroppingRectangle.ActualWidth,
+                CroppingRectangle.ActualHeight);
+            return true;
+        }
+
+        bounds = Rect.Empty;
+        return false;
+    }
+
+    private void ZoomToFitBounds(Rect bounds)
+    {
+        if (MainGrid.ActualWidth <= 0 || MainGrid.ActualHeight <= 0 || bounds.IsEmpty)
+            return;
+
+        const double paddingFactor = 0.85;
+        double availableWidth = MainGrid.ActualWidth * paddingFactor;
+        double availableHeight = MainGrid.ActualHeight * paddingFactor;
+        double scale = Math.Clamp(
+            Math.Min(availableWidth / bounds.Width, availableHeight / bounds.Height),
+            MinZoom,
+            MaxZoom);
+
+        canvasScale.ScaleX = scale;
+        canvasScale.ScaleY = scale;
+        StopCanvasTranslateAnimation();
+        canvasTranslate.X = (MainGrid.ActualWidth / 2) - ((50 + bounds.X + (bounds.Width / 2)) * scale);
+        canvasTranslate.Y = (MainGrid.ActualHeight / 2) - ((50 + bounds.Y + (bounds.Height / 2)) * scale);
+        UpdateCanvasNavigationUi();
     }
 
     /// <summary>
@@ -2042,40 +2504,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (imageWidth == 0 || imageHeight == 0)
             return;
 
-        // Add padding (10% on each side)
-        double paddingFactor = 0.9; // Use 90% of viewport to leave 10% padding
-        double availableWidth = viewportWidth * paddingFactor;
-        double availableHeight = viewportHeight * paddingFactor;
-
-        // Calculate scale factors to fit the image in the viewport
-        double scaleX = availableWidth / imageWidth;
-        double scaleY = availableHeight / imageHeight;
-
-        // Use the smaller scale to ensure the entire image fits
-        double scale = Math.Min(scaleX, scaleY);
-
-        // Clamp scale to min/max zoom limits
-        scale = Math.Clamp(scale, MinZoom, MaxZoom);
-
-        // Apply the scale
-        canvasScale.ScaleX = scale;
-        canvasScale.ScaleY = scale;
-
-        // Calculate the scaled image dimensions
-        double scaledImageWidth = imageWidth * scale;
-        double scaledImageHeight = imageHeight * scale;
-
-        // Calculate translation to center the image
-        // The canvas has a 50,50 margin, so we need to account for that
-        double canvasMarginX = 50;
-        double canvasMarginY = 50;
-
-        // Center the scaled image in the viewport
-        double translateX = (viewportWidth - scaledImageWidth) / 2 - (canvasMarginX * scale);
-        double translateY = (viewportHeight - scaledImageHeight) / 2 - (canvasMarginY * scale);
-
-        canvasTranslate.X = translateX;
-        canvasTranslate.Y = translateY;
+        ZoomToFitBounds(new Rect(0, 0, imageWidth, imageHeight));
     }
 
     /// <summary>
@@ -2084,6 +2513,234 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private void CenterAndZoomToFitMenuItem_Click(object sender, RoutedEventArgs e)
     {
         CenterAndZoomToFit();
+    }
+
+    private void MainGrid_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (IsOverMiniMap(e) || IsOverCornerNavButton(e))
+            return;
+
+        if (e.ChangedButton == MouseButton.Left && isMarkupSelectMode
+            && TryStartMarkupSelectGesture(e))
+        {
+            return;
+        }
+
+        if (e.ChangedButton != MouseButton.Middle)
+            return;
+
+        draggingMode = DraggingMode.Panning;
+        clickedPoint = e.GetPosition(this);
+        MainGrid.CaptureMouse();
+        Cursor = Cursors.SizeAll;
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// Handles a left-button press while the markup "Select" tool is active. Clicking an
+    /// already-selected shape/text (as part of a multi-item selection) drags the whole
+    /// group together; clicking empty canvas starts a rubber-band marquee that can enclose
+    /// ink strokes, shapes, and text as one group; clicking a stroke is left untouched so the
+    /// native InkCanvas selection/resize behavior keeps working for ink-only selections.
+    /// </summary>
+    /// <returns>True if the gesture was handled here and should not fall through.</returns>
+    private bool TryStartMarkupSelectGesture(MouseButtonEventArgs e)
+    {
+        Point clickPoint = e.GetPosition(ShapeCanvas);
+
+        if (e.OriginalSource is DependencyObject originalSource)
+        {
+            MarkupShapeControl? hitShape = FindAncestor<MarkupShapeControl>(originalSource);
+            MarkupTextControl? hitText = FindAncestor<MarkupTextControl>(originalSource);
+
+            if (hitShape is not null || hitText is not null)
+            {
+                bool alreadySelected = (hitShape is not null && selectedMarkupShapes.Contains(hitShape))
+                    || (hitText is not null && selectedMarkupTexts.Contains(hitText));
+                int totalSelected = selectedMarkupShapes.Count + selectedMarkupTexts.Count
+                    + MarkupCanvas.GetSelectedStrokes().Count;
+
+                if (alreadySelected && totalSelected > 1)
+                {
+                    BeginMarkupGroupMove(clickPoint);
+                    e.Handled = true;
+                    return true;
+                }
+
+                // Single click on a (possibly unselected) item: reset any existing group
+                // selection but let the item's own click/drag/edit behavior proceed untouched.
+                ClearMarkupGroupSelection();
+                return false;
+            }
+        }
+
+        Stroke? hitStroke = null;
+        foreach (Stroke stroke in MarkupCanvas.Strokes)
+        {
+            if (stroke.HitTest(clickPoint))
+            {
+                hitStroke = stroke;
+                break;
+            }
+        }
+
+        if (hitStroke is not null)
+        {
+            // Preserve an existing mixed group only if this stroke is already part of it;
+            // otherwise a fresh ink-only interaction is starting, so drop the stale selection.
+            bool partOfCurrentGroup = MarkupCanvas.GetSelectedStrokes().Contains(hitStroke)
+                && (selectedMarkupShapes.Count > 0 || selectedMarkupTexts.Count > 0);
+            if (!partOfCurrentGroup)
+                ClearMarkupGroupSelection();
+            return false; // let the native InkCanvas Select behavior handle strokes as before
+        }
+
+        BeginMarkupMarquee(clickPoint);
+        e.Handled = true;
+        return true;
+    }
+
+    private static bool IsOverMiniMap(RoutedEventArgs e)
+        => e.OriginalSource is DependencyObject source && FindAncestor<MiniMap>(source) is not null;
+
+    private static bool IsOverCornerNavButton(RoutedEventArgs e)
+        => e.OriginalSource is DependencyObject source && FindAncestor<CornerNavButton>(source) is not null;
+
+    private static T? FindAncestor<T>(DependencyObject? current) where T : DependencyObject
+    {
+        while (current is not null)
+        {
+            if (current is T match)
+                return match;
+            current = current is Visual ? VisualTreeHelper.GetParent(current) : null;
+        }
+        return null;
+    }
+
+    private void CanvasContextMenu_Opened(object sender, RoutedEventArgs e)
+    {
+        bool isBarVisible = CanvasNavigationBar.Visibility == Visibility.Visible;
+
+        ToggleCanvasNavigationMenuItem.IsEnabled = ViewModel.HasImage;
+        ToggleCanvasNavigationMenuItem.IsChecked = isBarVisible;
+
+        ToggleCanvasNavigationBarMenuItem.IsEnabled = ViewModel.HasImage;
+        ToggleCanvasNavigationBarMenuItem.IsChecked = isBarVisible;
+
+        ToggleMiniMapMenuItem.IsEnabled = ViewModel.HasImage;
+        ToggleMiniMapMenuItem.IsChecked = showMiniMap;
+
+        ToggleMiniMapBarMenuItem.IsEnabled = ViewModel.HasImage;
+        ToggleMiniMapBarMenuItem.IsChecked = showMiniMap;
+    }
+
+    private void ToggleMiniMapMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        showMiniMap = sender is System.Windows.Controls.MenuItem { IsCheckable: true } menuItem
+            ? menuItem.IsChecked
+            : !showMiniMap;
+
+        ToggleMiniMapMenuItem.IsChecked = showMiniMap;
+        ToggleMiniMapBarMenuItem.IsChecked = showMiniMap;
+
+        UpdateMiniMap();
+    }
+
+    private void ToggleCanvasNavigationMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        bool showBar = sender is System.Windows.Controls.MenuItem { IsCheckable: true } menuItem
+            ? menuItem.IsChecked
+            : CanvasNavigationBar.Visibility != Visibility.Visible;
+
+        if (showBar)
+            CanvasNavigationBar.ClearValue(UIElement.VisibilityProperty);
+        else
+            CanvasNavigationBar.Visibility = Visibility.Collapsed;
+
+        // Keep both menu items (canvas background + canvas bar) in sync.
+        ToggleCanvasNavigationMenuItem.IsChecked = showBar;
+        ToggleCanvasNavigationBarMenuItem.IsChecked = showBar;
+    }
+
+    private void ShowSidebar()
+    {
+        SidebarToggleButton.Visibility = Visibility.Visible;
+        SidebarToggleButton.IsChecked = true;
+        BottomBorder.Visibility = Visibility.Visible;
+        SidebarColumn.Width = new GridLength(DefaultSidebarWidth);
+        SidebarToggleText.Text = "Hide tools";
+        SidebarToggleButton.ToolTip = "Collapse tools sidebar";
+    }
+
+    private void HideSidebar()
+    {
+        BottomBorder.Visibility = Visibility.Collapsed;
+        SidebarColumn.Width = new GridLength(0);
+        SidebarToggleButton.IsChecked = false;
+        SidebarToggleButton.Visibility = Visibility.Collapsed;
+    }
+
+    private void SidebarToggleButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!IsInitialized)
+            return;
+
+        BottomBorder.Visibility = Visibility.Visible;
+        SidebarColumn.Width = new GridLength(DefaultSidebarWidth);
+        SidebarToggleText.Text = "Hide tools";
+        SidebarToggleButton.ToolTip = "Collapse tools sidebar";
+    }
+
+    private void SidebarToggleButton_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (!IsInitialized)
+            return;
+
+        BottomBorder.Visibility = Visibility.Collapsed;
+        SidebarColumn.Width = new GridLength(0);
+        SidebarToggleText.Text = "Show tools";
+        SidebarToggleButton.ToolTip = "Show tools sidebar";
+    }
+
+    private void MainGrid_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Middle || draggingMode != DraggingMode.Panning)
+            return;
+
+        draggingMode = DraggingMode.None;
+        MainGrid.ReleaseMouseCapture();
+        Cursor = null;
+        e.Handled = true;
+    }
+
+    private void ZoomAtCanvasPoint(double scale, Point canvasPoint)
+    {
+        StopCanvasTranslateAnimation();
+
+        double originalScale = canvasScale.ScaleX;
+        if (originalScale <= 0)
+            return;
+
+        double targetScale = Math.Clamp(scale, MinZoom, MaxZoom);
+        double absoluteX = (canvasPoint.X * originalScale) + canvasTranslate.X;
+        double absoluteY = (canvasPoint.Y * originalScale) + canvasTranslate.Y;
+        canvasTranslate.X = absoluteX - (canvasPoint.X * targetScale);
+        canvasTranslate.Y = absoluteY - (canvasPoint.Y * targetScale);
+        canvasScale.ScaleX = targetScale;
+        canvasScale.ScaleY = targetScale;
+        UpdateCanvasNavigationUi();
+    }
+
+    private void ZoomAtViewportPoint(double scale, Point viewportPoint)
+    {
+        double currentScale = canvasScale.ScaleX;
+        if (currentScale <= 0)
+            return;
+
+        Point canvasPoint = new(
+            (viewportPoint.X - 50 - canvasTranslate.X) / currentScale,
+            (viewportPoint.Y - 50 - canvasTranslate.Y) / currentScale);
+        ZoomAtCanvasPoint(scale, canvasPoint);
     }
 
     private void WhitePointPickerToggle_Checked(object sender, RoutedEventArgs e)
@@ -2493,6 +3150,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Visible;
+
+        RefreshCornerNavButtons();
     }
 
     private void HideTransformControls()
@@ -2504,6 +3163,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             element.Visibility = Visibility.Collapsed;
 
         lines?.Visibility = Visibility.Collapsed;
+
+        RefreshCornerNavButtons();
     }
 
     #region Tri-Fold Correction
@@ -2544,6 +3205,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         // Build the unified tri-fold polygon
         DrawTriFoldGuideLines();
+
+        RefreshCornerNavButtons();
     }
 
     private void HideTriFoldControls()
@@ -2562,6 +3225,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             element.Visibility = Visibility.Collapsed;
 
         RemoveTriFoldGuideLines();
+
+        RefreshCornerNavButtons();
     }
 
     private void ResetTriFoldMarkers()
@@ -2849,6 +3514,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         lines?.Visibility = Visibility.Collapsed;
 
         UpdateUnWarpGuideCurves();
+
+        UpdateCornerNavButtons();
     }
 
     private void ShowUnWarpControls()
@@ -2874,6 +3541,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         lines?.Visibility = Visibility.Collapsed;
 
         DrawUnWarpGuideCurves();
+
+        RefreshCornerNavButtons();
     }
 
     private void HideUnWarpControls()
@@ -2896,6 +3565,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             element.Visibility = Visibility.Collapsed;
 
         RemoveUnWarpGuideCurves();
+
+        RefreshCornerNavButtons();
     }
 
     private void ResetUnWarpMarkers()
@@ -3788,6 +4459,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         // Update the polyline
         DrawPolyLine();
+
+        UpdateCornerNavButtons();
     }
 
     private void ImageResizeGrip_MouseDown(object sender, MouseButtonEventArgs e)
@@ -4321,11 +4994,10 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             Title = "Set Real World Length",
             Content = inputTextBox,
             PrimaryButtonText = "Apply",
-            CloseButtonText = "Cancel"
+            CloseButtonText = "Cancel",
+            // Show the dialog and handle the result
+            DialogHost = Presenter
         };
-
-        // Show the dialog and handle the result
-        dialog.DialogHost = Presenter;
         dialog.Closing += (s, args) =>
         {
             // Check if the primary button was clicked and input is valid
@@ -5054,6 +5726,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         {
             MarkupShapeControl control = new();
             control.FromDto(dto);
+            control.IsDragGizmoVisible = MarkupTabItem?.IsSelected == true;
+            control.IsHitTestVisible = MarkupTabItem?.IsSelected == true;
             control.MeasurementPointMouseDown += MarkupShapePoint_MouseDown;
             control.RemoveControlRequested += MarkupShapeControl_RemoveControlRequested;
             markupShapeControls.Add(control);
@@ -5065,6 +5739,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         {
             MarkupTextControl control = new();
             control.FromDto(dto);
+            control.IsHitTestVisible = MarkupTabItem?.IsSelected == true;
             control.RemoveControlRequested += MarkupTextControl_RemoveControlRequested;
             control.EditCommitted += MarkupTextControl_EditCommitted;
             control.TextMoved += MarkupTextControl_TextMoved;
@@ -5316,6 +5991,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         // Rebuild the polyline so it matches the reset marker positions
         DrawPolyLine();
+
+        UpdateCornerNavButtons();
     }
 
     private void ResetApplicationState()
@@ -5344,12 +6021,13 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideResizeControls();
         HideObjectEraseControls();
         HideThresholdControls();
-        BottomBorder.Visibility = Visibility.Collapsed;
+        HideSidebar();
         WelcomeMessageModal.Visibility = Visibility.Visible;
         OpenFolderButton.IsEnabled = false;
         Save.IsEnabled = false;
 
         // Reset the canvas transform
+        StopCanvasTranslateAnimation();
         canvasScale.ScaleX = 1;
         canvasScale.ScaleY = 1;
         canvasScale.CenterX = 0;
@@ -5752,13 +6430,32 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             }
         }
 
-        // Handle Delete key for selected markup ink strokes
+        // Handle Delete key for selected markup ink strokes, shapes, and text
         if (e.Key == Key.Delete && isMarkupSelectMode)
         {
-            StrokeCollection selected = MarkupCanvas.GetSelectedStrokes();
-            if (selected.Count > 0)
+            bool deletedAnything = false;
+
+            if (MarkupCanvas.GetSelectedStrokes().Count > 0)
             {
                 DeleteSelectedMarkupStrokes();
+                deletedAnything = true;
+            }
+
+            foreach (MarkupShapeControl shape in selectedMarkupShapes.ToList())
+            {
+                MarkupShapeControl_RemoveControlRequested(shape, EventArgs.Empty);
+                deletedAnything = true;
+            }
+
+            foreach (MarkupTextControl text in selectedMarkupTexts.ToList())
+            {
+                MarkupTextControl_RemoveControlRequested(text, EventArgs.Empty);
+                deletedAnything = true;
+            }
+
+            if (deletedAnything)
+            {
+                ClearMarkupGroupSelection();
                 e.Handled = true;
                 return;
             }
@@ -6306,46 +7003,18 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     /// <returns>Point in image pixel coordinates</returns>
     private Point ConvertCanvasToImageCoordinates(Point canvasPoint)
     {
-        if (MainImage.Source == null)
+        if (MainImage.Source is not BitmapSource source
+            || MainImage.ActualWidth <= 0
+            || MainImage.ActualHeight <= 0)
             return new Point(0, 0);
 
-        try
-        {
-            // Get the transform from canvas to image
-            GeneralTransform transform = ShapeCanvas.TransformToVisual(MainImage);
-            Point imagePoint = transform.Transform(canvasPoint);
-
-            // MainImage might have its own transform/scale, so we need to map to actual pixels
-            double imageWidth = MainImage.Source.Width;
-            double imageHeight = MainImage.Source.Height;
-            double actualWidth = MainImage.ActualWidth;
-            double actualHeight = MainImage.ActualHeight;
-
-            // Calculate scale based on Stretch mode
-            double scaleX = imageWidth / actualWidth;
-            double scaleY = imageHeight / actualHeight;
-
-            // For Uniform stretch, use the same scale for both dimensions
-            if (MainImage.Stretch == Stretch.Uniform)
-            {
-                double scale = Math.Max(scaleX, scaleY);
-                scaleX = scaleY = scale;
-            }
-
-            // Convert to pixel coordinates
-            double pixelX = imagePoint.X * scaleX;
-            double pixelY = imagePoint.Y * scaleY;
-
-            // Clamp to image bounds
-            pixelX = Math.Max(0, Math.Min(imageWidth - 1, pixelX));
-            pixelY = Math.Max(0, Math.Min(imageHeight - 1, pixelY));
-
-            return new Point(pixelX, pixelY);
-        }
-        catch (Exception)
-        {
-            return new Point(0, 0);
-        }
+        // ImageGrid is anchored at the ShapeCanvas origin, so these logical canvas
+        // coordinates stay independent of the viewport's pan and zoom transform.
+        double pixelX = canvasPoint.X * source.PixelWidth / MainImage.ActualWidth;
+        double pixelY = canvasPoint.Y * source.PixelHeight / MainImage.ActualHeight;
+        return new Point(
+            Math.Clamp(pixelX, 0, source.PixelWidth - 1),
+            Math.Clamp(pixelY, 0, source.PixelHeight - 1));
     }
 
     /// <summary>
@@ -6409,9 +7078,13 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (e.Source is not TabControl)
             return;
 
+        bool measurementTabActive = MeasureTabItem?.IsSelected == true;
         bool markupTabActive = MarkupTabItem?.IsSelected == true;
         if (!markupTabActive)
             DeactivateAllMarkupTools();
+
+        SetMeasurementDragGizmosVisibility(measurementTabActive);
+        SetMarkupDragGizmosVisibility(markupTabActive);
     }
 
     private void DeactivateAllMarkupTools()
@@ -6429,8 +7102,99 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         UncheckMarkupAllBut();
     }
 
+    private void SetMarkupDragGizmosVisibility(bool visible)
+    {
+        if (!visible)
+            MarkupCanvas.Select(new StrokeCollection());
+
+        foreach (MarkupShapeControl control in markupShapeControls)
+        {
+            control.IsDragGizmoVisible = visible;
+            control.IsHitTestVisible = visible;
+        }
+
+        foreach (MarkupTextControl control in markupTextControls)
+            control.IsHitTestVisible = visible;
+    }
+
+    private void SetMeasurementDragGizmosVisibility(bool visible)
+    {
+        if (!visible)
+            DrawingCanvas.Select(new StrokeCollection());
+
+        foreach (DistanceMeasurementControl control in measurementTools)
+        {
+            SetMeasurementGizmoState(control, visible);
+            control.IsHitTestVisible = visible;
+        }
+
+        foreach (AngleMeasurementControl control in angleMeasurementTools)
+        {
+            SetMeasurementGizmoState(control, visible);
+            control.IsHitTestVisible = visible;
+        }
+
+        foreach (RectangleMeasurementControl control in rectangleMeasurementTools)
+        {
+            SetMeasurementGizmoState(control, visible);
+            control.IsHitTestVisible = visible;
+        }
+
+        foreach (PolygonMeasurementControl control in polygonMeasurementTools)
+        {
+            SetMeasurementGizmoState(control, visible);
+            control.IsHitTestVisible = visible;
+        }
+
+        foreach (CircleMeasurementControl control in circleMeasurementTools)
+        {
+            SetMeasurementGizmoState(control, visible);
+            control.IsHitTestVisible = visible;
+        }
+
+        foreach (VerticalLineControl control in verticalLineControls)
+            control.IsHitTestVisible = visible;
+
+        foreach (HorizontalLineControl control in horizontalLineControls)
+            control.IsHitTestVisible = visible;
+
+        foreach (StrokeLengthDisplay control in ShapeCanvas.Children.OfType<StrokeLengthDisplay>())
+            control.IsHitTestVisible = visible;
+    }
+
+    private static void SetMeasurementGizmoState<T>(T control, bool visible)
+        where T : class
+    {
+        switch (control)
+        {
+            case DistanceMeasurementControl distance:
+                distance.IsEndpointCapVisible = !visible;
+                distance.IsDragGizmoVisible = true;
+                break;
+            case AngleMeasurementControl angle:
+                angle.IsEndpointCapVisible = !visible;
+                angle.IsDragGizmoVisible = true;
+                break;
+            case RectangleMeasurementControl rectangle:
+                rectangle.IsEndpointCapVisible = !visible;
+                rectangle.IsDragGizmoVisible = true;
+                break;
+            case PolygonMeasurementControl polygon:
+                polygon.IsEndpointCapVisible = !visible;
+                polygon.IsDragGizmoVisible = true;
+                break;
+            case CircleMeasurementControl circle:
+                circle.IsEndpointCapVisible = !visible;
+                circle.IsDragGizmoVisible = true;
+                break;
+        }
+    }
+
     private void UncheckMarkupAllBut(ToggleButton? keep = null)
     {
+        // Switching markup tools drops any active multi-item group selection
+        ClearMarkupGroupSelection();
+
         if (MarkupToolsPanel is null || MarkupShapeToolsPanel is null) return;
         foreach (ToggleButton btn in MarkupToolsPanel.Children.OfType<ToggleButton>())
             if (btn != keep) btn.IsChecked = false;
@@ -6525,6 +7289,217 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         MarkupCanvas.EditingMode = InkCanvasEditingMode.Select;
         UncheckMarkupAllBut(sender as ToggleButton);
     }
+
+    #region Markup Group Selection
+
+    /// <summary>
+    /// Starts a rubber-band marquee (in ShapeCanvas coordinates) that, on release, selects
+    /// every ink stroke, shape, and text control it fully encloses as one group.
+    /// </summary>
+    private void BeginMarkupMarquee(Point startPoint)
+    {
+        markupMarqueeStartPoint = startPoint;
+        draggingMode = DraggingMode.MarkupGroupSelect;
+        MarkupMarqueeRectangle.Visibility = Visibility.Visible;
+        UpdateMarkupMarqueeVisual(startPoint);
+        CaptureMouse();
+    }
+
+    private void UpdateMarkupMarqueeVisual(Point currentPoint)
+    {
+        if (markupMarqueeStartPoint is not Point start)
+            return;
+
+        double x = Math.Min(start.X, currentPoint.X);
+        double y = Math.Min(start.Y, currentPoint.Y);
+        double width = Math.Abs(currentPoint.X - start.X);
+        double height = Math.Abs(currentPoint.Y - start.Y);
+
+        Canvas.SetLeft(MarkupMarqueeRectangle, x);
+        Canvas.SetTop(MarkupMarqueeRectangle, y);
+        MarkupMarqueeRectangle.Width = width;
+        MarkupMarqueeRectangle.Height = height;
+    }
+
+    private void FinishMarkupMarquee(Point endPoint)
+    {
+        MarkupMarqueeRectangle.Visibility = Visibility.Collapsed;
+
+        if (markupMarqueeStartPoint is not Point start)
+            return;
+
+        markupMarqueeStartPoint = null;
+
+        Rect marqueeRect = new(start, endPoint);
+
+        // Ignore accidental micro-drags (treat them as a deselect click on empty canvas)
+        if (marqueeRect.Width < 2 && marqueeRect.Height < 2)
+        {
+            ClearMarkupGroupSelection();
+            return;
+        }
+
+        StrokeCollection enclosedStrokes = [];
+        foreach (Stroke stroke in MarkupCanvas.Strokes)
+            if (marqueeRect.Contains(stroke.GetBounds()))
+                enclosedStrokes.Add(stroke);
+
+        List<MarkupShapeControl> enclosedShapes = [.. markupShapeControls.Where(s => marqueeRect.Contains(GetMarkupShapeBounds(s)))];
+        List<MarkupTextControl> enclosedTexts = [.. markupTextControls.Where(t => marqueeRect.Contains(GetMarkupTextBounds(t)))];
+
+        ApplyMarkupGroupSelection(enclosedStrokes, enclosedShapes, enclosedTexts);
+    }
+
+    private static Rect GetMarkupShapeBounds(MarkupShapeControl shape)
+    {
+        (Point p1, Point p2) = shape.GetPoints();
+        Rect rect = new(p1, p2);
+        rect.Inflate(6, 6);
+        return rect;
+    }
+
+    private static Rect GetMarkupTextBounds(MarkupTextControl text)
+    {
+        double left = Canvas.GetLeft(text);
+        double top = Canvas.GetTop(text);
+        double width = text.ActualWidth > 0 ? text.ActualWidth : 40;
+        double height = text.ActualHeight > 0 ? text.ActualHeight : 20;
+        return new Rect(left, top, width, height);
+    }
+
+    private void ApplyMarkupGroupSelection(StrokeCollection strokes, List<MarkupShapeControl> shapes, List<MarkupTextControl> texts)
+    {
+        ClearMarkupGroupSelection();
+
+        MarkupCanvas.Select(strokes);
+
+        foreach (MarkupShapeControl shape in shapes)
+        {
+            selectedMarkupShapes.Add(shape);
+            shape.IsDragGizmoVisible = true;
+        }
+
+        foreach (MarkupTextControl text in texts)
+        {
+            selectedMarkupTexts.Add(text);
+            AddMarkupSelectionHighlight(text);
+        }
+    }
+
+    private void AddMarkupSelectionHighlight(MarkupTextControl text)
+    {
+        Rect bounds = GetMarkupTextBounds(text);
+        System.Windows.Shapes.Rectangle highlight = new()
+        {
+            Width = bounds.Width + 8,
+            Height = bounds.Height + 8,
+            Stroke = System.Windows.Media.Brushes.DeepSkyBlue,
+            StrokeThickness = 1.5,
+            StrokeDashArray = [3, 2],
+            Fill = System.Windows.Media.Brushes.Transparent,
+            IsHitTestVisible = false,
+            Tag = text
+        };
+        Canvas.SetLeft(highlight, bounds.X - 4);
+        Canvas.SetTop(highlight, bounds.Y - 4);
+        Panel.SetZIndex(highlight, 2000);
+        ShapeCanvas.Children.Add(highlight);
+        markupSelectionHighlights.Add(highlight);
+    }
+
+    private void RefreshMarkupSelectionHighlights()
+    {
+        foreach (System.Windows.Shapes.Rectangle highlight in markupSelectionHighlights)
+        {
+            if (highlight.Tag is not MarkupTextControl text) continue;
+            Rect bounds = GetMarkupTextBounds(text);
+            Canvas.SetLeft(highlight, bounds.X - 4);
+            Canvas.SetTop(highlight, bounds.Y - 4);
+        }
+    }
+
+    /// <summary>
+    /// Clears the current multi-item markup selection (ink strokes, shapes, and text) along
+    /// with its visual affordances. Safe to call even when nothing is selected.
+    /// </summary>
+    private void ClearMarkupGroupSelection()
+    {
+        foreach (MarkupShapeControl shape in selectedMarkupShapes)
+            shape.IsDragGizmoVisible = MarkupTabItem?.IsSelected == true;
+        selectedMarkupShapes.Clear();
+
+        selectedMarkupTexts.Clear();
+
+        foreach (System.Windows.Shapes.Rectangle highlight in markupSelectionHighlights)
+            ShapeCanvas.Children.Remove(highlight);
+        markupSelectionHighlights.Clear();
+
+        if (MarkupCanvas.GetSelectedStrokes().Count > 0)
+            MarkupCanvas.Select(new StrokeCollection());
+    }
+
+    private void BeginMarkupGroupMove(Point startPoint)
+    {
+        markupGroupDragLastPoint = startPoint;
+        markupGroupDragTotalDeltaX = 0;
+        markupGroupDragTotalDeltaY = 0;
+        markupGroupMoveStrokes = new StrokeCollection(MarkupCanvas.GetSelectedStrokes());
+        markupGroupMoveShapes = [.. selectedMarkupShapes];
+        markupGroupMoveTexts = [.. selectedMarkupTexts];
+        draggingMode = DraggingMode.MarkupGroupMove;
+        CaptureMouse();
+    }
+
+    private void ApplyMarkupGroupDelta(double deltaX, double deltaY)
+    {
+        if (markupGroupMoveStrokes is { Count: > 0 })
+        {
+            Matrix m = new();
+            m.Translate(deltaX, deltaY);
+            foreach (Stroke stroke in markupGroupMoveStrokes)
+                stroke.Transform(m, false);
+        }
+
+        if (markupGroupMoveShapes is not null)
+        {
+            foreach (MarkupShapeControl shape in markupGroupMoveShapes)
+            {
+                (Point p1, Point p2) = shape.GetPoints();
+                shape.MovePoint(0, new Point(p1.X + deltaX, p1.Y + deltaY));
+                shape.MovePoint(1, new Point(p2.X + deltaX, p2.Y + deltaY));
+            }
+        }
+
+        if (markupGroupMoveTexts is not null)
+        {
+            foreach (MarkupTextControl text in markupGroupMoveTexts)
+            {
+                Canvas.SetLeft(text, Canvas.GetLeft(text) + deltaX);
+                Canvas.SetTop(text, Canvas.GetTop(text) + deltaY);
+            }
+        }
+
+        RefreshMarkupSelectionHighlights();
+    }
+
+    private void FinishMarkupGroupMove()
+    {
+        if (Math.Abs(markupGroupDragTotalDeltaX) > 0.01 || Math.Abs(markupGroupDragTotalDeltaY) > 0.01)
+        {
+            UndoRedo.AddUndo(new MarkupGroupMovedItem(
+                markupGroupMoveStrokes ?? [],
+                markupGroupMoveShapes ?? [],
+                markupGroupMoveTexts ?? [],
+                markupGroupDragTotalDeltaX,
+                markupGroupDragTotalDeltaY));
+        }
+
+        markupGroupMoveStrokes = null;
+        markupGroupMoveShapes = null;
+        markupGroupMoveTexts = null;
+    }
+
+    #endregion Markup Group Selection
 
     private void MarkupLineToggle_Checked(object sender, RoutedEventArgs e)
     {
@@ -6701,7 +7676,33 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         double deltaY = newBounds.Y - _selectionBoundsBeforeMove.Value.Y;
 
         if (Math.Abs(deltaX) > 0.01 || Math.Abs(deltaY) > 0.01)
-            UndoRedo.AddUndo(new MarkupStrokeMovedItem(_strokesBeforeMove, deltaX, deltaY));
+        {
+            // If shapes/text were also part of the group selection (from a marquee), move
+            // them by the same delta so dragging the native ink adorner moves the whole group
+            if (selectedMarkupShapes.Count > 0 || selectedMarkupTexts.Count > 0)
+            {
+                List<MarkupShapeControl> coShapes = [.. selectedMarkupShapes];
+                List<MarkupTextControl> coTexts = [.. selectedMarkupTexts];
+                foreach (MarkupShapeControl shape in coShapes)
+                {
+                    (Point p1, Point p2) = shape.GetPoints();
+                    shape.MovePoint(0, new Point(p1.X + deltaX, p1.Y + deltaY));
+                    shape.MovePoint(1, new Point(p2.X + deltaX, p2.Y + deltaY));
+                }
+                foreach (MarkupTextControl text in coTexts)
+                {
+                    Canvas.SetLeft(text, Canvas.GetLeft(text) + deltaX);
+                    Canvas.SetTop(text, Canvas.GetTop(text) + deltaY);
+                }
+                RefreshMarkupSelectionHighlights();
+
+                UndoRedo.AddUndo(new MarkupGroupMovedItem(_strokesBeforeMove, coShapes, coTexts, deltaX, deltaY));
+            }
+            else
+            {
+                UndoRedo.AddUndo(new MarkupStrokeMovedItem(_strokesBeforeMove, deltaX, deltaY));
+            }
+        }
 
         _strokesBeforeMove = null;
         _selectionBoundsBeforeMove = null;

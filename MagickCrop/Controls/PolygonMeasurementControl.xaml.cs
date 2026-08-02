@@ -14,6 +14,8 @@ public partial class PolygonMeasurementControl : UserControl
     private readonly List<Ellipse> vertexPoints = [];
     private bool isClosed = false;
     private int pointDraggingIndex = -1;
+    private bool areDragGizmosVisible = true;
+    private bool areEndpointCapsVisible;
 
     private double scaleFactor = 1.0;
     public double ScaleFactor
@@ -47,6 +49,37 @@ public partial class PolygonMeasurementControl : UserControl
     public PolygonMeasurementControl()
     {
         InitializeComponent();
+    }
+
+    public bool IsDragGizmoVisible
+    {
+        get => areDragGizmosVisible;
+        set
+        {
+            areDragGizmosVisible = value;
+            Visibility visibility = value ? Visibility.Visible : Visibility.Collapsed;
+            foreach (Ellipse point in vertexPoints)
+                point.Visibility = visibility;
+        }
+    }
+
+    public bool IsEndpointCapVisible
+    {
+        set
+        {
+            areEndpointCapsVisible = value;
+            double size = value ? 6 : 12;
+            foreach (Ellipse point in vertexPoints)
+            {
+                point.Width = size;
+                point.Height = size;
+            }
+
+            if (!value && !isClosed && vertices.Count >= 3)
+                UpdateFirstVertexAppearance();
+            else
+                UpdateVertexPositions();
+        }
     }
 
     public void AddVertex(Point vertex)
@@ -135,8 +168,8 @@ public partial class PolygonMeasurementControl : UserControl
     {
         Ellipse ellipse = new()
         {
-            Width = 12,
-            Height = 12,
+            Width = areEndpointCapsVisible ? 6 : 12,
+            Height = areEndpointCapsVisible ? 6 : 12,
             Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0066FF")),
             Stroke = Brushes.White,
             StrokeThickness = 1,
@@ -154,6 +187,7 @@ public partial class PolygonMeasurementControl : UserControl
 
         vertexPoints.Add(ellipse);
         MeasurementCanvas.Children.Add(ellipse);
+        ellipse.Visibility = areDragGizmosVisible ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void UpdatePolygonPath()

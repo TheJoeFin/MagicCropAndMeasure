@@ -37,6 +37,39 @@
             <Setter Property="Padding" Value="6,4" />
             <Setter Property="MinWidth" Value="100" />
         </Style>
+        <!--  Small circular "jump to neighbouring handle" buttons drawn beside transform gizmos  -->
+        <Style TargetType="c:CornerNavButton">
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Opacity" Value="0.7" />
+            <Setter Property="Panel.ZIndex" Value="900" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="c:CornerNavButton">
+                        <Border
+                            x:Name="NavBackground"
+                            Background="#E60F1115"
+                            BorderBrush="#FF0066FF"
+                            BorderThickness="1.5"
+                            CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="NavBackground" Property="Background" Value="#FF0066FF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" Value="1" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
         <!--  Add a style for narrow Tab Headers  -->
         <Style
             x:Key="NarrowTabHeaderStyle"
@@ -45,6 +78,36 @@
             <Setter Property="Padding" Value="4,2" />
             <Setter Property="Width" Value="60" />
             <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <!--  Style for the standalone floating sidebar toggle button, positioned just left of the tools pane  -->
+        <Style x:Key="SidebarTabToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="{wpfui:ThemeResource ApplicationBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{wpfui:ThemeResource ControlStrokeColorDefaultBrush}" />
+            <Setter Property="Foreground" Value="{wpfui:ThemeResource TextFillColorPrimaryBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border
+                            x:Name="TabBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8">
+                            <Border.Effect>
+                                <DropShadowEffect
+                                    BlurRadius="8"
+                                    Opacity="0.3"
+                                    ShadowDepth="1" />
+                            </Border.Effect>
+                            <ContentPresenter
+                                Margin="{TemplateBinding Padding}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
     <Grid>
@@ -55,13 +118,14 @@
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="auto" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition x:Name="SidebarColumn" Width="0" />
         </Grid.ColumnDefinitions>
 
         <wpfui:TitleBar
             x:Name="wpfuiTitleBar"
             Title="{Binding WindowTitle}"
-            Grid.ColumnSpan="2"
+            Grid.ColumnSpan="3"
             Height="32"
             Background="{wpfui:ThemeResource ApplicationBackgroundBrush}"
             Foreground="{wpfui:ThemeResource TextFillColorPrimaryBrush}">
@@ -87,7 +151,23 @@
             Background="Gray"
             ClipToBounds="True"
             IsManipulationEnabled="True"
+            PreviewMouseDown="MainGrid_PreviewMouseDown"
+            PreviewMouseUp="MainGrid_PreviewMouseUp"
             PreviewMouseWheel="ShapeCanvas_PreviewMouseWheel">
+            <Grid.ContextMenu>
+                <ContextMenu Opened="CanvasContextMenu_Opened">
+                    <MenuItem
+                        x:Name="ToggleCanvasNavigationMenuItem"
+                        Click="ToggleCanvasNavigationMenuItem_Click"
+                        Header="Show canvas controls"
+                        IsCheckable="True" />
+                    <MenuItem
+                        x:Name="ToggleMiniMapMenuItem"
+                        Click="ToggleMiniMapMenuItem_Click"
+                        Header="Show mini map"
+                        IsCheckable="True" />
+                </ContextMenu>
+            </Grid.ContextMenu>
             <Canvas x:Name="ShapeCanvas" Margin="50,50,0,0">
                 <Canvas.RenderTransform>
                     <TransformGroup>
@@ -253,6 +333,17 @@
 
                 <local:ResizableRectangle x:Name="CroppingRectangle" Visibility="Collapsed" />
                 <local:ResizableRectangle x:Name="LocalAdjustmentRectangle" Visibility="Collapsed" />
+
+                <!--  Rubber-band marquee for the Markup "Select" tool (ink + shapes + text)  -->
+                <Rectangle
+                    x:Name="MarkupMarqueeRectangle"
+                    Panel.ZIndex="2000"
+                    Fill="#330066FF"
+                    IsHitTestVisible="False"
+                    Stroke="#0066FF"
+                    StrokeDashArray="4 2"
+                    StrokeThickness="1"
+                    Visibility="Collapsed" />
             </Canvas>
 
             <!--  Pixel Precision Zoom Control - Outside ShapeCanvas to avoid being affected by canvas zoom  -->
@@ -276,6 +367,148 @@
                 Foreground="White"
                 IsHitTestVisible="False"
                 Text="0°"
+                Visibility="Collapsed" />
+
+            <Border
+                x:Name="CanvasNavigationBar"
+                Margin="12"
+                Padding="10,6"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Bottom"
+                Panel.ZIndex="1001"
+                Background="#F01E2026"
+                BorderBrush="#806A6D78"
+                BorderThickness="1"
+                CornerRadius="8"
+                Visibility="{Binding HasImage,
+                                     Converter={StaticResource BoolToVis}}">
+                <Border.ContextMenu>
+                    <ContextMenu Opened="CanvasContextMenu_Opened">
+                        <MenuItem
+                            x:Name="ToggleCanvasNavigationBarMenuItem"
+                            Click="ToggleCanvasNavigationMenuItem_Click"
+                            Header="Show canvas controls"
+                            IsCheckable="True" />
+                        <MenuItem
+                            x:Name="ToggleMiniMapBarMenuItem"
+                            Click="ToggleMiniMapMenuItem_Click"
+                            Header="Show mini map"
+                            IsCheckable="True" />
+                    </ContextMenu>
+                </Border.ContextMenu>
+                <Border.Effect>
+                    <DropShadowEffect
+                        BlurRadius="12"
+                        Opacity="0.35"
+                        ShadowDepth="2" />
+                </Border.Effect>
+                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                    <TextBlock
+                        Margin="0,0,10,0"
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        Foreground="#FFF4F4F5"
+                        Text="Canvas" />
+                    <Border
+                        Width="1"
+                        Height="22"
+                        Margin="0,0,10,0"
+                        Background="#4DFFFFFF" />
+                    <wpfui:Button
+                        Padding="8,3"
+                        Appearance="Secondary"
+                        Click="ResetCanvasNavigationButton_Click"
+                        Content="Reset"
+                        ToolTip="Reset zoom and pan" />
+                    <wpfui:Button
+                        Margin="6,0,0,0"
+                        Padding="8,3"
+                        Appearance="Secondary"
+                        Click="FitImageButton_Click"
+                        Content="Fit image"
+                        ToolTip="Fit the entire image in the canvas" />
+                    <wpfui:Button
+                        Margin="6,0,0,0"
+                        Padding="8,3"
+                        Appearance="Secondary"
+                        Click="FitTransformButton_Click"
+                        Content="Fit transform"
+                        ToolTip="Fit the active transform bounds in the canvas" />
+                    <Border
+                        Width="1"
+                        Height="22"
+                        Margin="12,0"
+                        Background="#4DFFFFFF" />
+                    <TextBlock
+                        Margin="0,0,6,0"
+                        VerticalAlignment="Center"
+                        Foreground="#FFD1D5DB"
+                        Text="Bounds" />
+                    <ToggleButton
+                        x:Name="AllowOutsideImageToggle"
+                        Padding="8,3"
+                        VerticalAlignment="Center"
+                        Checked="AllowOutsideImageToggle_Changed"
+                        Content="Allow outside"
+                        IsChecked="True"
+                        ToolTip="Allow transform handles to be placed beyond the image edge"
+                        Unchecked="AllowOutsideImageToggle_Changed" />
+                    <Border
+                        Width="1"
+                        Height="22"
+                        Margin="12,0"
+                        Background="#4DFFFFFF" />
+                    <TextBlock
+                        Margin="0,0,6,0"
+                        VerticalAlignment="Center"
+                        Foreground="#FFD1D5DB"
+                        Text="Zoom" />
+                    <TextBlock
+                        x:Name="CanvasZoomText"
+                        Width="48"
+                        Margin="0,0,8,0"
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        Foreground="#FFF4F4F5"
+                        Text="100%"
+                        TextAlignment="Right" />
+                    <Slider
+                        x:Name="CanvasZoomSlider"
+                        Width="170"
+                        Maximum="10"
+                        Minimum="0.1"
+                        SmallChange="0.05"
+                        TickFrequency="0.1"
+                        ToolTip="Canvas zoom"
+                        ValueChanged="CanvasZoomSlider_ValueChanged"
+                        Value="1" />
+                    <StackPanel
+                        Margin="12,0,0,0"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal"
+                        ToolTip="Processing..."
+                        Visibility="{Binding IsBusy,
+                                             Converter={StaticResource BoolToVis}}">
+                        <wpfui:ProgressRing
+                            Width="16"
+                            Height="16"
+                            IsIndeterminate="True" />
+                        <TextBlock
+                            Margin="6,0,0,0"
+                            VerticalAlignment="Center"
+                            Foreground="#FFD1D5DB"
+                            Text="Working" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!--  Mini map showing where the viewport sits within the image  -->
+            <c:MiniMap
+                x:Name="CanvasMiniMap"
+                Margin="12,12,12,66"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Panel.ZIndex="1002"
                 Visibility="Collapsed" />
 
             <!--  White point color preview  -->
@@ -321,12 +554,38 @@
             PasteButtonEvent="PasteButton_Click"
             PrimaryButtonEvent="OpenFileButton_Click" />
 
+        <ToggleButton
+            x:Name="SidebarToggleButton"
+            Grid.Row="1"
+            Grid.Column="0"
+            Width="22"
+            Height="88"
+            Margin="0,4,4,0"
+            Padding="2,10"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            Checked="SidebarToggleButton_Checked"
+            IsChecked="True"
+            Style="{StaticResource SidebarTabToggleButtonStyle}"
+            ToolTip="Collapse tools sidebar"
+            Unchecked="SidebarToggleButton_Unchecked"
+            Visibility="Collapsed">
+            <TextBlock
+                x:Name="SidebarToggleText"
+                FontSize="11"
+                Text="Hide tools">
+                <TextBlock.LayoutTransform>
+                    <RotateTransform Angle="-90" />
+                </TextBlock.LayoutTransform>
+            </TextBlock>
+        </ToggleButton>
+
         <Border
             x:Name="BottomBorder"
             Grid.Row="1"
-            Grid.Column="1"
+            Grid.Column="2"
             Padding="12,12"
-            HorizontalAlignment="Right"
+            HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
             Background="{wpfui:ThemeResource ApplicationBackgroundBrush}"
             Visibility="Collapsed">
@@ -337,7 +596,7 @@
                     <RowDefinition Height="auto" />
                 </Grid.RowDefinitions>
                 <ScrollViewer>
-                    <StackPanel Width="200" Orientation="Vertical">
+                    <StackPanel MinWidth="200" Orientation="Vertical">
                         <Grid Width="160">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -813,6 +1072,15 @@
                                         ToolTip="Convert image to black and white at a chosen threshold">
                                         <MenuItem.Icon>
                                             <wpfui:SymbolIcon Symbol="CircleHalfFill24" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem
+                                        Name="LensCorrectionMenuItem"
+                                        Command="{Binding ShowLensCorrectionCommand}"
+                                        Header="Lens Correction"
+                                        ToolTip="Correct barrel or pincushion lens distortion">
+                                        <MenuItem.Icon>
+                                            <wpfui:SymbolIcon Symbol="Camera24" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                     <Separator x:Name="ObjectEraseSeparator" Visibility="Collapsed" />
@@ -2176,6 +2444,6 @@
         <ContentPresenter
             x:Name="Presenter"
             Grid.Row="1"
-            Grid.ColumnSpan="2" />
+            Grid.ColumnSpan="3" />
     </Grid>
 </wpfui:FluentWindow>

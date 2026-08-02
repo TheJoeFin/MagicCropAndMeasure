@@ -11,4 +11,19 @@ public class SaveOptions
     public int Width { get; set; }
     public int Height { get; set; }
     public bool MaintainAspectRatio { get; set; }
+    public bool IncludeMarkup { get; set; }
+    public bool IncludeMeasurements { get; set; }
+
+    public SaveOptions Clone() => new()
+    {
+        Format = Format,
+        Extension = Extension,
+        Quality = Quality,
+        Resize = Resize,
+        Width = Width,
+        Height = Height,
+        MaintainAspectRatio = MaintainAspectRatio,
+        IncludeMarkup = IncludeMarkup,
+        IncludeMeasurements = IncludeMeasurements
+    };
 }
