@@ -22,7 +22,7 @@
             <Setter Property="StrokeThickness" Value="1" />
         </Style>
     </UserControl.Resources>
-    <Grid>
+    <Grid x:Name="RootGrid">
         <Rectangle
             x:Name="rectangle"
             Cursor="SizeAll"
@@ -40,7 +40,7 @@
         </Rectangle>
 
         <Ellipse
-            Margin="-5,-5,0,0"
+            Margin="-6,-6,0,0"
             HorizontalAlignment="Left"
             VerticalAlignment="Top"
             Cursor="SizeNWSE"
@@ -49,7 +49,7 @@
             Tag="TopLeft"
             ToolTip="Resize from top-left" />
         <Ellipse
-            Margin="0,-5,-5,0"
+            Margin="0,-6,-6,0"
             HorizontalAlignment="Right"
             VerticalAlignment="Top"
             Cursor="SizeNESW"
@@ -58,7 +58,7 @@
             Tag="TopRight"
             ToolTip="Resize from top-right" />
         <Ellipse
-            Margin="0,0,-5,-5"
+            Margin="0,0,-6,-6"
             HorizontalAlignment="Right"
             VerticalAlignment="Bottom"
             Cursor="SizeNWSE"
@@ -67,7 +67,7 @@
             Tag="BottomRight"
             ToolTip="Resize from bottom-right" />
         <Ellipse
-            Margin="-5,0,0,-5"
+            Margin="-6,0,0,-6"
             HorizontalAlignment="Left"
             VerticalAlignment="Bottom"
             Cursor="SizeNESW"
@@ -79,7 +79,7 @@
         <Rectangle
             Width="20"
             Height="8"
-            Margin="0,-3,0,0"
+            Margin="0,-4,0,0"
             HorizontalAlignment="Center"
             VerticalAlignment="Top"
             Cursor="SizeNS"
@@ -94,7 +94,7 @@
         <Rectangle
             Width="8"
             Height="20"
-            Margin="0,0,-3,0"
+            Margin="0,0,-4,0"
             HorizontalAlignment="Right"
             VerticalAlignment="Center"
             Cursor="SizeWE"
@@ -109,7 +109,7 @@
         <Rectangle
             Width="20"
             Height="8"
-            Margin="0,0,0,-3"
+            Margin="0,0,0,-4"
             HorizontalAlignment="Center"
             VerticalAlignment="Bottom"
             Cursor="SizeNS"
@@ -124,7 +124,7 @@
         <Rectangle
             Width="8"
             Height="20"
-            Margin="-3,0,0,0"
+            Margin="-4,0,0,0"
             HorizontalAlignment="Left"
             VerticalAlignment="Center"
             Cursor="SizeWE"

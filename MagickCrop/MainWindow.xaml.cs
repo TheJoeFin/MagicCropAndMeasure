@@ -143,6 +143,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private List<MarkupTextControl>? markupGroupMoveTexts;
 
     private Services.RecentProjectsManager? recentProjectsManager;
+    private readonly AppSettingsService appSettings = Singleton<AppSettingsService>.Instance;
     private System.Timers.Timer? autoSaveTimer;
     private readonly int AutoSaveIntervalMs = (int)TimeSpan.FromSeconds(5).TotalMilliseconds;
 
@@ -303,6 +304,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         ShapeCanvas.LostMouseCapture += ShapeCanvas_LostMouseCapture; // safety to ensure capture released
         MainGrid.LostMouseCapture += MainGrid_LostMouseCapture;
         rotationOverlayLabel = FindName("RotationOverlayLabel") as WpfTextBlock; // cache
+        ApplyPersistedCanvasSettings();
         UpdateCanvasNavigationUi();
         UpdateTransformVisualScale();
 
@@ -397,10 +399,15 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             Canvas.GetLeft(ellipse) + (ellipse.Width / 2),
             Canvas.GetTop(ellipse) + (ellipse.Height / 2));
         handleGrabOffset = clickedPoint - handleCenter;
+        lastActiveTransformHandle = ellipse;
+        lastActiveTransformIndex = pointDraggingIndex;
         CaptureMouse();
 
-        // Show pixel zoom for precise corner placement
-        ShowPixelZoom(clickedPoint);
+        BeginTransformHandleDrag(ellipse, handleCenter);
+
+        // Magnify the handle centre — not the cursor — so an off-centre grab still shows the
+        // pixel the corner will land on.
+        ShowPixelZoom(handleCenter, clickedPoint);
     }
 
     private void TopLeft_MouseMove(object sender, MouseEventArgs e)
@@ -431,14 +438,20 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         Point mousePos = e.GetPosition(ShapeCanvas);
         if (ShouldShowPixelZoom())
         {
+            // While dragging a transform handle the loupe follows the handle centre (grab offset
+            // removed and bounds applied), so the crosshair marks where the point really lands.
+            Point loupeTarget = draggingMode == DraggingMode.MoveElement && clickedElement is not null
+                ? ConstrainHandlePosition(mousePos - handleGrabOffset)
+                : mousePos;
+
             // Show the pixel zoom if not already visible
             if (PixelZoomControl.Visibility != Visibility.Visible)
             {
-                ShowPixelZoom(mousePos);
+                ShowPixelZoom(loupeTarget, mousePos);
             }
             else
             {
-                UpdatePixelZoom(mousePos);
+                UpdatePixelZoom(loupeTarget, mousePos);
             }
         }
         else
@@ -585,6 +598,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 FinishMarkupGroupMove();
             }
 
+            EndTransformHandleDrag();
+
             clickedElement = null;
             pointDraggingIndex = -1;
             ReleaseMouseCapture();
@@ -712,15 +727,12 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (draggingMode != DraggingMode.MoveElement || clickedElement is null)
             return;
 
-        Point newHandleCenter = new(
-            movingPoint.X - handleGrabOffset.X,
-            movingPoint.Y - handleGrabOffset.Y);
-        newHandleCenter = ConstrainHandlePosition(newHandleCenter);
-        Canvas.SetTop(clickedElement, newHandleCenter.Y - (clickedElement.Height / 2));
-        Canvas.SetLeft(clickedElement, newHandleCenter.X - (clickedElement.Width / 2));
-
-        MovePolyline(newHandleCenter);
-        UpdateCornerNavButtons();
+        MoveTransformHandleTo(
+            clickedElement,
+            pointDraggingIndex,
+            new Point(
+                movingPoint.X - handleGrabOffset.X,
+                movingPoint.Y - handleGrabOffset.Y));
 
         if (draggingMode == DraggingMode.CreatingMeasurement && isCreatingMeasurement)
         {
@@ -854,18 +866,22 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         lines?.StrokeThickness = 2 * inverseScale;
 
+        CroppingRectangle.SetCanvasScale(scale);
+        LocalAdjustmentRectangle.SetCanvasScale(scale);
+
+        UpdateActiveHandleCrosshairScale();
         UpdateCornerNavButtons();
     }
 
-    private void MovePolyline(Point newPoint)
+    private void MovePolyline(int handleIndex, Point newPoint)
     {
-        if (pointDraggingIndex < 0)
+        if (handleIndex < 0)
             return;
 
         // Update standard 4-corner polyline when dragging corner markers (index 0-3)
-        if (pointDraggingIndex < 4 && lines is not null)
+        if (handleIndex < 4 && lines is not null)
         {
-            lines.Points[pointDraggingIndex] = newPoint;
+            lines.Points[handleIndex] = newPoint;
             AspectRatioTransformPreview.SetAndScalePoints(lines.Points);
         }
 
@@ -974,7 +990,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrWhiteSpace(ViewModel.ImagePath))
             return;
 
-        SetUiForLongTask();
+        SetUiForLongTask("Correcting perspective");
 
         // Capture original image dimensions and crop rectangle position before distortion
         Size originalDisplaySize = new(MainImage.ActualWidth, MainImage.ActualHeight);
@@ -1087,7 +1103,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private async void ApplySaveSplitButton_Click(object sender, RoutedEventArgs e)
     {
-        SetUiForLongTask();
+        SetUiForLongTask("Saving image");
 
         SaveFileDialog saveFileDialog = new()
         {
@@ -1154,7 +1170,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrEmpty(ViewModel.ImagePath))
             return;
 
-        SetUiForLongTask();
+        SetUiForLongTask("Saving image");
 
         try
         {
@@ -1431,10 +1447,15 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         }
     }
 
-    private void SetUiForLongTask()
+    /// <param name="message">
+    /// What the user is waiting for, shown next to the canvas progress ring. Defaults to a generic
+    /// label so call sites that have nothing more specific to say need no argument.
+    /// </param>
+    private void SetUiForLongTask(string message = MainWindowViewModel.DefaultBusyMessage)
     {
         BottomPane.IsEnabled = false;
         Cursor = Cursors.Wait;
+        ViewModel.BusyMessage = message;
         ViewModel.IsBusy = true;
         autoSaveTimer?.Stop();
     }
@@ -1442,6 +1463,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private void SetUiForCompletedTask()
     {
         ViewModel.IsBusy = false;
+        ViewModel.BusyMessage = MainWindowViewModel.DefaultBusyMessage;
         Cursor = null;
         BottomPane.IsEnabled = true;
 
@@ -1464,7 +1486,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private async void OpenFileButton_Click(object sender, RoutedEventArgs e)
     {
-        SetUiForLongTask();
+        SetUiForLongTask("Opening image");
 
         OpenFileDialog openFileDialog = new()
         {
@@ -1501,7 +1523,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
-        SetUiForLongTask();
+        SetUiForLongTask("Pasting image");
         try
         {
             WelcomeMessageModal.Visibility = Visibility.Collapsed;
@@ -1556,7 +1578,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     {
         try
         {
-            SetUiForLongTask();
+            SetUiForLongTask("Capturing image");
             WelcomeMessageModal.Visibility = Visibility.Collapsed;
 
             nint hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
@@ -2339,9 +2361,45 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             CenterAndZoomToFit();
     }
 
+    /// <summary>
+    /// Restores the canvas preferences saved by a previous session.
+    /// </summary>
+    private void ApplyPersistedCanvasSettings()
+    {
+        allowHandlesOutsideImage = appSettings.AllowHandlesOutsideImage;
+        showMiniMap = appSettings.ShowMiniMap;
+
+        AllowOutsideImageToggle.IsChecked = allowHandlesOutsideImage;
+    }
+
     private void AllowOutsideImageToggle_Changed(object sender, RoutedEventArgs e)
     {
         allowHandlesOutsideImage = AllowOutsideImageToggle.IsChecked == true;
+
+        appSettings.AllowHandlesOutsideImage = allowHandlesOutsideImage;
+        appSettings.Save();
+
+        // Turning the restriction on should pull handles that are already outside the image back
+        // in, rather than only affecting the next drag.
+        if (!allowHandlesOutsideImage)
+            ConstrainAllTransformHandles();
+    }
+
+    /// <summary>
+    /// Re-applies the image-bounds constraint to every visible transform handle.
+    /// </summary>
+    private void ConstrainAllTransformHandles()
+    {
+        foreach (Ellipse handle in GetTransformHandles())
+        {
+            if (handle.Visibility != Visibility.Visible || handle.Tag is not string tag
+                || !int.TryParse(tag, out int index))
+            {
+                continue;
+            }
+
+            MoveTransformHandleTo(handle, index, GeometryMathHelper.GetEllipseCenter(handle));
+        }
     }
 
     private void CanvasZoomSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -2532,7 +2590,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         draggingMode = DraggingMode.Panning;
         clickedPoint = e.GetPosition(this);
         MainGrid.CaptureMouse();
-        Cursor = Cursors.SizeAll;
+        Cursor = CursorHelper.Grabbing;
         e.Handled = true;
     }
 
@@ -2642,6 +2700,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         ToggleMiniMapMenuItem.IsChecked = showMiniMap;
         ToggleMiniMapBarMenuItem.IsChecked = showMiniMap;
+
+        appSettings.ShowMiniMap = showMiniMap;
+        appSettings.Save();
 
         UpdateMiniMap();
     }
@@ -2839,7 +2900,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             WhitePointColorPreview.Visibility = Visibility.Visible;
 
             await Task.Delay(800);
-            SetUiForLongTask();
+            SetUiForLongTask("Sampling color");
 
             // Build the per-channel Level adjustment
             void ApplyColorPoint(MagickImage target)
@@ -2982,7 +3043,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         double factor = magickImage.Height / displayHeight;
         cropGeometry.ScaleAll(factor);
 
-        SetUiForLongTask();
+        SetUiForLongTask("Cropping image");
 
         magickImage.Crop(cropGeometry);
 
@@ -3035,6 +3096,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrEmpty(ViewModel.ImagePath) || !File.Exists(ViewModel.ImagePath))
             return;
 
+        ViewModel.BusyMessage = "Detecting edges";
         ViewModel.IsBusy = true;
 
         try
@@ -3073,6 +3135,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         finally
         {
             ViewModel.IsBusy = false;
+            ViewModel.BusyMessage = MainWindowViewModel.DefaultBusyMessage;
         }
     }
 
@@ -3324,7 +3387,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrWhiteSpace(ViewModel.ImagePath))
             return;
 
-        SetUiForLongTask();
+        SetUiForLongTask("Correcting tri-fold");
 
         try
         {
@@ -3406,6 +3469,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrEmpty(ViewModel.ImagePath) || !File.Exists(ViewModel.ImagePath))
             return;
 
+        ViewModel.BusyMessage = "Detecting edges";
         ViewModel.IsBusy = true;
 
         try
@@ -3447,6 +3511,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         finally
         {
             ViewModel.IsBusy = false;
+            ViewModel.BusyMessage = MainWindowViewModel.DefaultBusyMessage;
         }
     }
 
@@ -3669,7 +3734,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrWhiteSpace(ViewModel.ImagePath))
             return;
 
-        SetUiForLongTask();
+        SetUiForLongTask("Un-warping image");
 
         try
         {
@@ -3965,7 +4030,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
-        SetUiForLongTask();
+        SetUiForLongTask("Straightening edges");
 
         try
         {
@@ -4312,7 +4377,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
-        SetUiForLongTask();
+        SetUiForLongTask("Straightening grid");
 
         try
         {
@@ -4378,6 +4443,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrEmpty(ViewModel.ImagePath) || !File.Exists(ViewModel.ImagePath))
             return;
 
+        ViewModel.BusyMessage = "Detecting edges";
         ViewModel.IsBusy = true;
 
         try
@@ -4416,6 +4482,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         finally
         {
             ViewModel.IsBusy = false;
+            ViewModel.BusyMessage = MainWindowViewModel.DefaultBusyMessage;
         }
     }
 
@@ -4511,7 +4578,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             IgnoreAspectRatio = true
         };
 
-        SetUiForLongTask();
+        SetUiForLongTask("Resizing image");
 
         magickImage.Resize(resizeGeometry);
 
@@ -4849,7 +4916,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
-        SetUiForLongTask();
+        SetUiForLongTask("Erasing object");
 
         try
         {
@@ -5483,7 +5550,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (saveFileDialog.ShowDialog() != true)
             return;
 
-        SetUiForLongTask();
+        SetUiForLongTask("Saving project");
 
         try
         {
@@ -5508,7 +5575,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     public async Task<bool> LoadMeasurementsPackageFromFile()
     {
-        SetUiForLongTask();
+        SetUiForLongTask("Opening project");
 
         OpenFileDialog openFileDialog = new()
         {
@@ -5767,7 +5834,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     public async void LoadMeasurementsPackageFromFile(string filePath)
     {
-        SetUiForLongTask();
+        SetUiForLongTask("Opening project");
         WelcomeMessageModal.Visibility = Visibility.Collapsed;
 
         await LoadMeasurementPackageAsync(filePath);
@@ -5880,8 +5947,11 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         // --- Cancel any active placement / creation state ---
         isCreatingMeasurement = false;
         draggingMode = DraggingMode.None;
+        EndTransformHandleDrag();
         clickedElement = null;
         pointDraggingIndex = -1;
+        lastActiveTransformHandle = null;
+        lastActiveTransformIndex = -1;
         ShapeCanvas.ReleaseMouseCapture();
         ReleaseMouseCapture();
 
@@ -6408,6 +6478,19 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         // leave Ctrl+Z/Ctrl+Y to the text box's own undo
         bool typingInTextBox = Keyboard.FocusedElement is System.Windows.Controls.Primitives.TextBoxBase;
 
+        // Arrow keys nudge the transform handle that was last grabbed, for placement that is finer
+        // than the mouse can manage. Controls that use the arrow keys themselves keep priority.
+        if (e.Key is Key.Left or Key.Right or Key.Up or Key.Down
+            && !typingInTextBox
+            && Keyboard.FocusedElement is not Slider
+            && Keyboard.FocusedElement is not System.Windows.Controls.ComboBox
+            && (Keyboard.Modifiers & ModifierKeys.Alt) != ModifierKeys.Alt
+            && TryNudgeTransformHandle(e.Key))
+        {
+            e.Handled = true;
+            return;
+        }
+
         // Handle Ctrl+Z for undo
         if (!typingInTextBox && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && e.Key == Key.Z)
         {
@@ -6846,7 +6929,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return; // no-op
         }
 
-        SetUiForLongTask();
+        SetUiForLongTask("Rotating image");
         try
         {
             string previousPath = ViewModel.ImagePath!;
@@ -6926,10 +7009,17 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     #region Pixel Precision Zoom
 
     /// <summary>
-    /// Shows the pixel precision zoom control at the current mouse position.
+    /// Shows the pixel precision zoom control.
     /// </summary>
-    /// <param name="mousePosition">Mouse position in ShapeCanvas coordinates</param>
-    private void ShowPixelZoom(Point mousePosition)
+    /// <param name="targetPoint">
+    /// The point to magnify, in ShapeCanvas coordinates. When a handle is being dragged by its
+    /// edge this is the handle centre, not the cursor, so the crosshair marks where the point
+    /// will actually land.
+    /// </param>
+    /// <param name="cursorPoint">
+    /// Where to park the loupe, in ShapeCanvas coordinates. Defaults to <paramref name="targetPoint"/>.
+    /// </param>
+    private void ShowPixelZoom(Point targetPoint, Point? cursorPoint = null)
     {
         if (MainImage.Source == null)
             return;
@@ -6938,17 +7028,12 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         {
             // Set the source image for the zoom control
             PixelZoomControl.SourceImage = MainImage.Source;
+            UpdateLoupeMagnification();
 
-            // Convert mouse position to image coordinates
-            Point imagePosition = ConvertCanvasToImageCoordinates(mousePosition);
-            PixelZoomControl.CurrentPosition = imagePosition;
+            // Convert the magnified point to image coordinates
+            PixelZoomControl.CurrentPosition = ConvertCanvasToImageCoordinates(targetPoint);
 
-            // Convert ShapeCanvas coordinates to MainGrid coordinates
-            // ShapeCanvas has transforms applied, so we need to transform the point
-            Point mainGridPosition = ShapeCanvas.TransformToAncestor(MainGrid).Transform(mousePosition);
-
-            // Position the zoom control near the cursor in MainGrid coordinates
-            PixelZoomControl.PositionNearCursor(mainGridPosition, MainGrid.ActualWidth, MainGrid.ActualHeight);
+            PositionPixelZoom(cursorPoint ?? targetPoint);
 
             // Show the control
             PixelZoomControl.Visibility = Visibility.Visible;
@@ -6963,29 +7048,49 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     /// <summary>
     /// Updates the pixel precision zoom control position and preview.
     /// </summary>
-    /// <param name="mousePosition">Mouse position in ShapeCanvas coordinates</param>
-    private void UpdatePixelZoom(Point mousePosition)
+    /// <param name="targetPoint">The point to magnify, in ShapeCanvas coordinates</param>
+    /// <param name="cursorPoint">Where to park the loupe, in ShapeCanvas coordinates</param>
+    private void UpdatePixelZoom(Point targetPoint, Point? cursorPoint = null)
     {
         if (PixelZoomControl.Visibility != Visibility.Visible)
             return;
 
         try
         {
-            // Convert mouse position to image coordinates
-            Point imagePosition = ConvertCanvasToImageCoordinates(mousePosition);
-            PixelZoomControl.CurrentPosition = imagePosition;
-
-            // Convert ShapeCanvas coordinates to MainGrid coordinates
-            // ShapeCanvas has transforms applied, so we need to transform the point
-            Point mainGridPosition = ShapeCanvas.TransformToAncestor(MainGrid).Transform(mousePosition);
-
-            // Update the zoom control position in MainGrid coordinates
-            PixelZoomControl.PositionNearCursor(mainGridPosition, MainGrid.ActualWidth, MainGrid.ActualHeight);
+            UpdateLoupeMagnification();
+            PixelZoomControl.CurrentPosition = ConvertCanvasToImageCoordinates(targetPoint);
+            PositionPixelZoom(cursorPoint ?? targetPoint);
         }
         catch (Exception)
         {
             // Silently handle any errors
         }
+    }
+
+    /// <summary>
+    /// Moves the loupe next to the cursor. ShapeCanvas is pan/zoom transformed, so the point has
+    /// to be projected into MainGrid coordinates first.
+    /// </summary>
+    private void PositionPixelZoom(Point cursorPoint)
+    {
+        Point mainGridPosition = ShapeCanvas.TransformToAncestor(MainGrid).Transform(cursorPoint);
+        PixelZoomControl.PositionNearCursor(mainGridPosition, MainGrid.ActualWidth, MainGrid.ActualHeight);
+    }
+
+    /// <summary>
+    /// Keeps the loupe more magnified than the canvas itself. The loupe magnifies source pixels,
+    /// so on a small image at a high canvas zoom a fixed factor would actually show *less* detail
+    /// than the canvas underneath it.
+    /// </summary>
+    private void UpdateLoupeMagnification()
+    {
+        if (MainImage.Source is not BitmapSource source
+            || source.PixelWidth <= 0
+            || MainImage.ActualWidth <= 0)
+            return;
+
+        double canvasPixelsPerSourcePixel = MainImage.ActualWidth / source.PixelWidth * canvasScale.ScaleX;
+        PixelZoomControl.ZoomFactor = Math.Clamp(canvasPixelsPerSourcePixel * 2.5, 6.0, 24.0);
     }
 
     /// <summary>

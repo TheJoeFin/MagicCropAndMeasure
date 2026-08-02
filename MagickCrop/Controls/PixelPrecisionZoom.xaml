@@ -27,7 +27,10 @@
                         Width="150"
                         Height="150"
                         ClipToBounds="True">
-                        <Image x:Name="ZoomImage" Stretch="None" />
+                        <Image
+                            x:Name="ZoomImage"
+                            RenderOptions.BitmapScalingMode="NearestNeighbor"
+                            Stretch="None" />
                     </Canvas>
                 </Viewbox>
 
