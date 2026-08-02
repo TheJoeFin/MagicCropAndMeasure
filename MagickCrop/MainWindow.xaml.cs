@@ -143,6 +143,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private List<MarkupTextControl>? markupGroupMoveTexts;
 
     private Services.RecentProjectsManager? recentProjectsManager;
+    private readonly AppSettingsService appSettings = Singleton<AppSettingsService>.Instance;
     private System.Timers.Timer? autoSaveTimer;
     private readonly int AutoSaveIntervalMs = (int)TimeSpan.FromSeconds(5).TotalMilliseconds;
 
@@ -303,6 +304,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         ShapeCanvas.LostMouseCapture += ShapeCanvas_LostMouseCapture; // safety to ensure capture released
         MainGrid.LostMouseCapture += MainGrid_LostMouseCapture;
         rotationOverlayLabel = FindName("RotationOverlayLabel") as WpfTextBlock; // cache
+        ApplyPersistedCanvasSettings();
         UpdateCanvasNavigationUi();
         UpdateTransformVisualScale();
 
@@ -2359,9 +2361,45 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             CenterAndZoomToFit();
     }
 
+    /// <summary>
+    /// Restores the canvas preferences saved by a previous session.
+    /// </summary>
+    private void ApplyPersistedCanvasSettings()
+    {
+        allowHandlesOutsideImage = appSettings.AllowHandlesOutsideImage;
+        showMiniMap = appSettings.ShowMiniMap;
+
+        AllowOutsideImageToggle.IsChecked = allowHandlesOutsideImage;
+    }
+
     private void AllowOutsideImageToggle_Changed(object sender, RoutedEventArgs e)
     {
         allowHandlesOutsideImage = AllowOutsideImageToggle.IsChecked == true;
+
+        appSettings.AllowHandlesOutsideImage = allowHandlesOutsideImage;
+        appSettings.Save();
+
+        // Turning the restriction on should pull handles that are already outside the image back
+        // in, rather than only affecting the next drag.
+        if (!allowHandlesOutsideImage)
+            ConstrainAllTransformHandles();
+    }
+
+    /// <summary>
+    /// Re-applies the image-bounds constraint to every visible transform handle.
+    /// </summary>
+    private void ConstrainAllTransformHandles()
+    {
+        foreach (Ellipse handle in GetTransformHandles())
+        {
+            if (handle.Visibility != Visibility.Visible || handle.Tag is not string tag
+                || !int.TryParse(tag, out int index))
+            {
+                continue;
+            }
+
+            MoveTransformHandleTo(handle, index, GeometryMathHelper.GetEllipseCenter(handle));
+        }
     }
 
     private void CanvasZoomSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -2662,6 +2700,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         ToggleMiniMapMenuItem.IsChecked = showMiniMap;
         ToggleMiniMapBarMenuItem.IsChecked = showMiniMap;
+
+        appSettings.ShowMiniMap = showMiniMap;
+        appSettings.Save();
 
         UpdateMiniMap();
     }
