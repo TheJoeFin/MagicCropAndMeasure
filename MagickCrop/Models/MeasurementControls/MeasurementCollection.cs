@@ -47,6 +47,11 @@ public class MeasurementCollection
     public List<PolygonMeasurementControlDto> PolygonMeasurements { get; set; } = [];
 
     /// <summary>
+    /// Collection of parametric constructions (points and the lines through them)
+    /// </summary>
+    public List<ConstructionGeometryDto> Constructions { get; set; } = [];
+
+    /// <summary>
     /// Collection of serialized ink strokes
     /// </summary>
     public List<StrokeDto> InkStrokes { get; set; } = [];

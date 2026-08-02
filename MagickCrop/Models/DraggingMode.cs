@@ -19,5 +19,11 @@ public enum DraggingMode
     MarkupShape,
     MarkupText,
     MarkupGroupSelect,
-    MarkupGroupMove
+    MarkupGroupMove,
+
+    /// <summary>Dragging an existing construction point.</summary>
+    ConstructionPoint,
+
+    /// <summary>Dragging out a new construction edge and its two points.</summary>
+    ConstructionEdgeCreate
 }
