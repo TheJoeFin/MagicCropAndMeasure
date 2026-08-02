@@ -1316,13 +1316,14 @@
                                                 FontStyle="Italic"
                                                 Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
                                                 Text="Corners are where the edge lines cross. Click a point to select it, then drag to reshape. Select two points and click the faint line to connect them, or a third point for the circle through all three. Faint rings mark line crossings and circle centres — click one to keep it as a point. Find Edge Point drags a short line across a boundary and drops the point on the transition. Select a line or circle and press Delete to remove it — its points stay."
-                                                TextWrapping="Wrap" />
+                                                TextWrapping="Wrap"
+                                                Visibility="Collapsed" />
 
                                             <wpfui:Button
                                                 x:Name="ApplyConstructionToTransformButton"
                                                 Width="150"
                                                 Margin="0,4"
-                                                Appearance="Primary"
+                                                Appearance="Secondary"
                                                 Click="ApplyConstructionToTransform_Click"
                                                 Content="Use for Transform"
                                                 IsEnabled="False"
@@ -1987,7 +1988,8 @@
                     <GroupBox
                         Margin="0,8,0,0"
                         Padding="0,6"
-                        Header="Construction (Parametric)">
+                        Header="Construction (Parametric)"
+                        Visibility="Collapsed">
                         <StackPanel x:Name="ConstructionToolsPanelTransform" HorizontalAlignment="Center">
                             <ToggleButton
                                 x:Name="ConstructionEdgeToggleTransform"
