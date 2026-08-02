@@ -497,7 +497,7 @@
                             Margin="6,0,0,0"
                             VerticalAlignment="Center"
                             Foreground="#FFD1D5DB"
-                            Text="Working" />
+                            Text="{Binding BusyMessage}" />
                     </StackPanel>
                 </StackPanel>
             </Border>

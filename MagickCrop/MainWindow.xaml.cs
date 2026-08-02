@@ -988,7 +988,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrWhiteSpace(ViewModel.ImagePath))
             return;
 
-        SetUiForLongTask();
+        SetUiForLongTask("Correcting perspective");
 
         // Capture original image dimensions and crop rectangle position before distortion
         Size originalDisplaySize = new(MainImage.ActualWidth, MainImage.ActualHeight);
@@ -1101,7 +1101,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private async void ApplySaveSplitButton_Click(object sender, RoutedEventArgs e)
     {
-        SetUiForLongTask();
+        SetUiForLongTask("Saving image");
 
         SaveFileDialog saveFileDialog = new()
         {
@@ -1168,7 +1168,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrEmpty(ViewModel.ImagePath))
             return;
 
-        SetUiForLongTask();
+        SetUiForLongTask("Saving image");
 
         try
         {
@@ -1445,10 +1445,15 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         }
     }
 
-    private void SetUiForLongTask()
+    /// <param name="message">
+    /// What the user is waiting for, shown next to the canvas progress ring. Defaults to a generic
+    /// label so call sites that have nothing more specific to say need no argument.
+    /// </param>
+    private void SetUiForLongTask(string message = MainWindowViewModel.DefaultBusyMessage)
     {
         BottomPane.IsEnabled = false;
         Cursor = Cursors.Wait;
+        ViewModel.BusyMessage = message;
         ViewModel.IsBusy = true;
         autoSaveTimer?.Stop();
     }
@@ -1456,6 +1461,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private void SetUiForCompletedTask()
     {
         ViewModel.IsBusy = false;
+        ViewModel.BusyMessage = MainWindowViewModel.DefaultBusyMessage;
         Cursor = null;
         BottomPane.IsEnabled = true;
 
@@ -1478,7 +1484,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private async void OpenFileButton_Click(object sender, RoutedEventArgs e)
     {
-        SetUiForLongTask();
+        SetUiForLongTask("Opening image");
 
         OpenFileDialog openFileDialog = new()
         {
@@ -1515,7 +1521,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
-        SetUiForLongTask();
+        SetUiForLongTask("Pasting image");
         try
         {
             WelcomeMessageModal.Visibility = Visibility.Collapsed;
@@ -1570,7 +1576,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     {
         try
         {
-            SetUiForLongTask();
+            SetUiForLongTask("Capturing image");
             WelcomeMessageModal.Visibility = Visibility.Collapsed;
 
             nint hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
@@ -2853,7 +2859,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             WhitePointColorPreview.Visibility = Visibility.Visible;
 
             await Task.Delay(800);
-            SetUiForLongTask();
+            SetUiForLongTask("Sampling color");
 
             // Build the per-channel Level adjustment
             void ApplyColorPoint(MagickImage target)
@@ -2996,7 +3002,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         double factor = magickImage.Height / displayHeight;
         cropGeometry.ScaleAll(factor);
 
-        SetUiForLongTask();
+        SetUiForLongTask("Cropping image");
 
         magickImage.Crop(cropGeometry);
 
@@ -3049,6 +3055,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrEmpty(ViewModel.ImagePath) || !File.Exists(ViewModel.ImagePath))
             return;
 
+        ViewModel.BusyMessage = "Detecting edges";
         ViewModel.IsBusy = true;
 
         try
@@ -3087,6 +3094,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         finally
         {
             ViewModel.IsBusy = false;
+            ViewModel.BusyMessage = MainWindowViewModel.DefaultBusyMessage;
         }
     }
 
@@ -3338,7 +3346,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrWhiteSpace(ViewModel.ImagePath))
             return;
 
-        SetUiForLongTask();
+        SetUiForLongTask("Correcting tri-fold");
 
         try
         {
@@ -3420,6 +3428,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrEmpty(ViewModel.ImagePath) || !File.Exists(ViewModel.ImagePath))
             return;
 
+        ViewModel.BusyMessage = "Detecting edges";
         ViewModel.IsBusy = true;
 
         try
@@ -3461,6 +3470,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         finally
         {
             ViewModel.IsBusy = false;
+            ViewModel.BusyMessage = MainWindowViewModel.DefaultBusyMessage;
         }
     }
 
@@ -3683,7 +3693,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrWhiteSpace(ViewModel.ImagePath))
             return;
 
-        SetUiForLongTask();
+        SetUiForLongTask("Un-warping image");
 
         try
         {
@@ -3979,7 +3989,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
-        SetUiForLongTask();
+        SetUiForLongTask("Straightening edges");
 
         try
         {
@@ -4326,7 +4336,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
-        SetUiForLongTask();
+        SetUiForLongTask("Straightening grid");
 
         try
         {
@@ -4392,6 +4402,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrEmpty(ViewModel.ImagePath) || !File.Exists(ViewModel.ImagePath))
             return;
 
+        ViewModel.BusyMessage = "Detecting edges";
         ViewModel.IsBusy = true;
 
         try
@@ -4430,6 +4441,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         finally
         {
             ViewModel.IsBusy = false;
+            ViewModel.BusyMessage = MainWindowViewModel.DefaultBusyMessage;
         }
     }
 
@@ -4525,7 +4537,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             IgnoreAspectRatio = true
         };
 
-        SetUiForLongTask();
+        SetUiForLongTask("Resizing image");
 
         magickImage.Resize(resizeGeometry);
 
@@ -4863,7 +4875,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
-        SetUiForLongTask();
+        SetUiForLongTask("Erasing object");
 
         try
         {
@@ -5497,7 +5509,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (saveFileDialog.ShowDialog() != true)
             return;
 
-        SetUiForLongTask();
+        SetUiForLongTask("Saving project");
 
         try
         {
@@ -5522,7 +5534,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     public async Task<bool> LoadMeasurementsPackageFromFile()
     {
-        SetUiForLongTask();
+        SetUiForLongTask("Opening project");
 
         OpenFileDialog openFileDialog = new()
         {
@@ -5781,7 +5793,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     public async void LoadMeasurementsPackageFromFile(string filePath)
     {
-        SetUiForLongTask();
+        SetUiForLongTask("Opening project");
         WelcomeMessageModal.Visibility = Visibility.Collapsed;
 
         await LoadMeasurementPackageAsync(filePath);
@@ -6876,7 +6888,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return; // no-op
         }
 
-        SetUiForLongTask();
+        SetUiForLongTask("Rotating image");
         try
         {
             string previousPath = ViewModel.ImagePath!;

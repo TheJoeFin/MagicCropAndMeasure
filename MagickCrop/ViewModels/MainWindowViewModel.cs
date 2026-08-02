@@ -89,6 +89,12 @@ public partial class MainWindowViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsNotBusy))]
     private bool isBusy;
 
+    /// <summary>What the app is currently busy doing, shown next to the canvas progress ring.</summary>
+    [ObservableProperty]
+    private string busyMessage = DefaultBusyMessage;
+
+    public const string DefaultBusyMessage = "Working";
+
     [ObservableProperty]
     private string windowTitle = "Magick Crop & Measure by TheJoeFin";
 
