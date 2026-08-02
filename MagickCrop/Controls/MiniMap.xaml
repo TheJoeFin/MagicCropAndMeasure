@@ -1,0 +1,48 @@
+﻿<UserControl
+    x:Class="MagickCrop.Controls.MiniMap"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    HorizontalAlignment="Right"
+    VerticalAlignment="Bottom"
+    mc:Ignorable="d">
+    <Border
+        Padding="6"
+        Background="#F01E2026"
+        BorderBrush="#806A6D78"
+        BorderThickness="1"
+        CornerRadius="8">
+        <Border.Effect>
+            <DropShadowEffect
+                BlurRadius="12"
+                Opacity="0.35"
+                ShadowDepth="2" />
+        </Border.Effect>
+        <Grid
+            x:Name="MapHost"
+            Width="160"
+            Height="120"
+            ClipToBounds="True"
+            Cursor="SizeAll"
+            MouseLeftButtonDown="MapHost_MouseLeftButtonDown"
+            MouseLeftButtonUp="MapHost_MouseLeftButtonUp"
+            MouseMove="MapHost_MouseMove"
+            ToolTip="Drag to pan the canvas">
+            <Rectangle Fill="#FF2A2D33" />
+            <Image x:Name="MiniImage" Stretch="Fill" />
+            <Path
+                x:Name="OutsideDim"
+                Fill="#73000000"
+                IsHitTestVisible="False" />
+            <Rectangle
+                x:Name="ViewportRectangle"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                IsHitTestVisible="False"
+                Stroke="#0066FF"
+                StrokeThickness="1.5" />
+            <Border BorderBrush="#59FFFFFF" BorderThickness="1" />
+        </Grid>
+    </Border>
+</UserControl>

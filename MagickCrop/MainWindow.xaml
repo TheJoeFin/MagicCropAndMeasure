@@ -128,6 +128,11 @@
                         Click="ToggleCanvasNavigationMenuItem_Click"
                         Header="Show canvas controls"
                         IsCheckable="True" />
+                    <MenuItem
+                        x:Name="ToggleMiniMapMenuItem"
+                        Click="ToggleMiniMapMenuItem_Click"
+                        Header="Show mini map"
+                        IsCheckable="True" />
                 </ContextMenu>
             </Grid.ContextMenu>
             <Canvas x:Name="ShapeCanvas" Margin="50,50,0,0">
@@ -351,6 +356,11 @@
                             Click="ToggleCanvasNavigationMenuItem_Click"
                             Header="Show canvas controls"
                             IsCheckable="True" />
+                        <MenuItem
+                            x:Name="ToggleMiniMapBarMenuItem"
+                            Click="ToggleMiniMapMenuItem_Click"
+                            Header="Show mini map"
+                            IsCheckable="True" />
                     </ContextMenu>
                 </Border.ContextMenu>
                 <Border.Effect>
@@ -458,6 +468,15 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
+
+            <!--  Mini map showing where the viewport sits within the image  -->
+            <c:MiniMap
+                x:Name="CanvasMiniMap"
+                Margin="12,12,12,66"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Panel.ZIndex="1002"
+                Visibility="Collapsed" />
 
             <!--  White point color preview  -->
             <Border

@@ -8,6 +8,7 @@ using MagickCrop.ViewModels;
 using Microsoft.Win32;
 using Microsoft.Windows.Media.Capture;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -63,6 +64,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private FrameworkElement? clickedElement;
     private bool allowHandlesOutsideImage = true;
     private bool isUpdatingCanvasNavigation;
+    private bool showMiniMap = true;
+    private const double CanvasOriginOffset = 50;
     private const double DefaultSidebarWidth = 240;
 
     // Size input properties
@@ -232,6 +235,13 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         InitializeComponent();
         canvasScale.Changed += CanvasScale_Changed;
+        canvasTranslate.Changed += CanvasTranslate_Changed;
+        CanvasMiniMap.ViewportCenterRequested += CanvasMiniMap_ViewportCenterRequested;
+        MainGrid.SizeChanged += (_, _) => UpdateMiniMap();
+        MainImage.SizeChanged += (_, _) => UpdateMiniMap();
+        DependencyPropertyDescriptor
+            .FromProperty(System.Windows.Controls.Image.SourceProperty, typeof(System.Windows.Controls.Image))
+            ?.AddValueChanged(MainImage, (_, _) => UpdateMiniMap());
         // Ensure zoom still works if mouse wheel fires at window level (after a pan or when mouse over other element)
         PreviewMouseWheel += ShapeCanvas_PreviewMouseWheel;
 
@@ -1700,7 +1710,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private void ShapeCanvas_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         // Only zoom when the mouse is over the canvas area so ScrollViewers elsewhere still work
-        if (!MainGrid.IsMouseOver)
+        if (!MainGrid.IsMouseOver || IsOverMiniMap(e))
             return;
 
         // Get the current mouse position relative to the canvas
@@ -2339,6 +2349,59 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         UpdateTransformVisualScale();
         UpdateCanvasNavigationUi();
+        UpdateMiniMap();
+    }
+
+    private void CanvasTranslate_Changed(object? sender, EventArgs e)
+    {
+        if (!IsInitialized)
+            return;
+
+        UpdateMiniMap();
+    }
+
+    /// <summary>
+    /// Recomputes the visible canvas region and pushes it to the mini map overlay.
+    /// </summary>
+    private void UpdateMiniMap()
+    {
+        if (!IsInitialized)
+            return;
+
+        bool hasContent = false;
+        double scale = canvasScale.ScaleX;
+
+        if (showMiniMap
+            && scale > 0
+            && MainImage.Source is not null
+            && MainImage.ActualWidth > 0
+            && MainImage.ActualHeight > 0
+            && MainGrid.ActualWidth > 0
+            && MainGrid.ActualHeight > 0)
+        {
+            Rect viewportInCanvas = new(
+                (-CanvasOriginOffset - canvasTranslate.X) / scale,
+                (-CanvasOriginOffset - canvasTranslate.Y) / scale,
+                MainGrid.ActualWidth / scale,
+                MainGrid.ActualHeight / scale);
+
+            hasContent = CanvasMiniMap.UpdateMap(
+                MainImage.Source,
+                new Size(MainImage.ActualWidth, MainImage.ActualHeight),
+                viewportInCanvas);
+        }
+
+        CanvasMiniMap.Visibility = hasContent ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void CanvasMiniMap_ViewportCenterRequested(object? sender, Point canvasPoint)
+    {
+        double scale = canvasScale.ScaleX;
+        if (scale <= 0)
+            return;
+
+        canvasTranslate.X = (MainGrid.ActualWidth / 2) - CanvasOriginOffset - (canvasPoint.X * scale);
+        canvasTranslate.Y = (MainGrid.ActualHeight / 2) - CanvasOriginOffset - (canvasPoint.Y * scale);
     }
 
     private void UpdateCanvasNavigationUi()
@@ -2443,6 +2506,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private void MainGrid_PreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (IsOverMiniMap(e))
+            return;
+
         if (e.ChangedButton == MouseButton.Left && isMarkupSelectMode
             && TryStartMarkupSelectGesture(e))
         {
@@ -2523,6 +2589,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         return true;
     }
 
+    private static bool IsOverMiniMap(RoutedEventArgs e)
+        => e.OriginalSource is DependencyObject source && FindAncestor<MiniMap>(source) is not null;
+
     private static T? FindAncestor<T>(DependencyObject? current) where T : DependencyObject
     {
         while (current is not null)
@@ -2543,6 +2612,24 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         ToggleCanvasNavigationBarMenuItem.IsEnabled = ViewModel.HasImage;
         ToggleCanvasNavigationBarMenuItem.IsChecked = isBarVisible;
+
+        ToggleMiniMapMenuItem.IsEnabled = ViewModel.HasImage;
+        ToggleMiniMapMenuItem.IsChecked = showMiniMap;
+
+        ToggleMiniMapBarMenuItem.IsEnabled = ViewModel.HasImage;
+        ToggleMiniMapBarMenuItem.IsChecked = showMiniMap;
+    }
+
+    private void ToggleMiniMapMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        showMiniMap = sender is System.Windows.Controls.MenuItem { IsCheckable: true } menuItem
+            ? menuItem.IsChecked
+            : !showMiniMap;
+
+        ToggleMiniMapMenuItem.IsChecked = showMiniMap;
+        ToggleMiniMapBarMenuItem.IsChecked = showMiniMap;
+
+        UpdateMiniMap();
     }
 
     private void ToggleCanvasNavigationMenuItem_Click(object sender, RoutedEventArgs e)
