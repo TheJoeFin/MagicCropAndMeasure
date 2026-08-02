@@ -92,6 +92,12 @@ public partial class MiniMap : UserControl
         if (!isDragging)
             return;
 
+        if (e.LeftButton != MouseButtonState.Pressed)
+        {
+            EndDrag();
+            return;
+        }
+
         RequestCenter(e.GetPosition(MapHost));
         e.Handled = true;
     }
@@ -101,8 +107,20 @@ public partial class MiniMap : UserControl
         if (!isDragging)
             return;
 
-        isDragging = false;
-        MapHost.ReleaseMouseCapture();
+        EndDrag();
         e.Handled = true;
+    }
+
+    private void MapHost_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        isDragging = false;
+    }
+
+    private void EndDrag()
+    {
+        isDragging = false;
+
+        if (MapHost.IsMouseCaptured)
+            MapHost.ReleaseMouseCapture();
     }
 }

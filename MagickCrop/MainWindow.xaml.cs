@@ -713,6 +713,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         Canvas.SetLeft(clickedElement, newHandleCenter.X - (clickedElement.Width / 2));
 
         MovePolyline(newHandleCenter);
+        UpdateCornerNavButtons();
 
         if (draggingMode == DraggingMode.CreatingMeasurement && isCreatingMeasurement)
         {
@@ -795,6 +796,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private void PanCanvas(MouseEventArgs e)
     {
+        StopCanvasTranslateAnimation();
+
         Point currentPosition = e.GetPosition(this);
         Vector delta = currentPosition - clickedPoint;
 
@@ -843,6 +846,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         }
 
         lines?.StrokeThickness = 2 * inverseScale;
+
+        UpdateCornerNavButtons();
     }
 
     private void MovePolyline(Point newPoint)
@@ -1347,6 +1352,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         }
 
         Dictionary<MarkupShapeControl, bool> markupGizmoVisibility = [];
+        StopCanvasTranslateAnimation();
         double originalScaleX = canvasScale.ScaleX;
         double originalScaleY = canvasScale.ScaleY;
         double originalTranslateX = canvasTranslate.X;
@@ -2300,6 +2306,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private void ResetCanvasNavigation()
     {
+        StopCanvasTranslateAnimation();
+
         canvasScale.ScaleX = 1;
         canvasScale.ScaleY = 1;
 
@@ -2396,12 +2404,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private void CanvasMiniMap_ViewportCenterRequested(object? sender, Point canvasPoint)
     {
-        double scale = canvasScale.ScaleX;
-        if (scale <= 0)
-            return;
-
-        canvasTranslate.X = (MainGrid.ActualWidth / 2) - CanvasOriginOffset - (canvasPoint.X * scale);
-        canvasTranslate.Y = (MainGrid.ActualHeight / 2) - CanvasOriginOffset - (canvasPoint.Y * scale);
+        CenterViewportOnCanvasPoint(canvasPoint, animate: false);
     }
 
     private void UpdateCanvasNavigationUi()
@@ -2466,6 +2469,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         canvasScale.ScaleX = scale;
         canvasScale.ScaleY = scale;
+        StopCanvasTranslateAnimation();
         canvasTranslate.X = (MainGrid.ActualWidth / 2) - ((50 + bounds.X + (bounds.Width / 2)) * scale);
         canvasTranslate.Y = (MainGrid.ActualHeight / 2) - ((50 + bounds.Y + (bounds.Height / 2)) * scale);
         UpdateCanvasNavigationUi();
@@ -2506,7 +2510,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private void MainGrid_PreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (IsOverMiniMap(e))
+        if (IsOverMiniMap(e) || IsOverCornerNavButton(e))
             return;
 
         if (e.ChangedButton == MouseButton.Left && isMarkupSelectMode
@@ -2591,6 +2595,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private static bool IsOverMiniMap(RoutedEventArgs e)
         => e.OriginalSource is DependencyObject source && FindAncestor<MiniMap>(source) is not null;
+
+    private static bool IsOverCornerNavButton(RoutedEventArgs e)
+        => e.OriginalSource is DependencyObject source && FindAncestor<CornerNavButton>(source) is not null;
 
     private static T? FindAncestor<T>(DependencyObject? current) where T : DependencyObject
     {
@@ -2701,6 +2708,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private void ZoomAtCanvasPoint(double scale, Point canvasPoint)
     {
+        StopCanvasTranslateAnimation();
+
         double originalScale = canvasScale.ScaleX;
         if (originalScale <= 0)
             return;
@@ -3134,6 +3143,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Visible;
+
+        RefreshCornerNavButtons();
     }
 
     private void HideTransformControls()
@@ -3145,6 +3156,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             element.Visibility = Visibility.Collapsed;
 
         lines?.Visibility = Visibility.Collapsed;
+
+        RefreshCornerNavButtons();
     }
 
     #region Tri-Fold Correction
@@ -3185,6 +3198,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         // Build the unified tri-fold polygon
         DrawTriFoldGuideLines();
+
+        RefreshCornerNavButtons();
     }
 
     private void HideTriFoldControls()
@@ -3203,6 +3218,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             element.Visibility = Visibility.Collapsed;
 
         RemoveTriFoldGuideLines();
+
+        RefreshCornerNavButtons();
     }
 
     private void ResetTriFoldMarkers()
@@ -3490,6 +3507,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         lines?.Visibility = Visibility.Collapsed;
 
         UpdateUnWarpGuideCurves();
+
+        UpdateCornerNavButtons();
     }
 
     private void ShowUnWarpControls()
@@ -3515,6 +3534,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         lines?.Visibility = Visibility.Collapsed;
 
         DrawUnWarpGuideCurves();
+
+        RefreshCornerNavButtons();
     }
 
     private void HideUnWarpControls()
@@ -3537,6 +3558,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             element.Visibility = Visibility.Collapsed;
 
         RemoveUnWarpGuideCurves();
+
+        RefreshCornerNavButtons();
     }
 
     private void ResetUnWarpMarkers()
@@ -4429,6 +4452,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         // Update the polyline
         DrawPolyLine();
+
+        UpdateCornerNavButtons();
     }
 
     private void ImageResizeGrip_MouseDown(object sender, MouseButtonEventArgs e)
@@ -5959,6 +5984,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         // Rebuild the polyline so it matches the reset marker positions
         DrawPolyLine();
+
+        UpdateCornerNavButtons();
     }
 
     private void ResetApplicationState()
@@ -5993,6 +6020,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         Save.IsEnabled = false;
 
         // Reset the canvas transform
+        StopCanvasTranslateAnimation();
         canvasScale.ScaleX = 1;
         canvasScale.ScaleY = 1;
         canvasScale.CenterX = 0;

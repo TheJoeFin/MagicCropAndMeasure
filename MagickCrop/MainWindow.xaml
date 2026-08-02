@@ -37,6 +37,39 @@
             <Setter Property="Padding" Value="6,4" />
             <Setter Property="MinWidth" Value="100" />
         </Style>
+        <!--  Small circular "jump to neighbouring handle" buttons drawn beside transform gizmos  -->
+        <Style TargetType="c:CornerNavButton">
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Opacity" Value="0.7" />
+            <Setter Property="Panel.ZIndex" Value="900" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="c:CornerNavButton">
+                        <Border
+                            x:Name="NavBackground"
+                            Background="#E60F1115"
+                            BorderBrush="#FF0066FF"
+                            BorderThickness="1.5"
+                            CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="NavBackground" Property="Background" Value="#FF0066FF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" Value="1" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
         <!--  Add a style for narrow Tab Headers  -->
         <Style
             x:Key="NarrowTabHeaderStyle"

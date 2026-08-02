@@ -25,6 +25,7 @@
             Height="120"
             ClipToBounds="True"
             Cursor="SizeAll"
+            LostMouseCapture="MapHost_LostMouseCapture"
             MouseLeftButtonDown="MapHost_MouseLeftButtonDown"
             MouseLeftButtonUp="MapHost_MouseLeftButtonUp"
             MouseMove="MapHost_MouseMove"
