@@ -1,7 +1,6 @@
 using ImageMagick;
 using Microsoft.Windows.AI;
 using Microsoft.Windows.AI.Imaging;
-using System.IO;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Windows.Ink;
 using System.Windows.Media;
@@ -165,8 +164,6 @@ internal static class ObjectEraseHelper
         using MagickImage result = new();
         result.ReadPixels(pixels, settings);
 
-        string tempPath = Path.GetTempFileName();
-        result.Write(tempPath, MagickFormat.Png);
-        return tempPath;
+        return result.WriteToTempFile();
     }
 }

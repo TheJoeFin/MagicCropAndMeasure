@@ -439,25 +439,7 @@ public partial class MainWindowViewModel : ObservableObject
                 await Task.Run(() => adjustment(magickImage));
             }
 
-            // Path.GetTempFileName() hands back a ".tmp" name, and Magick picks its
-            // encoder from the extension - ".tmp" resolves to Unknown and fails to
-            // encode. Pick an explicit format, promoting to PNG when the operation
-            // introduced transparency that the source format cannot represent.
-            MagickFormat targetFormat = magickImage.Format;
-
-            if (targetFormat is MagickFormat.Unknown)
-                targetFormat = MagickFormat.Png;
-
-            if (magickImage.HasAlpha && targetFormat is MagickFormat.Jpeg or MagickFormat.Jpg or MagickFormat.Bmp)
-                targetFormat = MagickFormat.Png;
-
-            magickImage.Format = targetFormat;
-
-            string tempFileName = Path.ChangeExtension(
-                Path.GetTempFileName(),
-                targetFormat.ToString().ToLowerInvariant());
-
-            await magickImage.WriteAsync(tempFileName, targetFormat);
+            string tempFileName = await magickImage.WriteToTempFileAsync();
 
             MagickImageUndoRedoItem undoRedoItem = new(_view.MainImageControl, ImagePath, tempFileName);
             UndoRedo.AddUndo(undoRedoItem);

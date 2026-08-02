@@ -1014,8 +1014,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             });
         }
 
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await image.WriteAsync(tempFileName);
+        string tempFileName = await image.WriteToTempFileAsync();
         ViewModel.ImagePath = tempFileName;
 
         // Reset ImageGrid so it auto-sizes to the new image's aspect ratio.
@@ -1091,7 +1090,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         SaveFileDialog saveFileDialog = new()
         {
-            Filter = "Image Files|*.jpg;",
+            Filter = "JPEG Image|*.jpg",
+            DefaultExt = ".jpg",
+            AddExtension = true,
             RestoreDirectory = true,
             FileName = $"{ViewModel.OpenedFileName}_corrected.jpg",
             InitialDirectory = !string.IsNullOrEmpty(ViewModel.OriginalFilePath) ? System.IO.Path.GetDirectoryName(ViewModel.OriginalFilePath) : null,
@@ -1126,7 +1127,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         try
         {
-            await image.WriteAsync(correctedImageFileName);
+            await image.WriteAsync(correctedImageFileName, MagickFormat.Jpeg);
 
             OpenFolderButton.IsEnabled = true;
             SaveWindow saveWindow = new(correctedImageFileName);
@@ -2903,8 +2904,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 await Task.Run(() => ApplyColorPoint(magickImage));
             }
 
-            string tempFileName = System.IO.Path.GetTempFileName();
-            await magickImage.WriteAsync(tempFileName);
+            string tempFileName = await magickImage.WriteToTempFileAsync();
 
             MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, tempFileName);
             UndoRedo.AddUndo(undoRedoItem);
@@ -2986,8 +2986,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         magickImage.Crop(cropGeometry);
 
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
+        string tempFileName = await magickImage.WriteToTempFileAsync();
 
         MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, tempFileName);
         UndoRedo.AddUndo(undoRedoItem);
@@ -3349,8 +3348,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 return;
             }
 
-            string tempFileName = System.IO.Path.GetTempFileName();
-            await result.WriteAsync(tempFileName);
+            string tempFileName = await result.WriteToTempFileAsync();
 
             MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, tempFileName);
             UndoRedo.AddUndo(undoRedoItem);
@@ -3703,8 +3701,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 return;
             }
 
-            string tempFileName = System.IO.Path.GetTempFileName();
-            await result.WriteAsync(tempFileName);
+            string tempFileName = await result.WriteToTempFileAsync();
 
             MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, tempFileName);
             UndoRedo.AddUndo(undoRedoItem);
@@ -3985,8 +3982,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 return;
             }
 
-            string tempFileName = System.IO.Path.GetTempFileName();
-            await result.WriteAsync(tempFileName);
+            string tempFileName = await result.WriteToTempFileAsync();
 
             MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, tempFileName);
             UndoRedo.AddUndo(undoRedoItem);
@@ -4334,8 +4330,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 return;
             }
 
-            string tempFileName = System.IO.Path.GetTempFileName();
-            await result.WriteAsync(tempFileName);
+            string tempFileName = await result.WriteToTempFileAsync();
 
             MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, tempFileName);
             UndoRedo.AddUndo(undoRedoItem);
@@ -4515,8 +4510,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         magickImage.Resize(resizeGeometry);
 
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
+        string tempFileName = await magickImage.WriteToTempFileAsync();
 
         ResizeUndoRedoItem undoRedoItem = new(MainImage, ImageGrid, oldGridSize, ViewModel.ImagePath, tempFileName);
         UndoRedo.AddUndo(undoRedoItem);
@@ -6850,15 +6844,13 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         try
         {
             string previousPath = ViewModel.ImagePath!;
-            string tempFileName = System.IO.Path.GetTempFileName();
-
-            await Task.Run(() =>
+            string tempFileName = await Task.Run(() =>
             {
                 using MagickImage mi = new(previousPath);
                 mi.BackgroundColor = MagickColors.Transparent;
                 mi.VirtualPixelMethod = VirtualPixelMethod.Transparent;
                 mi.Rotate(angle);
-                mi.Write(tempFileName);
+                return mi.WriteToTempFile();
             });
 
             MagickImageUndoRedoItem undoItem = new(MainImage, previousPath, tempFileName);
