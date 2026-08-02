@@ -10,7 +10,7 @@ using System.Windows.Media;
 
 namespace MagickCrop;
 
-public class UndoRedo : INotifyPropertyChanged
+public partial class UndoRedo : INotifyPropertyChanged
 {
     private readonly Stack<UndoRedoItem> _undoStack = new();
     private readonly Stack<UndoRedoItem> _redoStack = new();
@@ -295,6 +295,65 @@ public class MarkupStrokeMovedItem : UndoRedoItem
     }
 }
 
+public class MarkupGroupMovedItem : UndoRedoItem
+{
+    private readonly StrokeCollection _strokes;
+    private readonly List<MarkupShapeControl> _shapes;
+    private readonly List<MarkupTextControl> _texts;
+    private readonly double _deltaX;
+    private readonly double _deltaY;
+
+    public MarkupGroupMovedItem(
+        StrokeCollection strokes,
+        List<MarkupShapeControl> shapes,
+        List<MarkupTextControl> texts,
+        double deltaX,
+        double deltaY)
+    {
+        _strokes = new StrokeCollection(strokes);
+        _shapes = shapes;
+        _texts = texts;
+        _deltaX = deltaX;
+        _deltaY = deltaY;
+    }
+
+    public override string Undo()
+    {
+        Apply(-_deltaX, -_deltaY);
+        return string.Empty;
+    }
+
+    public override string Redo()
+    {
+        Apply(_deltaX, _deltaY);
+        return string.Empty;
+    }
+
+    private void Apply(double deltaX, double deltaY)
+    {
+        if (_strokes.Count > 0)
+        {
+            Matrix m = new();
+            m.Translate(deltaX, deltaY);
+            foreach (Stroke s in _strokes)
+                s.Transform(m, false);
+        }
+
+        foreach (MarkupShapeControl shape in _shapes)
+        {
+            (Point p1, Point p2) = shape.GetPoints();
+            shape.MovePoint(0, new Point(p1.X + deltaX, p1.Y + deltaY));
+            shape.MovePoint(1, new Point(p2.X + deltaX, p2.Y + deltaY));
+        }
+
+        foreach (MarkupTextControl text in _texts)
+        {
+            Canvas.SetLeft(text, Canvas.GetLeft(text) + deltaX);
+            Canvas.SetTop(text, Canvas.GetTop(text) + deltaY);
+        }
+    }
+}
+
 public class MarkupStrokeDeletedItem : UndoRedoItem
 {
     private readonly InkCanvas _canvas;
@@ -333,14 +392,14 @@ public class MarkupStrokePropertiesChangedItem : UndoRedoItem
 
     public override string Undo()
     {
-        foreach (var (stroke, before, _) in _changes)
+        foreach ((Stroke? stroke, DrawingAttributes? before, DrawingAttributes _) in _changes)
             stroke.DrawingAttributes = before;
         return string.Empty;
     }
 
     public override string Redo()
     {
-        foreach (var (stroke, _, after) in _changes)
+        foreach ((Stroke? stroke, DrawingAttributes _, DrawingAttributes? after) in _changes)
             stroke.DrawingAttributes = after;
         return string.Empty;
     }

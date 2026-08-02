@@ -61,42 +61,49 @@ public partial class PixelPrecisionZoom : UserControl
         if (sourceImage == null)
             return;
 
-        try
+        if (sourceImage is not BitmapSource bitmapSource)
+            return;
+
+        // Render a fixed-size source region so the loupe retains its scale at image edges.
+        int captureWidth = Math.Max(1, (int)Math.Ceiling(DefaultPreviewSize / ZoomFactor));
+        int captureHeight = Math.Max(1, (int)Math.Ceiling(DefaultPreviewSize / ZoomFactor));
+        int originX = (int)Math.Floor(currentPosition.X - (captureWidth / 2.0));
+        int originY = (int)Math.Floor(currentPosition.Y - (captureHeight / 2.0));
+
+        int sourceLeft = Math.Clamp(originX, 0, bitmapSource.PixelWidth);
+        int sourceTop = Math.Clamp(originY, 0, bitmapSource.PixelHeight);
+        int sourceRight = Math.Clamp(originX + captureWidth, 0, bitmapSource.PixelWidth);
+        int sourceBottom = Math.Clamp(originY + captureHeight, 0, bitmapSource.PixelHeight);
+        int sourceWidth = sourceRight - sourceLeft;
+        int sourceHeight = sourceBottom - sourceTop;
+
+        RenderTargetBitmap preview = new(
+            captureWidth,
+            captureHeight,
+            bitmapSource.DpiX,
+            bitmapSource.DpiY,
+            PixelFormats.Pbgra32);
+        DrawingVisual visual = new();
+        using (DrawingContext context = visual.RenderOpen())
         {
-            // Create a RenderTargetBitmap to capture the source image
-            if (sourceImage is BitmapSource bitmapSource)
+            context.DrawRectangle(Brushes.Black, null, new Rect(0, 0, captureWidth, captureHeight));
+            if (sourceWidth > 0 && sourceHeight > 0)
             {
-                // Calculate the region to capture (centered on current position)
-                double captureWidth = DefaultPreviewSize / ZoomFactor;
-                double captureHeight = DefaultPreviewSize / ZoomFactor;
-
-                // Create a cropped version of the source
                 Int32Rect sourceRect = new(
-                    (int)Math.Max(0, currentPosition.X - captureWidth / 2),
-                    (int)Math.Max(0, currentPosition.Y - captureHeight / 2),
-                    (int)Math.Min(captureWidth, bitmapSource.PixelWidth - (currentPosition.X - captureWidth / 2)),
-                    (int)Math.Min(captureHeight, bitmapSource.PixelHeight - (currentPosition.Y - captureHeight / 2))
-                );
-
-                // Ensure valid rectangle
-                if (sourceRect.Width > 0 && sourceRect.Height > 0 &&
-                    sourceRect.X >= 0 && sourceRect.Y >= 0 &&
-                    sourceRect.X + sourceRect.Width <= bitmapSource.PixelWidth &&
-                    sourceRect.Y + sourceRect.Height <= bitmapSource.PixelHeight)
-                {
-                    CroppedBitmap croppedBitmap = new(bitmapSource, sourceRect);
-
-                    // Apply scaling transform
-                    TransformedBitmap transformedBitmap = new(croppedBitmap, new ScaleTransform(ZoomFactor, ZoomFactor));
-
-                    ZoomImage.Source = transformedBitmap;
-                }
+                    sourceLeft,
+                    sourceTop,
+                    sourceWidth,
+                    sourceHeight);
+                CroppedBitmap croppedBitmap = new(bitmapSource, sourceRect);
+                context.DrawImage(
+                    croppedBitmap,
+                    new Rect(sourceLeft - originX, sourceTop - originY, sourceWidth, sourceHeight));
             }
         }
-        catch (Exception)
-        {
-            // Silently handle any rendering errors
-        }
+
+        preview.Render(visual);
+        preview.Freeze();
+        ZoomImage.Source = new TransformedBitmap(preview, new ScaleTransform(ZoomFactor, ZoomFactor));
     }
 
     /// <summary>
