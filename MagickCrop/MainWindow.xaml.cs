@@ -2552,7 +2552,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         draggingMode = DraggingMode.Panning;
         clickedPoint = e.GetPosition(this);
         MainGrid.CaptureMouse();
-        Cursor = Cursors.SizeAll;
+        Cursor = CursorHelper.Grabbing;
         e.Handled = true;
     }
 
