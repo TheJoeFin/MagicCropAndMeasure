@@ -1,5 +1,6 @@
 ﻿using ImageMagick;
 using MagickCrop.Controls;
+using MagickCrop.Models.MeasurementControls;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -602,6 +603,101 @@ public class MarkupClearedItem : UndoRedoItem
         }
         foreach (Stroke stroke in _strokes)
             _inkCanvas.Strokes.Remove(stroke);
+        return string.Empty;
+    }
+}
+
+/// <summary>
+/// One construction edit, stored as before/after snapshots of the whole point/line
+/// graph rather than as a delta. The graph is tiny and every corner is derived from all
+/// of it, so a snapshot is both cheaper to reason about and impossible to desync.
+/// </summary>
+public class ConstructionGeometryEditedItem : UndoRedoItem
+{
+    private readonly ConstructionOverlayControl _control;
+    private readonly ConstructionGeometryDto _before;
+    private readonly ConstructionGeometryDto _after;
+
+    public ConstructionGeometryEditedItem(
+        ConstructionOverlayControl control,
+        ConstructionGeometryDto before,
+        ConstructionGeometryDto after)
+    {
+        _control = control;
+        _before = before;
+        _after = after;
+    }
+
+    public override string Undo()
+    {
+        _control.RestoreGeometry(_before);
+        return string.Empty;
+    }
+
+    public override string Redo()
+    {
+        _control.RestoreGeometry(_after);
+        return string.Empty;
+    }
+}
+
+/// <summary>
+/// Removal of whole construction overlays — "Clear Construction", or removing one from
+/// its measurement menu. The controls are kept alive so an undo puts back the same
+/// instances the geometry undo items still point at.
+/// </summary>
+public class ConstructionOverlaysRemovedItem : UndoRedoItem
+{
+    private readonly List<ConstructionOverlayControl> _overlays;
+    private readonly ObservableCollection<ConstructionOverlayControl> _collection;
+    private readonly Canvas _canvas;
+    private readonly Action<ConstructionOverlayControl> _wireEvents;
+    private readonly Action<ConstructionOverlayControl> _unwireEvents;
+    private readonly Action _afterChange;
+
+    public ConstructionOverlaysRemovedItem(
+        List<ConstructionOverlayControl> overlays,
+        ObservableCollection<ConstructionOverlayControl> collection,
+        Canvas canvas,
+        Action<ConstructionOverlayControl> wireEvents,
+        Action<ConstructionOverlayControl> unwireEvents,
+        Action afterChange)
+    {
+        _overlays = overlays;
+        _collection = collection;
+        _canvas = canvas;
+        _wireEvents = wireEvents;
+        _unwireEvents = unwireEvents;
+        _afterChange = afterChange;
+    }
+
+    public override string Undo()
+    {
+        foreach (ConstructionOverlayControl overlay in _overlays)
+        {
+            if (_collection.Contains(overlay)) continue;
+
+            _wireEvents(overlay);
+            _collection.Add(overlay);
+            _canvas.Children.Add(overlay);
+        }
+
+        _afterChange();
+        return string.Empty;
+    }
+
+    public override string Redo()
+    {
+        foreach (ConstructionOverlayControl overlay in _overlays)
+        {
+            if (!_collection.Contains(overlay)) continue;
+
+            _unwireEvents(overlay);
+            _collection.Remove(overlay);
+            _canvas.Children.Remove(overlay);
+        }
+
+        _afterChange();
         return string.Empty;
     }
 }

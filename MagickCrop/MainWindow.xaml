@@ -1222,6 +1222,104 @@
                                         </StackPanel>
                                     </GroupBox>
 
+                                    <GroupBox
+                                        Margin="8,8,8,0"
+                                        Padding="0,6"
+                                        Header="Construction (Parametric)">
+                                        <StackPanel x:Name="ConstructionToolsPanel" HorizontalAlignment="Center">
+                                            <ToggleButton
+                                                x:Name="ConstructionEdgeToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="ToolSelector_Checked"
+                                                Click="ToolSelector_Clicked"
+                                                Tag="ConstructionEdge"
+                                                ToolTip="Drag along an object's edge to lay down an edge line. Release on an existing point to reuse it.">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Line24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Draw Edge" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                            <ToggleButton
+                                                x:Name="ConstructionPointToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="ToolSelector_Checked"
+                                                Click="ToolSelector_Clicked"
+                                                Tag="ConstructionPoint"
+                                                ToolTip="Click to place a construction point. Clicking an existing point selects it instead.">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Circle24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Add Point" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                            <ToggleButton
+                                                x:Name="ConstructionLineToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="ToolSelector_Checked"
+                                                Click="ToolSelector_Clicked"
+                                                Tag="ConstructionLine"
+                                                ToolTip="Click two points to connect them, then keep clicking to chain more edges">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Connector24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Connect Points" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+
+                                            <TextBlock
+                                                Width="150"
+                                                Margin="0,6,0,2"
+                                                FontSize="11"
+                                                FontStyle="Italic"
+                                                Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
+                                                Text="Corners are where the edge lines cross. Click a point to select it, then drag to reshape. Select two points and click the faint line to connect them, or a third point for the circle through all three. Faint rings mark line crossings and circle centres — click one to keep it as a point. Select a line or circle and press Delete to remove it — its points stay."
+                                                TextWrapping="Wrap" />
+
+                                            <wpfui:Button
+                                                x:Name="ApplyConstructionToTransformButton"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Appearance="Primary"
+                                                Click="ApplyConstructionToTransform_Click"
+                                                Content="Use for Transform"
+                                                IsEnabled="False"
+                                                ToolTip="Move the perspective corner handles to the constructed corners" />
+                                            <wpfui:Button
+                                                x:Name="ApplyConstructionToCropButton"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Appearance="Secondary"
+                                                Click="ApplyConstructionToCrop_Click"
+                                                Content="Use for Crop"
+                                                IsEnabled="False"
+                                                ToolTip="Set the crop rectangle to the constructed shape's bounds" />
+                                            <wpfui:Button
+                                                x:Name="ApplyConstructionToUnWarpButton"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Appearance="Secondary"
+                                                Click="ApplyConstructionToUnWarp_Click"
+                                                Content="Use for Un-Warp"
+                                                IsEnabled="False"
+                                                ToolTip="Move the un-warp markers to the constructed corners" />
+                                            <wpfui:Button
+                                                x:Name="ClearConstructionButton"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Appearance="Secondary"
+                                                Click="ClearConstruction_Click"
+                                                Content="Clear Construction"
+                                                ToolTip="Remove all construction points and lines" />
+                                        </StackPanel>
+                                    </GroupBox>
+
                                     <TextBlock
                                         Margin="0,8"
                                         FontStyle="Italic"
@@ -1845,6 +1943,72 @@
                         x:Name="QuadrilateralSelectorControl"
                         Margin="0,8,0,0"
                         Visibility="Collapsed" />
+
+                    <!--
+                        Construction tools, mirrored from the Measure tab. Matching Tags pair each
+                        button with its twin so both tabs show the same active tool.
+                    -->
+                    <GroupBox
+                        Margin="0,8,0,0"
+                        Padding="0,6"
+                        Header="Construction (Parametric)">
+                        <StackPanel x:Name="ConstructionToolsPanelTransform" HorizontalAlignment="Center">
+                            <ToggleButton
+                                x:Name="ConstructionEdgeToggleTransform"
+                                Width="150"
+                                Margin="0,4"
+                                Checked="ToolSelector_Checked"
+                                Click="ToolSelector_Clicked"
+                                Tag="ConstructionEdge"
+                                ToolTip="Drag along an object's edge to lay down an edge line. Release on an existing point to reuse it.">
+                                <ToggleButton.Content>
+                                    <StackPanel Orientation="Horizontal">
+                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Line24" />
+                                        <TextBlock VerticalAlignment="Center" Text="Draw Edge" />
+                                    </StackPanel>
+                                </ToggleButton.Content>
+                            </ToggleButton>
+                            <ToggleButton
+                                x:Name="ConstructionPointToggleTransform"
+                                Width="150"
+                                Margin="0,4"
+                                Checked="ToolSelector_Checked"
+                                Click="ToolSelector_Clicked"
+                                Tag="ConstructionPoint"
+                                ToolTip="Click to place a construction point. Clicking an existing point selects it instead.">
+                                <ToggleButton.Content>
+                                    <StackPanel Orientation="Horizontal">
+                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Circle24" />
+                                        <TextBlock VerticalAlignment="Center" Text="Add Point" />
+                                    </StackPanel>
+                                </ToggleButton.Content>
+                            </ToggleButton>
+                            <ToggleButton
+                                x:Name="ConstructionLineToggleTransform"
+                                Width="150"
+                                Margin="0,4"
+                                Checked="ToolSelector_Checked"
+                                Click="ToolSelector_Clicked"
+                                Tag="ConstructionLine"
+                                ToolTip="Click two points to connect them, then keep clicking to chain more edges">
+                                <ToggleButton.Content>
+                                    <StackPanel Orientation="Horizontal">
+                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Connector24" />
+                                        <TextBlock VerticalAlignment="Center" Text="Connect Points" />
+                                    </StackPanel>
+                                </ToggleButton.Content>
+                            </ToggleButton>
+                            <wpfui:Button
+                                x:Name="ApplyConstructionToTransformButtonTransformTab"
+                                Width="150"
+                                Margin="0,6,0,0"
+                                Appearance="Primary"
+                                Click="ApplyConstructionToTransform_Click"
+                                Content="Use for Transform"
+                                IsEnabled="False"
+                                ToolTip="Move the perspective corner handles to the constructed corners" />
+                        </StackPanel>
+                    </GroupBox>
 
                     <CheckBox
                         x:Name="AlsoCropAndScaleCheckBox"

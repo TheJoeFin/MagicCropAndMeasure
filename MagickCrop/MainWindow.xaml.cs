@@ -51,7 +51,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         || angleMeasurementTools.Count > 0
         || rectangleMeasurementTools.Count > 0
         || polygonMeasurementTools.Count > 0
-        || circleMeasurementTools.Count > 0;
+        || circleMeasurementTools.Count > 0
+        || constructionControls.Any(control => !control.IsEmpty);
 
     MagickGeometry IMainWindowView.GetLocalAdjustmentRegion() => LocalAdjustmentRectangle.CropShape;
 
@@ -108,6 +109,11 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private readonly ObservableCollection<VerticalLineControl> verticalLineControls = [];
     private readonly ObservableCollection<HorizontalLineControl> horizontalLineControls = [];
+
+    // Panels whose ToggleButtons form one mutually-exclusive tool group. Construction
+    // tools appear in both the Measure and Transform tabs, so this cannot be one panel.
+    private List<StackPanel>? toolPanels;
+    private bool isSyncingToolToggles;
 
     // --- Markup state ---
     private readonly ObservableCollection<MarkupShapeControl> markupShapeControls = [];
@@ -245,7 +251,11 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         canvasTranslate.Changed += CanvasTranslate_Changed;
         CanvasMiniMap.ViewportCenterRequested += CanvasMiniMap_ViewportCenterRequested;
         MainGrid.SizeChanged += (_, _) => UpdateMiniMap();
-        MainImage.SizeChanged += (_, _) => UpdateMiniMap();
+        MainImage.SizeChanged += (_, _) =>
+        {
+            UpdateMiniMap();
+            UpdateConstructionImageBounds();
+        };
         DependencyPropertyDescriptor
             .FromProperty(System.Windows.Controls.Image.SourceProperty, typeof(System.Windows.Controls.Image))
             ?.AddValueChanged(MainImage, (_, _) => UpdateMiniMap());
@@ -260,6 +270,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Collapsed;
+
+        // MeasureToolsPanel stays first so the existing tools keep their exact behaviour.
+        toolPanels = [MeasureToolsPanel, ConstructionToolsPanel, ConstructionToolsPanelTransform];
 
         // Tri-fold elements: all 8 markers + fold guide lines (built later)
         _triFoldElements.AddRange([TopLeft, TopRight, BottomRight, BottomLeft,
@@ -486,6 +499,15 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
+        // --- CONSTRUCTION PLACEMENT LOGIC ---
+        // Must stay above the buttons-released block below: the Line tool's rubber band
+        // has to follow the cursor between its two clicks, with no button held.
+        if (HandleConstructionMouseMove(mousePos))
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (Mouse.MiddleButton == MouseButtonState.Released && Mouse.LeftButton == MouseButtonState.Released)
         {
             if (draggingMode == DraggingMode.Panning)
@@ -526,6 +548,13 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             {
                 activeCircleMeasureControl.ResetActivePoint();
                 activeCircleMeasureControl = null;
+            }
+
+            if (draggingMode == DraggingMode.ConstructionPoint && activeConstructionControl is not null)
+            {
+                activeConstructionControl.ResetActivePoint();
+                activeConstructionControl.EndDrag();
+                activeConstructionControl = null;
             }
 
             if (draggingMode == DraggingMode.EdgeCorrectionDragging)
@@ -679,6 +708,17 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             if (pointIndex >= 0)
             {
                 activeCircleMeasureControl.MovePoint(pointIndex, movingPoint);
+            }
+            e.Handled = true;
+            return;
+        }
+
+        if (draggingMode == DraggingMode.ConstructionPoint && activeConstructionControl is not null)
+        {
+            int pointIndex = activeConstructionControl.GetActivePointIndex();
+            if (pointIndex >= 0)
+            {
+                activeConstructionControl.MovePoint(pointIndex, movingPoint);
             }
             e.Handled = true;
             return;
@@ -854,6 +894,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         lines?.StrokeThickness = 2 * inverseScale;
 
+        UpdateConstructionVisualScale();
         UpdateCornerNavButtons();
     }
 
@@ -1342,6 +1383,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             includedElements.UnionWith(circleMeasurementTools);
             includedElements.UnionWith(verticalLineControls);
             includedElements.UnionWith(horizontalLineControls);
+            includedElements.UnionWith(constructionControls);
             includedElements.UnionWith(ShapeCanvas.Children.OfType<StrokeLengthDisplay>());
         }
 
@@ -1936,6 +1978,18 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
+        if (IsConstructionToolActive)
+        {
+            HandleConstructionMouseDown(clickedPoint, e);
+            return;
+        }
+
+        // Reaching here means no construction point, line, or faint line claimed the
+        // click — it landed on bare canvas, which deselects. Left button only, so a
+        // right-click aimed at a context menu leaves the selection alone.
+        if (e.ChangedButton == MouseButton.Left)
+            ClearConstructionSelection();
+
         if (MeasureDistanceToggle.IsChecked is true)
         {
             double scale = ScaleInput.Value ?? 1.0;
@@ -2126,6 +2180,16 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         {
             anglePlacementStep = AnglePlacementStep.PlacingThirdPoint;
             ShapeCanvas.ReleaseMouseCapture();
+            e.Handled = true;
+            return;
+        }
+
+        // --- CONSTRUCTION EDGE DRAG ---
+        // Keyed to its own dragging mode, so it must be tested before the generic
+        // CreatingMeasurement block below.
+        if (draggingMode == DraggingMode.ConstructionEdgeCreate)
+        {
+            HandleConstructionMouseUp(e.GetPosition(ShapeCanvas));
             e.Handled = true;
             return;
         }
@@ -3042,21 +3106,25 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             QuadrilateralDetector.DetectionResult detectionResult = await Task.Run(() =>
                 QuadrilateralDetector.DetectQuadrilateralsWithDimensions(ViewModel.ImagePath, minArea: QuadDetectionMinArea, maxResults: QuadDetectionMaxResults));
 
-            if (detectionResult.Quadrilaterals.Count == 0)
+            List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads = [.. detectionResult.Quadrilaterals.Select(q =>
+                QuadrilateralDetector.ScaleToDisplay(
+                    q,
+                    detectionResult.ImageWidth,
+                    detectionResult.ImageHeight,
+                    MainImage.ActualWidth,
+                    MainImage.ActualHeight))];
+
+            // A hand-built construction is most valuable on exactly the images where
+            // contour detection finds nothing, so it is offered even with no detections.
+            PrependConstructedQuadrilateral(scaledQuads);
+
+            if (scaledQuads.Count == 0)
             {
                 CropDetectInfoText.Text = "No shapes detected. Position the crop rectangle manually.";
                 CropDetectInfoText.Visibility = Visibility.Visible;
             }
             else
             {
-                List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads = [.. detectionResult.Quadrilaterals.Select(q =>
-                    QuadrilateralDetector.ScaleToDisplay(
-                        q,
-                        detectionResult.ImageWidth,
-                        detectionResult.ImageHeight,
-                        MainImage.ActualWidth,
-                        MainImage.ActualHeight))];
-
                 CropQuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
                 CropQuadrilateralSelectorControl.QuadrilateralHoverEnter -= QuadrilateralSelector_HoverEnter;
                 CropQuadrilateralSelectorControl.QuadrilateralHoverExit -= QuadrilateralSelector_HoverExit;
@@ -3414,22 +3482,24 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 QuadrilateralDetector.DetectQuadrilateralsWithDimensions(
                     ViewModel.ImagePath, minArea: QuadDetectionMinArea, maxResults: QuadDetectionMaxResults));
 
-            if (detectionResult.Quadrilaterals.Count == 0)
+            List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads =
+            [.. detectionResult.Quadrilaterals.Select(q =>
+                QuadrilateralDetector.ScaleToDisplay(
+                    q,
+                    detectionResult.ImageWidth,
+                    detectionResult.ImageHeight,
+                    MainImage.ActualWidth,
+                    MainImage.ActualHeight))];
+
+            PrependConstructedQuadrilateral(scaledQuads);
+
+            if (scaledQuads.Count == 0)
             {
                 UnWarpDetectInfoText.Text = "No shapes detected. Position the corner markers manually.";
                 UnWarpDetectInfoText.Visibility = Visibility.Visible;
             }
             else
             {
-                List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads =
-                [.. detectionResult.Quadrilaterals.Select(q =>
-                    QuadrilateralDetector.ScaleToDisplay(
-                        q,
-                        detectionResult.ImageWidth,
-                        detectionResult.ImageHeight,
-                        MainImage.ActualWidth,
-                        MainImage.ActualHeight))];
-
                 UnWarpQuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
                 UnWarpQuadrilateralSelectorControl.QuadrilateralHoverEnter -= QuadrilateralSelector_HoverEnter;
                 UnWarpQuadrilateralSelectorControl.QuadrilateralHoverExit -= QuadrilateralSelector_HoverExit;
@@ -4385,21 +4455,23 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             QuadrilateralDetector.DetectionResult detectionResult = await Task.Run(() =>
                 QuadrilateralDetector.DetectQuadrilateralsWithDimensions(ViewModel.ImagePath, minArea: QuadDetectionMinArea, maxResults: QuadDetectionMaxResults));
 
-            if (detectionResult.Quadrilaterals.Count == 0)
+            List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads = [.. detectionResult.Quadrilaterals.Select(q =>
+                QuadrilateralDetector.ScaleToDisplay(
+                    q,
+                    detectionResult.ImageWidth,
+                    detectionResult.ImageHeight,
+                    MainImage.ActualWidth,
+                    MainImage.ActualHeight))];
+
+            PrependConstructedQuadrilateral(scaledQuads);
+
+            if (scaledQuads.Count == 0)
             {
                 TransformDetectInfoText.Text = "No shapes detected. Position the corner markers manually.";
                 TransformDetectInfoText.Visibility = Visibility.Visible;
             }
             else
             {
-                List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads = [.. detectionResult.Quadrilaterals.Select(q =>
-                    QuadrilateralDetector.ScaleToDisplay(
-                        q,
-                        detectionResult.ImageWidth,
-                        detectionResult.ImageHeight,
-                        MainImage.ActualWidth,
-                        MainImage.ActualHeight))];
-
                 QuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
                 QuadrilateralSelectorControl.QuadrilateralHoverEnter -= QuadrilateralSelector_HoverEnter;
                 QuadrilateralSelectorControl.QuadrilateralHoverExit -= QuadrilateralSelector_HoverExit;
@@ -5083,6 +5155,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         horizontalLineControls.Clear();
 
+        RemoveConstructionControls();
+
         ClearAllStrokesAndLengths();
         ClearAllMarkup();
         draggingMode = DraggingMode.None;
@@ -5287,6 +5361,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         foreach (CircleMeasurementControl tool in circleMeasurementTools)
             tool.ScaleFactor = newScale;
 
+        foreach (ConstructionOverlayControl tool in constructionControls)
+            tool.ScaleFactor = newScale;
+
         // Update stroke measurements
         UpdateStrokeMeasurements();
     }
@@ -5306,6 +5383,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             tool.Units = textBox.Text;
 
         foreach (CircleMeasurementControl tool in circleMeasurementTools)
+            tool.Units = textBox.Text;
+
+        foreach (ConstructionOverlayControl tool in constructionControls)
             tool.Units = textBox.Text;
 
         // Update stroke measurements
@@ -5369,6 +5449,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         foreach (HorizontalLineControl control in horizontalLineControls)
             control.Visibility = visibility;
 
+        foreach (ConstructionOverlayControl control in constructionControls)
+            control.Visibility = visibility;
+
         DrawingCanvas.Visibility = visibility;
     }
 
@@ -5417,6 +5500,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         foreach (PolygonMeasurementControl control in polygonMeasurementTools)
             package.Measurements.PolygonMeasurements.Add(control.ToDto());
+
+        foreach (ConstructionOverlayControl control in constructionControls)
+            package.Measurements.Constructions.Add(control.ToDto());
 
         foreach (VerticalLineControl control in verticalLineControls)
             package.Measurements.VerticalLines.Add(control.ToDto());
@@ -5682,6 +5768,24 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         }
         Debug.WriteLine($"Loaded polygon measurements. Total in collection: {polygonMeasurementTools.Count}");
 
+        // Add parametric constructions
+        foreach (ConstructionGeometryDto dto in package.Measurements.Constructions)
+        {
+            ConstructionOverlayControl control = new();
+            control.FromDto(dto);
+            WireConstructionOverlay(control);
+            constructionControls.Add(control);
+            ShapeCanvas.Children.Add(control);
+
+            // The overlay the construction tools will build into.
+            constructionOverlay ??= control;
+        }
+
+        UpdateConstructionImageBounds();
+        UpdateConstructionVisualScale();
+        UpdateConstructionApplyButtons();
+        SyncConstructionToolState();
+
         foreach (VerticalLineControlDto dto in package.Measurements.VerticalLines)
         {
             VerticalLineControl control = new();
@@ -5923,6 +6027,10 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             ShapeCanvas.Children.Remove(activePolygonPlacementControl);
             activePolygonPlacementControl = null;
         }
+
+        // --- Construction placement ---
+        CancelConstructionGesture();
+        activeConstructionControl = null;
 
         // --- Circle measurement placement ---
         isPlacingCircleMeasurement = false;
@@ -6340,11 +6448,23 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         UncheckAllBut(toggleButton);
     }
 
+    /// <summary>
+    /// Every tool toggle across all tool panels. Construction tools appear in both the
+    /// Measure and Transform tabs, so mutual exclusion cannot look at one panel alone.
+    /// </summary>
+    private IEnumerable<ToggleButton> AllToolToggles()
+    {
+        if (toolPanels is null)
+            return MeasureToolsPanel?.Children.OfType<ToggleButton>() ?? [];
+
+        return toolPanels
+            .Where(panel => panel is not null)
+            .SelectMany(panel => panel.Children.OfType<ToggleButton>());
+    }
+
     private bool IsAnyToolSelected()
     {
-        List<ToggleButton> toolToggleButtons = [.. MeasureToolsPanel.Children.OfType<ToggleButton>()];
-
-        foreach (ToggleButton button in toolToggleButtons)
+        foreach (ToggleButton button in AllToolToggles())
             if (button.IsChecked == true)
                 return true;
 
@@ -6353,17 +6473,40 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private void UncheckAllBut(ToggleButton? toggleButton = null)
     {
-        List<ToggleButton> toolToggleButtons = [.. MeasureToolsPanel.Children.OfType<ToggleButton>()];
+        // Checking a twin raises its own Checked event, which lands back here.
+        if (isSyncingToolToggles)
+            return;
 
-        foreach (ToggleButton button in toolToggleButtons)
-            if (button != toggleButton)
-                button.IsChecked = false;
+        isSyncingToolToggles = true;
+        try
+        {
+            // A construction tool has a twin button in the other tab. Both carry the same
+            // Tag, so keeping the twin checked keeps both tabs showing the same active tool.
+            string? keepTag = toggleButton?.Tag as string;
+
+            foreach (ToggleButton button in AllToolToggles())
+            {
+                if (button == toggleButton)
+                    continue;
+
+                bool isTwin = keepTag is not null && button.Tag as string == keepTag;
+                button.IsChecked = isTwin;
+            }
+        }
+        finally
+        {
+            isSyncingToolToggles = false;
+        }
 
         if (toggleButton is null)
         {
             draggingMode = DraggingMode.None;
             isCreatingMeasurement = false;
+            CancelConstructionGesture();
         }
+
+        // Single funnel for tool changes, so the overlays always know which one is live.
+        SyncConstructionToolState();
     }
 
     private void ToolSelector_Clicked(object sender, RoutedEventArgs e)
@@ -6456,6 +6599,18 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             if (deletedAnything)
             {
                 ClearMarkupGroupSelection();
+                e.Handled = true;
+                return;
+            }
+        }
+
+        // Delete removes the selected construction line — keeping its two points — or,
+        // when no line is selected, the selected points themselves. Placed after the
+        // markup handler so a markup selection still wins its own Delete.
+        if (!typingInTextBox && e.Key is Key.Delete or Key.Back && HasConstructionSelection)
+        {
+            if (DeleteSelectedConstruction())
+            {
                 e.Handled = true;
                 return;
             }
@@ -7033,7 +7188,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             DraggingMode.MeasureAngle or
             DraggingMode.MeasureRectangle or
             DraggingMode.MeasurePolygon or
-            DraggingMode.MeasureCircle)
+            DraggingMode.MeasureCircle or
+            DraggingMode.ConstructionPoint or
+            DraggingMode.ConstructionEdgeCreate)
             return true;
 
         // Show during measurement creation (active drag)
@@ -7066,6 +7223,10 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             VerticalLineToggle?.IsChecked == true)
             return true;
 
+        // Construction points need at least as much precision as any other measurement.
+        if (IsConstructionToolActive)
+            return true;
+
         return false;
     }
 
@@ -7085,6 +7246,16 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         SetMeasurementDragGizmosVisibility(measurementTabActive);
         SetMarkupDragGizmosVisibility(markupTabActive);
+
+        // Construction tools live in both the Measure and Transform tabs, so the overlay
+        // must stay interactive across both. It is deliberately kept out of
+        // SetMeasurementDragGizmosVisibility, which would kill hit-testing on Transform.
+        bool constructionTabActive = measurementTabActive || TransformTabItem?.IsSelected == true;
+        foreach (ConstructionOverlayControl control in constructionControls)
+        {
+            control.IsHitTestVisible = constructionTabActive;
+            control.IsDragGizmoVisible = constructionTabActive;
+        }
     }
 
     private void DeactivateAllMarkupTools()
