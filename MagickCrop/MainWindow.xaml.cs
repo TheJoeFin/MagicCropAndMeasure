@@ -864,6 +864,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         lines?.StrokeThickness = 2 * inverseScale;
 
+        CroppingRectangle.SetCanvasScale(scale);
+        LocalAdjustmentRectangle.SetCanvasScale(scale);
+
         UpdateActiveHandleCrosshairScale();
         UpdateCornerNavButtons();
     }
