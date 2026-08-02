@@ -1,4 +1,4 @@
-﻿using ImageMagick;
+using ImageMagick;
 using MagickCrop.Controls;
 using MagickCrop.Helpers;
 using MagickCrop.Models;
@@ -442,6 +442,12 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         // Update pixel zoom if it should be shown (including before first measurement placement)
         Point mousePos = e.GetPosition(ShapeCanvas);
+
+        // A boundary probe magnifies the edge it found rather than the cursor, so it
+        // drives the loupe itself from the construction block further down — by which
+        // point it knows where the edge is.
+        bool probeOwnsPixelZoom = draggingMode == DraggingMode.ConstructionBoundaryProbe;
+
         if (ShouldShowPixelZoom())
         {
             // Show the pixel zoom if not already visible
@@ -449,7 +455,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             {
                 ShowPixelZoom(mousePos);
             }
-            else
+            else if (!probeOwnsPixelZoom)
             {
                 UpdatePixelZoom(mousePos);
             }
@@ -1055,8 +1061,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             });
         }
 
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await image.WriteAsync(tempFileName);
+        string tempFileName = await image.WriteToTempFileAsync();
         ViewModel.ImagePath = tempFileName;
 
         // Reset ImageGrid so it auto-sizes to the new image's aspect ratio.
@@ -2184,10 +2189,10 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
-        // --- CONSTRUCTION EDGE DRAG ---
-        // Keyed to its own dragging mode, so it must be tested before the generic
+        // --- CONSTRUCTION EDGE DRAG / BOUNDARY PROBE ---
+        // Keyed to their own dragging modes, so they must be tested before the generic
         // CreatingMeasurement block below.
-        if (draggingMode == DraggingMode.ConstructionEdgeCreate)
+        if (draggingMode is DraggingMode.ConstructionEdgeCreate or DraggingMode.ConstructionBoundaryProbe)
         {
             HandleConstructionMouseUp(e.GetPosition(ShapeCanvas));
             e.Handled = true;
@@ -2967,8 +2972,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 await Task.Run(() => ApplyColorPoint(magickImage));
             }
 
-            string tempFileName = System.IO.Path.GetTempFileName();
-            await magickImage.WriteAsync(tempFileName);
+            string tempFileName = await magickImage.WriteToTempFileAsync();
 
             MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, tempFileName);
             UndoRedo.AddUndo(undoRedoItem);
@@ -3050,8 +3054,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         magickImage.Crop(cropGeometry);
 
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
+        string tempFileName = await magickImage.WriteToTempFileAsync();
 
         MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, tempFileName);
         UndoRedo.AddUndo(undoRedoItem);
@@ -3417,8 +3420,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 return;
             }
 
-            string tempFileName = System.IO.Path.GetTempFileName();
-            await result.WriteAsync(tempFileName);
+            string tempFileName = await result.WriteToTempFileAsync();
 
             MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, tempFileName);
             UndoRedo.AddUndo(undoRedoItem);
@@ -3773,8 +3775,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 return;
             }
 
-            string tempFileName = System.IO.Path.GetTempFileName();
-            await result.WriteAsync(tempFileName);
+            string tempFileName = await result.WriteToTempFileAsync();
 
             MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, tempFileName);
             UndoRedo.AddUndo(undoRedoItem);
@@ -4055,8 +4056,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 return;
             }
 
-            string tempFileName = System.IO.Path.GetTempFileName();
-            await result.WriteAsync(tempFileName);
+            string tempFileName = await result.WriteToTempFileAsync();
 
             MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, tempFileName);
             UndoRedo.AddUndo(undoRedoItem);
@@ -4404,8 +4404,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 return;
             }
 
-            string tempFileName = System.IO.Path.GetTempFileName();
-            await result.WriteAsync(tempFileName);
+            string tempFileName = await result.WriteToTempFileAsync();
 
             MagickImageUndoRedoItem undoRedoItem = new(MainImage, ViewModel.ImagePath, tempFileName);
             UndoRedo.AddUndo(undoRedoItem);
@@ -4587,8 +4586,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         magickImage.Resize(resizeGeometry);
 
-        string tempFileName = System.IO.Path.GetTempFileName();
-        await magickImage.WriteAsync(tempFileName);
+        string tempFileName = await magickImage.WriteToTempFileAsync();
 
         ResizeUndoRedoItem undoRedoItem = new(MainImage, ImageGrid, oldGridSize, ViewModel.ImagePath, tempFileName);
         UndoRedo.AddUndo(undoRedoItem);
@@ -6449,6 +6447,55 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     }
 
     /// <summary>
+    /// Turning a tool off has to go through the same funnel as turning one on.
+    /// </summary>
+    /// <remarks>
+    /// Without this, clicking a checked construction tool cleared only the button that was
+    /// clicked. Its twin in the other tab stayed checked, and since
+    /// <see cref="ActiveConstructionTool"/> reads whichever toggle is checked across both
+    /// tabs, the tool went on being active behind a button that looked off. The tool state
+    /// never resynced either, so the sample buffer was never released.
+    /// </remarks>
+    private void ToolSelector_Unchecked(object sender, RoutedEventArgs e)
+    {
+        // A programmatic uncheck is already part of a sync that will finish the job.
+        if (isSyncingToolToggles)
+            return;
+
+        if (sender is not ToggleButton toggleButton)
+            return;
+
+        UncheckTwinsOf(toggleButton);
+
+        // Single funnel for tool changes, same as UncheckAllBut ends with.
+        SyncConstructionToolState();
+    }
+
+    /// <summary>
+    /// Clears the other buttons carrying the same Tag. Construction tools appear once per
+    /// tab, and the pair has to move together in both directions.
+    /// </summary>
+    private void UncheckTwinsOf(ToggleButton toggleButton)
+    {
+        if (toggleButton.Tag is not string tag)
+            return;
+
+        isSyncingToolToggles = true;
+        try
+        {
+            foreach (ToggleButton button in AllToolToggles())
+            {
+                if (button != toggleButton && button.Tag as string == tag)
+                    button.IsChecked = false;
+            }
+        }
+        finally
+        {
+            isSyncingToolToggles = false;
+        }
+    }
+
+    /// <summary>
     /// Every tool toggle across all tool panels. Construction tools appear in both the
     /// Measure and Transform tabs, so mutual exclusion cannot look at one panel alone.
     /// </summary>
@@ -7005,15 +7052,16 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         try
         {
             string previousPath = ViewModel.ImagePath!;
-            string tempFileName = System.IO.Path.GetTempFileName();
 
-            await Task.Run(() =>
+            string tempFileName = await Task.Run(() =>
             {
                 using MagickImage mi = new(previousPath);
                 mi.BackgroundColor = MagickColors.Transparent;
                 mi.VirtualPixelMethod = VirtualPixelMethod.Transparent;
                 mi.Rotate(angle);
-                mi.Write(tempFileName);
+
+                // Rotation fills the corners with transparency, so keep an alpha-capable format.
+                return mi.WriteToTempFile(MagickFormat.Png);
             });
 
             MagickImageUndoRedoItem undoItem = new(MainImage, previousPath, tempFileName);
@@ -7119,15 +7167,21 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     /// Updates the pixel precision zoom control position and preview.
     /// </summary>
     /// <param name="mousePosition">Mouse position in ShapeCanvas coordinates</param>
-    private void UpdatePixelZoom(Point mousePosition)
+    /// <param name="focusPoint">
+    /// What to magnify, in ShapeCanvas coordinates, when that is not the cursor. The
+    /// boundary probe passes the edge it found, so the crosshairs sit on the point that
+    /// is about to be placed rather than on the hand placing it. The panel itself still
+    /// parks by the cursor, so it does not jump about as the found point moves.
+    /// </param>
+    private void UpdatePixelZoom(Point mousePosition, Point? focusPoint = null)
     {
         if (PixelZoomControl.Visibility != Visibility.Visible)
             return;
 
         try
         {
-            // Convert mouse position to image coordinates
-            Point imagePosition = ConvertCanvasToImageCoordinates(mousePosition);
+            // Convert the point of interest to image coordinates
+            Point imagePosition = ConvertCanvasToImageCoordinates(focusPoint ?? mousePosition);
             PixelZoomControl.CurrentPosition = imagePosition;
 
             // Convert ShapeCanvas coordinates to MainGrid coordinates
@@ -7173,6 +7227,22 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     }
 
     /// <summary>
+    /// Converts a point from MainImage pixel coordinates back to ShapeCanvas coordinates,
+    /// for results that come out of analysing the image at its own resolution.
+    /// </summary>
+    private Point ConvertImageToCanvasCoordinates(Point imagePoint)
+    {
+        if (MainImage.Source is not BitmapSource source
+            || source.PixelWidth <= 0
+            || source.PixelHeight <= 0)
+            return new Point(0, 0);
+
+        return new Point(
+            imagePoint.X * MainImage.ActualWidth / source.PixelWidth,
+            imagePoint.Y * MainImage.ActualHeight / source.PixelHeight);
+    }
+
+    /// <summary>
     /// Checks if pixel zoom should be shown for the current operation.
     /// Shows when a measurement tool is active, including hover before first placement.
     /// </summary>
@@ -7190,7 +7260,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             DraggingMode.MeasurePolygon or
             DraggingMode.MeasureCircle or
             DraggingMode.ConstructionPoint or
-            DraggingMode.ConstructionEdgeCreate)
+            DraggingMode.ConstructionEdgeCreate or
+            DraggingMode.ConstructionBoundaryProbe)
             return true;
 
         // Show during measurement creation (active drag)

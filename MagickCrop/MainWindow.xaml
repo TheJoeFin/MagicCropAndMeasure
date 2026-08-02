@@ -1112,7 +1112,8 @@
                                                 Margin="0,4"
                                                 Checked="ToolSelector_Checked"
                                                 Click="ToolSelector_Clicked"
-                                                ToolTip="Add a distance measurement">
+                                                ToolTip="Add a distance measurement"
+                                                Unchecked="ToolSelector_Unchecked">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Ruler24" />
@@ -1126,7 +1127,8 @@
                                                 Margin="0,4"
                                                 Checked="ToolSelector_Checked"
                                                 Click="ToolSelector_Clicked"
-                                                ToolTip="Add an angle measurement">
+                                                ToolTip="Add an angle measurement"
+                                                Unchecked="ToolSelector_Unchecked">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="DataPie24" />
@@ -1140,7 +1142,8 @@
                                                 Margin="0,4"
                                                 Checked="ToolSelector_Checked"
                                                 Click="ToolSelector_Clicked"
-                                                ToolTip="Add a rectangle measurement">
+                                                ToolTip="Add a rectangle measurement"
+                                                Unchecked="ToolSelector_Unchecked">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="RectangleLandscape24" />
@@ -1154,7 +1157,8 @@
                                                 Margin="0,4"
                                                 Checked="ToolSelector_Checked"
                                                 Click="ToolSelector_Clicked"
-                                                ToolTip="Add a circle measurement">
+                                                ToolTip="Add a circle measurement"
+                                                Unchecked="ToolSelector_Unchecked">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Circle24" />
@@ -1168,7 +1172,8 @@
                                                 Margin="0,4"
                                                 Checked="ToolSelector_Checked"
                                                 Click="ToolSelector_Clicked"
-                                                ToolTip="Add a horizontal guide line">
+                                                ToolTip="Add a horizontal guide line"
+                                                Unchecked="ToolSelector_Unchecked">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="SplitHorizontal24" />
@@ -1182,7 +1187,8 @@
                                                 Margin="0,4"
                                                 Checked="ToolSelector_Checked"
                                                 Click="ToolSelector_Clicked"
-                                                ToolTip="Add a vertical guide line">
+                                                ToolTip="Add a vertical guide line"
+                                                Unchecked="ToolSelector_Unchecked">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="SplitVertical24" />
@@ -1196,7 +1202,8 @@
                                                 Margin="0,4"
                                                 Checked="ToolSelector_Checked"
                                                 Click="ToolSelector_Clicked"
-                                                ToolTip="Add a polygon measurement">
+                                                ToolTip="Add a polygon measurement"
+                                                Unchecked="ToolSelector_Unchecked">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="SelectObjectSkewEdit24" />
@@ -1234,7 +1241,8 @@
                                                 Checked="ToolSelector_Checked"
                                                 Click="ToolSelector_Clicked"
                                                 Tag="ConstructionEdge"
-                                                ToolTip="Drag along an object's edge to lay down an edge line. Release on an existing point to reuse it.">
+                                                ToolTip="Drag along an object's edge to lay down an edge line. Release on an existing point to reuse it."
+                                                Unchecked="ToolSelector_Unchecked">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Line24" />
@@ -1249,7 +1257,8 @@
                                                 Checked="ToolSelector_Checked"
                                                 Click="ToolSelector_Clicked"
                                                 Tag="ConstructionPoint"
-                                                ToolTip="Click to place a construction point. Clicking an existing point selects it instead.">
+                                                ToolTip="Click to place a construction point. Clicking an existing point selects it instead."
+                                                Unchecked="ToolSelector_Unchecked">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Circle24" />
@@ -1264,7 +1273,8 @@
                                                 Checked="ToolSelector_Checked"
                                                 Click="ToolSelector_Clicked"
                                                 Tag="ConstructionLine"
-                                                ToolTip="Click two points to connect them, then keep clicking to chain more edges">
+                                                ToolTip="Click two points to connect them, then keep clicking to chain more edges"
+                                                Unchecked="ToolSelector_Unchecked">
                                                 <ToggleButton.Content>
                                                     <StackPanel Orientation="Horizontal">
                                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Connector24" />
@@ -1272,6 +1282,32 @@
                                                     </StackPanel>
                                                 </ToggleButton.Content>
                                             </ToggleButton>
+                                            <ToggleButton
+                                                x:Name="ConstructionBoundaryToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="ToolSelector_Checked"
+                                                Click="ToolSelector_Clicked"
+                                                Tag="ConstructionBoundary"
+                                                ToolTip="Drag a short line across an edge, from one side to the other. The point lands on the transition between the two sides rather than where you released."
+                                                Unchecked="ToolSelector_Unchecked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="TargetAdd24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Find Edge Point" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
+                                            <!--  Shown while the image is being read for probing  -->
+                                            <wpfui:ProgressRing
+                                                x:Name="ConstructionBoundaryProgressRing"
+                                                Width="20"
+                                                Height="20"
+                                                Margin="0,2"
+                                                HorizontalAlignment="Center"
+                                                IsIndeterminate="True"
+                                                ToolTip="Reading the image so edges can be found..."
+                                                Visibility="Collapsed" />
 
                                             <TextBlock
                                                 Width="150"
@@ -1279,7 +1315,7 @@
                                                 FontSize="11"
                                                 FontStyle="Italic"
                                                 Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
-                                                Text="Corners are where the edge lines cross. Click a point to select it, then drag to reshape. Select two points and click the faint line to connect them, or a third point for the circle through all three. Faint rings mark line crossings and circle centres — click one to keep it as a point. Select a line or circle and press Delete to remove it — its points stay."
+                                                Text="Corners are where the edge lines cross. Click a point to select it, then drag to reshape. Select two points and click the faint line to connect them, or a third point for the circle through all three. Faint rings mark line crossings and circle centres — click one to keep it as a point. Find Edge Point drags a short line across a boundary and drops the point on the transition. Select a line or circle and press Delete to remove it — its points stay."
                                                 TextWrapping="Wrap" />
 
                                             <wpfui:Button
@@ -1960,7 +1996,8 @@
                                 Checked="ToolSelector_Checked"
                                 Click="ToolSelector_Clicked"
                                 Tag="ConstructionEdge"
-                                ToolTip="Drag along an object's edge to lay down an edge line. Release on an existing point to reuse it.">
+                                ToolTip="Drag along an object's edge to lay down an edge line. Release on an existing point to reuse it."
+                                Unchecked="ToolSelector_Unchecked">
                                 <ToggleButton.Content>
                                     <StackPanel Orientation="Horizontal">
                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Line24" />
@@ -1975,7 +2012,8 @@
                                 Checked="ToolSelector_Checked"
                                 Click="ToolSelector_Clicked"
                                 Tag="ConstructionPoint"
-                                ToolTip="Click to place a construction point. Clicking an existing point selects it instead.">
+                                ToolTip="Click to place a construction point. Clicking an existing point selects it instead."
+                                Unchecked="ToolSelector_Unchecked">
                                 <ToggleButton.Content>
                                     <StackPanel Orientation="Horizontal">
                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Circle24" />
@@ -1990,7 +2028,8 @@
                                 Checked="ToolSelector_Checked"
                                 Click="ToolSelector_Clicked"
                                 Tag="ConstructionLine"
-                                ToolTip="Click two points to connect them, then keep clicking to chain more edges">
+                                ToolTip="Click two points to connect them, then keep clicking to chain more edges"
+                                Unchecked="ToolSelector_Unchecked">
                                 <ToggleButton.Content>
                                     <StackPanel Orientation="Horizontal">
                                         <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="Connector24" />
@@ -1998,6 +2037,32 @@
                                     </StackPanel>
                                 </ToggleButton.Content>
                             </ToggleButton>
+                            <ToggleButton
+                                x:Name="ConstructionBoundaryToggleTransform"
+                                Width="150"
+                                Margin="0,4"
+                                Checked="ToolSelector_Checked"
+                                Click="ToolSelector_Clicked"
+                                Tag="ConstructionBoundary"
+                                ToolTip="Drag a short line across an edge, from one side to the other. The point lands on the transition between the two sides rather than where you released."
+                                Unchecked="ToolSelector_Unchecked">
+                                <ToggleButton.Content>
+                                    <StackPanel Orientation="Horizontal">
+                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="TargetAdd24" />
+                                        <TextBlock VerticalAlignment="Center" Text="Find Edge Point" />
+                                    </StackPanel>
+                                </ToggleButton.Content>
+                            </ToggleButton>
+                            <!--  Shown while the image is being read for probing  -->
+                            <wpfui:ProgressRing
+                                x:Name="ConstructionBoundaryProgressRingTransform"
+                                Width="20"
+                                Height="20"
+                                Margin="0,2"
+                                HorizontalAlignment="Center"
+                                IsIndeterminate="True"
+                                ToolTip="Reading the image so edges can be found..."
+                                Visibility="Collapsed" />
                             <wpfui:Button
                                 x:Name="ApplyConstructionToTransformButtonTransformTab"
                                 Width="150"
