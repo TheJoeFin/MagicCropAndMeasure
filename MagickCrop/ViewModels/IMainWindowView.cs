@@ -22,6 +22,10 @@ public interface IMainWindowView
     bool IsLocalAdjustment { get; }
     MagickGeometry GetLocalAdjustmentRegion();
 
+    // True when any measurement tool has been placed on the canvas.
+    // Geometric operations invalidate these, so callers can warn first.
+    bool HasMeasurements { get; }
+
     // Busy state (delegates to existing SetUiForLongTask/SetUiForCompletedTask)
     void SetBusy(bool busy);
 

@@ -46,6 +46,13 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     bool IMainWindowView.IsLocalAdjustment => LocalAdjustmentCheckBox.IsChecked == true;
 
+    bool IMainWindowView.HasMeasurements =>
+        measurementTools.Count > 0
+        || angleMeasurementTools.Count > 0
+        || rectangleMeasurementTools.Count > 0
+        || polygonMeasurementTools.Count > 0
+        || circleMeasurementTools.Count > 0;
+
     MagickGeometry IMainWindowView.GetLocalAdjustmentRegion() => LocalAdjustmentRectangle.CropShape;
 
     void IMainWindowView.SetBusy(bool busy)

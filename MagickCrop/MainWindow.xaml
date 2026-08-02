@@ -1074,6 +1074,15 @@
                                             <wpfui:SymbolIcon Symbol="CircleHalfFill24" />
                                         </MenuItem.Icon>
                                     </MenuItem>
+                                    <MenuItem
+                                        Name="LensCorrectionMenuItem"
+                                        Command="{Binding ShowLensCorrectionCommand}"
+                                        Header="Lens Correction"
+                                        ToolTip="Correct barrel or pincushion lens distortion">
+                                        <MenuItem.Icon>
+                                            <wpfui:SymbolIcon Symbol="Camera24" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
                                     <Separator x:Name="ObjectEraseSeparator" Visibility="Collapsed" />
                                     <MenuItem
                                         Name="ObjectEraseMenuItem"

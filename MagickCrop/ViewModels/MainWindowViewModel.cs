@@ -3,8 +3,10 @@ using CommunityToolkit.Mvvm.Input;
 using ImageMagick;
 using MagickCrop.Helpers;
 using MagickCrop.Models;
+using MagickCrop.Services;
 using MagickCrop.Models.MeasurementControls;
 using MagickCrop.Windows;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -55,6 +57,7 @@ public partial class MainWindowViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(FlipVerticalCommand))]
     [NotifyCanExecuteChangedFor(nameof(FlipHorizontalCommand))]
     [NotifyCanExecuteChangedFor(nameof(ApplyThresholdCommand))]
+    // Lens-related commands do not need NotifyCanExecuteChanged entries here
     private string? imagePath;
 
     [ObservableProperty]
@@ -171,6 +174,17 @@ public partial class MainWindowViewModel : ObservableObject
         aboutWindow.ShowDialog();
     }
 
+    [RelayCommand]
+    private void ShowLensCorrection()
+    {
+        if (_view is null) return;
+        var window = new MagickCrop.Windows.LensCorrectionWindow(this)
+        {
+            Owner = _view.OwnerWindow
+        };
+        window.ShowDialog();
+    }
+
     // ──────────────────────────────────────────────
     //  Commands: Clipboard / Folder / Share
     // ──────────────────────────────────────────────
@@ -281,10 +295,104 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private double thresholdValue = 128.0;
 
+    // Lens correction coefficients (barrel distortion)
+    [ObservableProperty]
+    private double lensCorrectionA = 0.0;
+
+    [ObservableProperty]
+    private double lensCorrectionB = 0.0;
+
+    [ObservableProperty]
+    private double lensCorrectionC = 0.0;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDetectedLensDescription))]
+    private string detectedLensDescription = string.Empty;
+
+    public bool HasDetectedLensDescription => !string.IsNullOrEmpty(DetectedLensDescription);
+
+    public ObservableCollection<LensProfileEntry> LensProfiles { get; } = [];
+
+    [ObservableProperty]
+    private LensProfileEntry? selectedLensProfile;
+
+    // Guards against re-entrancy when a profile selection writes the coefficients.
+    private bool applyingLensProfile;
+
+    partial void OnSelectedLensProfileChanged(LensProfileEntry? value)
+    {
+        if (value is null || applyingLensProfile) return;
+
+        applyingLensProfile = true;
+        try
+        {
+            LensCorrectionA = value.A;
+            LensCorrectionB = value.B;
+            LensCorrectionC = value.C;
+        }
+        finally
+        {
+            applyingLensProfile = false;
+        }
+    }
+
+    public void LoadLensProfiles()
+    {
+        LensProfiles.Clear();
+        foreach (LensProfileEntry entry in LensProfileService.GetProfiles())
+            LensProfiles.Add(entry);
+    }
+
+    private void SelectProfileByKey(string? key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return;
+
+        LensProfileEntry? match = LensProfiles
+            .FirstOrDefault(p => string.Equals(p.Key, key, StringComparison.OrdinalIgnoreCase));
+
+        if (match is null) return;
+
+        applyingLensProfile = true;
+        try
+        {
+            SelectedLensProfile = match;
+        }
+        finally
+        {
+            applyingLensProfile = false;
+        }
+    }
+
+    [RelayCommand]
+    private void SaveLensProfile()
+    {
+        string name = LensProfileName?.Trim() ?? string.Empty;
+        if (string.IsNullOrEmpty(name))
+        {
+            DetectedLensDescription = "Enter a name to save this profile";
+            return;
+        }
+
+        LensProfileEntry? saved = LensProfileService.Save(name, LensCorrectionA, LensCorrectionB, LensCorrectionC);
+        if (saved is null)
+        {
+            DetectedLensDescription = "Could not save the lens profile";
+            return;
+        }
+
+        LoadLensProfiles();
+        SelectProfileByKey(name);
+        LensProfileName = string.Empty;
+        DetectedLensDescription = $"Saved profile \u201c{name}\u201d";
+    }
+
+    [ObservableProperty]
+    private string lensProfileName = string.Empty;
+
     [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
     private Task ApplyThreshold() => ApplyAdjustmentAsync(img => img.Threshold(new Percentage(ThresholdValue / 255.0 * 100.0)));
 
-    private async Task ApplyAdjustmentAsync(Action<MagickImage> adjustment)
+    private async Task ApplyAdjustmentAsync(Action<MagickImage> adjustment, bool forceFullImage = false)
     {
         if (_view is null || string.IsNullOrWhiteSpace(ImagePath))
             return;
@@ -295,7 +403,7 @@ public partial class MainWindowViewModel : ObservableObject
         {
             using MagickImage magickImage = new(ImagePath);
 
-            if (_view.IsLocalAdjustment)
+            if (!forceFullImage && _view.IsLocalAdjustment)
             {
                 MagickGeometry region = _view.GetLocalAdjustmentRegion();
 
@@ -331,8 +439,25 @@ public partial class MainWindowViewModel : ObservableObject
                 await Task.Run(() => adjustment(magickImage));
             }
 
-            string tempFileName = Path.GetTempFileName();
-            await magickImage.WriteAsync(tempFileName);
+            // Path.GetTempFileName() hands back a ".tmp" name, and Magick picks its
+            // encoder from the extension - ".tmp" resolves to Unknown and fails to
+            // encode. Pick an explicit format, promoting to PNG when the operation
+            // introduced transparency that the source format cannot represent.
+            MagickFormat targetFormat = magickImage.Format;
+
+            if (targetFormat is MagickFormat.Unknown)
+                targetFormat = MagickFormat.Png;
+
+            if (magickImage.HasAlpha && targetFormat is MagickFormat.Jpeg or MagickFormat.Jpg or MagickFormat.Bmp)
+                targetFormat = MagickFormat.Png;
+
+            magickImage.Format = targetFormat;
+
+            string tempFileName = Path.ChangeExtension(
+                Path.GetTempFileName(),
+                targetFormat.ToString().ToLowerInvariant());
+
+            await magickImage.WriteAsync(tempFileName, targetFormat);
 
             MagickImageUndoRedoItem undoRedoItem = new(_view.MainImageControl, ImagePath, tempFileName);
             UndoRedo.AddUndo(undoRedoItem);
@@ -341,10 +466,116 @@ public partial class MainWindowViewModel : ObservableObject
             _view.ImageSource = magickImage.ToBitmapSource();
             ActualImageSize = new Size(magickImage.Width, magickImage.Height);
         }
+        catch (Exception ex)
+        {
+            // Never let an image operation take down the app; surface it instead.
+            System.Windows.MessageBox.Show(
+                $"The image operation could not be completed.\n\n{ex.Message}",
+                "Image Operation Failed",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Warning);
+        }
         finally
         {
             _view.SetBusy(false);
         }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
+    private async Task ApplyLensCorrection()
+    {
+        if (_view is null)
+            return;
+
+        // Lens correction warps the image, so any calibrated scale and existing
+        // measurements no longer line up with the pixels underneath them.
+        if (_view.HasMeasurements)
+        {
+            Wpf.Ui.Controls.MessageBox confirm = new()
+            {
+                Title = "Lens Correction",
+                Content = "Lens correction changes the image geometry, so existing measurements and scale calibration will no longer be accurate.\n\nApply anyway?",
+                PrimaryButtonText = "Apply",
+                CloseButtonText = "Cancel",
+            };
+
+            if (await confirm.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
+                return;
+        }
+
+        double a = LensCorrectionA;
+        double b = LensCorrectionB;
+        double c = LensCorrectionC;
+        double d = 1.0 - a - b - c;
+
+        await ApplyAdjustmentAsync(img =>
+        {
+            img.VirtualPixelMethod = VirtualPixelMethod.Transparent;
+            // Barrel distortion takes four coefficients: A, B, C, D
+            img.Distort(DistortMethod.Barrel, a, b, c, d);
+        }, forceFullImage: true);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
+    private void ResetLensCorrection()
+    {
+        applyingLensProfile = true;
+        try
+        {
+            SelectedLensProfile = null;
+        }
+        finally
+        {
+            applyingLensProfile = false;
+        }
+
+        LensCorrectionA = 0.0;
+        LensCorrectionB = 0.0;
+        LensCorrectionC = 0.0;
+        DetectedLensDescription = string.Empty;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
+    private void AutoDetectLensCorrection()
+    {
+        if (string.IsNullOrWhiteSpace(ImagePath)) return;
+
+        LensMetadata? meta = LensMetadataHelper.Read(ImagePath);
+        if (meta is null)
+        {
+            DetectedLensDescription = "No EXIF metadata found";
+            return;
+        }
+
+        string describe = string.Join(" ", new[] { meta.CameraMake, meta.CameraModel, meta.LensModel }
+            .Where(s => !string.IsNullOrWhiteSpace(s)));
+
+        LensCorrectionSettings? profile = LensProfileService.Lookup(meta);
+        if (profile is not null)
+        {
+            LensCorrectionA = profile.A;
+            LensCorrectionB = profile.B;
+            LensCorrectionC = profile.C;
+
+            // Reflect the EXIF match in the profile list so both paths agree.
+            string combined = string.Join(" ", new[] { meta.CameraMake, meta.CameraModel, meta.LensMake, meta.LensModel });
+            LensProfileEntry? matched = LensProfiles.FirstOrDefault(p =>
+                !string.IsNullOrEmpty(p.Key) && combined.Contains(p.Key, StringComparison.OrdinalIgnoreCase));
+            SelectProfileByKey(matched?.Key);
+
+            DetectedLensDescription = $"Detected: {describe}";
+            return;
+        }
+
+        DetectedLensDescription = string.IsNullOrWhiteSpace(describe)
+            ? "No matching lens profile found"
+            : $"{describe} — no profile, adjust manually";
+    }
+
+    [RelayCommand(CanExecute = nameof(CanApplyAdjustment))]
+    private Task ApplyExifOrientation()
+    {
+        return ApplyAdjustmentAsync(img => img.AutoOrient(), forceFullImage: true);
     }
 
     // ──────────────────────────────────────────────
