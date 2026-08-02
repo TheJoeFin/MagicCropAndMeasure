@@ -397,10 +397,15 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             Canvas.GetLeft(ellipse) + (ellipse.Width / 2),
             Canvas.GetTop(ellipse) + (ellipse.Height / 2));
         handleGrabOffset = clickedPoint - handleCenter;
+        lastActiveTransformHandle = ellipse;
+        lastActiveTransformIndex = pointDraggingIndex;
         CaptureMouse();
 
-        // Show pixel zoom for precise corner placement
-        ShowPixelZoom(clickedPoint);
+        BeginTransformHandleDrag(ellipse, handleCenter);
+
+        // Magnify the handle centre — not the cursor — so an off-centre grab still shows the
+        // pixel the corner will land on.
+        ShowPixelZoom(handleCenter, clickedPoint);
     }
 
     private void TopLeft_MouseMove(object sender, MouseEventArgs e)
@@ -431,14 +436,20 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         Point mousePos = e.GetPosition(ShapeCanvas);
         if (ShouldShowPixelZoom())
         {
+            // While dragging a transform handle the loupe follows the handle centre (grab offset
+            // removed and bounds applied), so the crosshair marks where the point really lands.
+            Point loupeTarget = draggingMode == DraggingMode.MoveElement && clickedElement is not null
+                ? ConstrainHandlePosition(mousePos - handleGrabOffset)
+                : mousePos;
+
             // Show the pixel zoom if not already visible
             if (PixelZoomControl.Visibility != Visibility.Visible)
             {
-                ShowPixelZoom(mousePos);
+                ShowPixelZoom(loupeTarget, mousePos);
             }
             else
             {
-                UpdatePixelZoom(mousePos);
+                UpdatePixelZoom(loupeTarget, mousePos);
             }
         }
         else
@@ -585,6 +596,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 FinishMarkupGroupMove();
             }
 
+            EndTransformHandleDrag();
+
             clickedElement = null;
             pointDraggingIndex = -1;
             ReleaseMouseCapture();
@@ -712,15 +725,12 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (draggingMode != DraggingMode.MoveElement || clickedElement is null)
             return;
 
-        Point newHandleCenter = new(
-            movingPoint.X - handleGrabOffset.X,
-            movingPoint.Y - handleGrabOffset.Y);
-        newHandleCenter = ConstrainHandlePosition(newHandleCenter);
-        Canvas.SetTop(clickedElement, newHandleCenter.Y - (clickedElement.Height / 2));
-        Canvas.SetLeft(clickedElement, newHandleCenter.X - (clickedElement.Width / 2));
-
-        MovePolyline(newHandleCenter);
-        UpdateCornerNavButtons();
+        MoveTransformHandleTo(
+            clickedElement,
+            pointDraggingIndex,
+            new Point(
+                movingPoint.X - handleGrabOffset.X,
+                movingPoint.Y - handleGrabOffset.Y));
 
         if (draggingMode == DraggingMode.CreatingMeasurement && isCreatingMeasurement)
         {
@@ -854,18 +864,19 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         lines?.StrokeThickness = 2 * inverseScale;
 
+        UpdateActiveHandleCrosshairScale();
         UpdateCornerNavButtons();
     }
 
-    private void MovePolyline(Point newPoint)
+    private void MovePolyline(int handleIndex, Point newPoint)
     {
-        if (pointDraggingIndex < 0)
+        if (handleIndex < 0)
             return;
 
         // Update standard 4-corner polyline when dragging corner markers (index 0-3)
-        if (pointDraggingIndex < 4 && lines is not null)
+        if (handleIndex < 4 && lines is not null)
         {
-            lines.Points[pointDraggingIndex] = newPoint;
+            lines.Points[handleIndex] = newPoint;
             AspectRatioTransformPreview.SetAndScalePoints(lines.Points);
         }
 
@@ -5880,8 +5891,11 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         // --- Cancel any active placement / creation state ---
         isCreatingMeasurement = false;
         draggingMode = DraggingMode.None;
+        EndTransformHandleDrag();
         clickedElement = null;
         pointDraggingIndex = -1;
+        lastActiveTransformHandle = null;
+        lastActiveTransformIndex = -1;
         ShapeCanvas.ReleaseMouseCapture();
         ReleaseMouseCapture();
 
@@ -6408,6 +6422,19 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         // leave Ctrl+Z/Ctrl+Y to the text box's own undo
         bool typingInTextBox = Keyboard.FocusedElement is System.Windows.Controls.Primitives.TextBoxBase;
 
+        // Arrow keys nudge the transform handle that was last grabbed, for placement that is finer
+        // than the mouse can manage. Controls that use the arrow keys themselves keep priority.
+        if (e.Key is Key.Left or Key.Right or Key.Up or Key.Down
+            && !typingInTextBox
+            && Keyboard.FocusedElement is not Slider
+            && Keyboard.FocusedElement is not System.Windows.Controls.ComboBox
+            && (Keyboard.Modifiers & ModifierKeys.Alt) != ModifierKeys.Alt
+            && TryNudgeTransformHandle(e.Key))
+        {
+            e.Handled = true;
+            return;
+        }
+
         // Handle Ctrl+Z for undo
         if (!typingInTextBox && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && e.Key == Key.Z)
         {
@@ -6926,10 +6953,17 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     #region Pixel Precision Zoom
 
     /// <summary>
-    /// Shows the pixel precision zoom control at the current mouse position.
+    /// Shows the pixel precision zoom control.
     /// </summary>
-    /// <param name="mousePosition">Mouse position in ShapeCanvas coordinates</param>
-    private void ShowPixelZoom(Point mousePosition)
+    /// <param name="targetPoint">
+    /// The point to magnify, in ShapeCanvas coordinates. When a handle is being dragged by its
+    /// edge this is the handle centre, not the cursor, so the crosshair marks where the point
+    /// will actually land.
+    /// </param>
+    /// <param name="cursorPoint">
+    /// Where to park the loupe, in ShapeCanvas coordinates. Defaults to <paramref name="targetPoint"/>.
+    /// </param>
+    private void ShowPixelZoom(Point targetPoint, Point? cursorPoint = null)
     {
         if (MainImage.Source == null)
             return;
@@ -6938,17 +6972,12 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         {
             // Set the source image for the zoom control
             PixelZoomControl.SourceImage = MainImage.Source;
+            UpdateLoupeMagnification();
 
-            // Convert mouse position to image coordinates
-            Point imagePosition = ConvertCanvasToImageCoordinates(mousePosition);
-            PixelZoomControl.CurrentPosition = imagePosition;
+            // Convert the magnified point to image coordinates
+            PixelZoomControl.CurrentPosition = ConvertCanvasToImageCoordinates(targetPoint);
 
-            // Convert ShapeCanvas coordinates to MainGrid coordinates
-            // ShapeCanvas has transforms applied, so we need to transform the point
-            Point mainGridPosition = ShapeCanvas.TransformToAncestor(MainGrid).Transform(mousePosition);
-
-            // Position the zoom control near the cursor in MainGrid coordinates
-            PixelZoomControl.PositionNearCursor(mainGridPosition, MainGrid.ActualWidth, MainGrid.ActualHeight);
+            PositionPixelZoom(cursorPoint ?? targetPoint);
 
             // Show the control
             PixelZoomControl.Visibility = Visibility.Visible;
@@ -6963,29 +6992,49 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     /// <summary>
     /// Updates the pixel precision zoom control position and preview.
     /// </summary>
-    /// <param name="mousePosition">Mouse position in ShapeCanvas coordinates</param>
-    private void UpdatePixelZoom(Point mousePosition)
+    /// <param name="targetPoint">The point to magnify, in ShapeCanvas coordinates</param>
+    /// <param name="cursorPoint">Where to park the loupe, in ShapeCanvas coordinates</param>
+    private void UpdatePixelZoom(Point targetPoint, Point? cursorPoint = null)
     {
         if (PixelZoomControl.Visibility != Visibility.Visible)
             return;
 
         try
         {
-            // Convert mouse position to image coordinates
-            Point imagePosition = ConvertCanvasToImageCoordinates(mousePosition);
-            PixelZoomControl.CurrentPosition = imagePosition;
-
-            // Convert ShapeCanvas coordinates to MainGrid coordinates
-            // ShapeCanvas has transforms applied, so we need to transform the point
-            Point mainGridPosition = ShapeCanvas.TransformToAncestor(MainGrid).Transform(mousePosition);
-
-            // Update the zoom control position in MainGrid coordinates
-            PixelZoomControl.PositionNearCursor(mainGridPosition, MainGrid.ActualWidth, MainGrid.ActualHeight);
+            UpdateLoupeMagnification();
+            PixelZoomControl.CurrentPosition = ConvertCanvasToImageCoordinates(targetPoint);
+            PositionPixelZoom(cursorPoint ?? targetPoint);
         }
         catch (Exception)
         {
             // Silently handle any errors
         }
+    }
+
+    /// <summary>
+    /// Moves the loupe next to the cursor. ShapeCanvas is pan/zoom transformed, so the point has
+    /// to be projected into MainGrid coordinates first.
+    /// </summary>
+    private void PositionPixelZoom(Point cursorPoint)
+    {
+        Point mainGridPosition = ShapeCanvas.TransformToAncestor(MainGrid).Transform(cursorPoint);
+        PixelZoomControl.PositionNearCursor(mainGridPosition, MainGrid.ActualWidth, MainGrid.ActualHeight);
+    }
+
+    /// <summary>
+    /// Keeps the loupe more magnified than the canvas itself. The loupe magnifies source pixels,
+    /// so on a small image at a high canvas zoom a fixed factor would actually show *less* detail
+    /// than the canvas underneath it.
+    /// </summary>
+    private void UpdateLoupeMagnification()
+    {
+        if (MainImage.Source is not BitmapSource source
+            || source.PixelWidth <= 0
+            || MainImage.ActualWidth <= 0)
+            return;
+
+        double canvasPixelsPerSourcePixel = MainImage.ActualWidth / source.PixelWidth * canvasScale.ScaleX;
+        PixelZoomControl.ZoomFactor = Math.Clamp(canvasPixelsPerSourcePixel * 2.5, 6.0, 24.0);
     }
 
     /// <summary>
