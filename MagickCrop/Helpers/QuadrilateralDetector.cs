@@ -35,6 +35,12 @@ public static class QuadrilateralDetector
         public double Area { get; set; }
         public double Confidence { get; set; }
 
+        /// <summary>
+        /// Overrides the generated name in the selector list. Set for quadrilaterals that
+        /// did not come from contour detection, such as a user's construction.
+        /// </summary>
+        public string? Label { get; set; }
+
         public DetectedQuadrilateral(System.Windows.Point[] points, double area, double confidence)
         {
             if (points.Length != 4)

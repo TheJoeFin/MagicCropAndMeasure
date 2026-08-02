@@ -21,8 +21,13 @@ public partial class QuadrilateralSelector : UserControl
         public QuadrilateralViewModel(QuadrilateralDetector.DetectedQuadrilateral quad, int index)
         {
             Quadrilateral = quad ?? throw new ArgumentNullException(nameof(quad));
-            Name = $"Quad: {index + 1}";
-            Description = $"Confidence: {quad.Confidence:P0}";
+
+            // A labelled quadrilateral did not come from contour detection, so a
+            // confidence percentage would be meaningless for it.
+            Name = quad.Label ?? $"Quad: {index + 1}";
+            Description = quad.Label is null
+                ? $"Confidence: {quad.Confidence:P0}"
+                : "From your construction lines";
 
             // Scale points for preview (60x60 canvas)
             PreviewPoints = ScalePointsForPreview(quad);
@@ -43,8 +48,10 @@ public partial class QuadrilateralSelector : UserControl
             double targetSize = 50;
             double padding = 5;
 
-            // Calculate scale to fit in preview
-            double scale = Math.Min(targetSize / width, targetSize / height);
+            // A degenerate quad would divide by zero here and produce NaN preview points.
+            double scale = width > 0 && height > 0
+                ? Math.Min(targetSize / width, targetSize / height)
+                : 1.0;
 
             // Create scaled points
             PointCollection scaledPoints =
