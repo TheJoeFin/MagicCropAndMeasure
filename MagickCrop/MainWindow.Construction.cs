@@ -21,12 +21,14 @@ public partial class MainWindow
         None,
         Edge,
         Point,
-        Line
+        Line,
+        Boundary
     }
 
     private const string ConstructionEdgeTag = "ConstructionEdge";
     private const string ConstructionPointTag = "ConstructionPoint";
     private const string ConstructionLineTag = "ConstructionLine";
+    private const string ConstructionBoundaryTag = "ConstructionBoundary";
 
     /// <summary>Minimum drag distance before an edge drag counts as more than a click.</summary>
     private const double ConstructionDragThreshold = 5.0;
@@ -41,6 +43,16 @@ public partial class MainWindow
     /// <summary>The end point being dragged out while the Edge tool creates a line.</summary>
     private Guid? constructionDragEndPointId;
     private Guid? constructionDragLineId;
+
+    /// <summary>Where the in-progress boundary probe was pressed, in canvas coordinates.</summary>
+    private Point? boundaryProbeStart;
+
+    // In-memory copy of the current image, kept so a probe can sample on every mouse move
+    // without re-decoding the file. Keyed by the path it was built from, which is how it
+    // invalidates itself: every edit writes a new temp file.
+    private ImageSampleBuffer? probeBuffer;
+    private string? probeBufferPath;
+    private bool isWarmingProbeBuffer;
 
     #region Tool state
 
@@ -57,6 +69,7 @@ public partial class MainWindow
                     case ConstructionEdgeTag: return ConstructionTool.Edge;
                     case ConstructionPointTag: return ConstructionTool.Point;
                     case ConstructionLineTag: return ConstructionTool.Line;
+                    case ConstructionBoundaryTag: return ConstructionTool.Boundary;
                 }
             }
 
@@ -145,8 +158,11 @@ public partial class MainWindow
     /// Removes every construction overlay without an undo step. Called from the shared
     /// measurement teardown, where the whole undo stack is going away anyway.
     /// </summary>
-    private void RemoveConstructionControls() =>
+    private void RemoveConstructionControls()
+    {
         RemoveConstructionOverlays([.. constructionControls], recordUndo: false);
+        ReleaseProbeBuffer();
+    }
 
     /// <summary>
     /// Takes overlays off the canvas, optionally as an undoable step. The controls
@@ -246,6 +262,11 @@ public partial class MainWindow
                 e.Handled = true;
                 return true;
 
+            case ConstructionTool.Boundary:
+                StartBoundaryProbe(canvasPoint);
+                e.Handled = true;
+                return true;
+
             default:
                 return false;
         }
@@ -316,6 +337,9 @@ public partial class MainWindow
     /// </summary>
     private bool HandleConstructionMouseMove(Point canvasPoint)
     {
+        if (draggingMode == DraggingMode.ConstructionBoundaryProbe)
+            return UpdateBoundaryProbe(canvasPoint);
+
         if (draggingMode == DraggingMode.ConstructionEdgeCreate &&
             constructionOverlay is not null &&
             constructionDragEndPointId is Guid dragEndId)
@@ -344,6 +368,9 @@ public partial class MainWindow
     /// </summary>
     private bool HandleConstructionMouseUp(Point canvasPoint)
     {
+        if (draggingMode == DraggingMode.ConstructionBoundaryProbe)
+            return FinishBoundaryProbe(canvasPoint);
+
         if (draggingMode != DraggingMode.ConstructionEdgeCreate)
             return false;
 
@@ -394,6 +421,218 @@ public partial class MainWindow
         }
     }
 
+    #region Boundary probe
+
+    /// <summary>
+    /// Begins a probe: the user drags a short line across a boundary and the point lands
+    /// on the transition rather than wherever the cursor happened to stop.
+    /// </summary>
+    /// <remarks>
+    /// Unlike the Edge tool this creates nothing up front. There is no point to drag until
+    /// the analysis has somewhere to put one, so the whole gesture is a preview and the
+    /// geometry is only touched on release.
+    /// </remarks>
+    private void StartBoundaryProbe(Point canvasPoint)
+    {
+        ConstructionOverlayControl overlay = EnsureConstructionOverlay();
+
+        // Starting a probe abandons whatever was picked before it, as every other tool does.
+        overlay.ClearSelection();
+
+        boundaryProbeStart = canvasPoint;
+        draggingMode = DraggingMode.ConstructionBoundaryProbe;
+        isCreatingMeasurement = true;
+        ShapeCanvas.CaptureMouse();
+        ShowPixelZoom(canvasPoint);
+
+        // Normally already warm from when the tool was picked. Doing it here rather than
+        // on the first mouse move keeps any decode cost out of the middle of the drag.
+        GetProbeBuffer();
+    }
+
+    /// <summary>
+    /// Tracks the probe as it is dragged, showing both the probe line and where the point
+    /// would land if it were released now.
+    /// </summary>
+    private bool UpdateBoundaryProbe(Point canvasPoint)
+    {
+        if (boundaryProbeStart is not Point start || constructionOverlay is null)
+            return false;
+
+        constructionOverlay.ShowPreviewLine(start, canvasPoint);
+
+        if (TryProbeBoundary(start, canvasPoint, out Point found, out bool isWeak))
+        {
+            constructionOverlay.ShowBoundaryCandidate(found, isWeak);
+
+            // The crosshairs belong on the edge that was found, not on the cursor — the
+            // whole point of the gesture is that those are different places, and seeing
+            // the transition magnified is how the user judges whether it picked right.
+            UpdatePixelZoom(canvasPoint, found);
+        }
+        else
+        {
+            constructionOverlay.HideBoundaryCandidate();
+            UpdatePixelZoom(canvasPoint);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Commits the probe as a single free point. A probe too short to say which way the
+    /// boundary runs places nothing rather than guessing at the press position.
+    /// </summary>
+    private bool FinishBoundaryProbe(Point canvasPoint)
+    {
+        ConstructionOverlayControl? overlay = constructionOverlay;
+        Point? probeStart = boundaryProbeStart;
+
+        boundaryProbeStart = null;
+        isCreatingMeasurement = false;
+        draggingMode = DraggingMode.None;
+        ShapeCanvas.ReleaseMouseCapture();
+
+        overlay?.HidePreviewLine();
+        overlay?.HideBoundaryCandidate();
+
+        if (overlay is null || probeStart is not Point start)
+            return true;
+
+        bool movedFarEnough =
+            Math.Abs(canvasPoint.X - start.X) > ConstructionDragThreshold ||
+            Math.Abs(canvasPoint.Y - start.Y) > ConstructionDragThreshold;
+
+        if (!movedFarEnough)
+            return true;
+
+        if (!TryProbeBoundary(start, canvasPoint, out Point found, out bool isWeak))
+            return true;
+
+        // AddPoint is one Edit, so the whole gesture lands on the undo stack as one step.
+        overlay.AddPoint(found);
+
+        // Said rather than enforced: a weak reading is still usually close, and the point
+        // is an ordinary one the user can drag.
+        overlay.TransientHint = isWeak
+            ? "Weak boundary — check the point and nudge it if needed"
+            : null;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Runs one probe. Canvas coordinates in and out; the analysis itself happens in image
+    /// pixel space, at the resolution the pixels actually have rather than the one they
+    /// are displayed at.
+    /// </summary>
+    private bool TryProbeBoundary(Point canvasStart, Point canvasEnd, out Point found, out bool isWeak)
+    {
+        found = default;
+        isWeak = true;
+
+        Point startPixel = ConvertCanvasToImageCoordinates(canvasStart);
+        Point endPixel = ConvertCanvasToImageCoordinates(canvasEnd);
+
+        if (!BoundaryProbeAnalyzer.TryFindBoundary(
+                GetProbeBuffer(), startPixel, endPixel,
+                out BoundaryProbeAnalyzer.BoundaryProbeResult result))
+            return false;
+
+        found = ConvertImageToCanvasCoordinates(result.Position);
+        isWeak = result.IsWeak;
+        return true;
+    }
+
+    /// <summary>
+    /// The sample buffer for the image on screen right now, building it if the warm-up
+    /// has not finished or the image has changed since.
+    /// </summary>
+    private ImageSampleBuffer? GetProbeBuffer()
+    {
+        string? path = ViewModel.ImagePath;
+        if (string.IsNullOrEmpty(path))
+            return null;
+
+        if (probeBuffer is not null && probeBufferPath == path)
+            return probeBuffer;
+
+        // Sampling the previous image's pixels would put the point in the wrong place
+        // silently, which is worse than a brief pause here.
+        probeBuffer = ImageSampleBuffer.FromFile(path);
+        probeBufferPath = probeBuffer is null ? null : path;
+        return probeBuffer;
+    }
+
+    /// <summary>
+    /// Builds the sample buffer off the UI thread, so picking the tool absorbs the decode
+    /// instead of the first press. Shows a ring next to the tool button while it runs.
+    /// </summary>
+    private async void WarmProbeBuffer()
+    {
+        string? path = ViewModel.ImagePath;
+
+        if (string.IsNullOrEmpty(path) || path == probeBufferPath)
+        {
+            SetProbeWarmingIndicator(false);
+            return;
+        }
+
+        // Reselecting the tool while a build is still running: the in-flight one finishes
+        // the job, but the indicator still has to be put back up for it.
+        SetProbeWarmingIndicator(true);
+
+        if (isWarmingProbeBuffer)
+            return;
+
+        isWarmingProbeBuffer = true;
+
+        try
+        {
+            ImageSampleBuffer? buffer = await Task.Run(() => ImageSampleBuffer.FromFile(path));
+
+            // The tool may have been put down, or the image edited again, while this was
+            // decoding. Either way the result is stale; GetProbeBuffer rebuilds on demand.
+            if (buffer is not null &&
+                path == ViewModel.ImagePath &&
+                ActiveConstructionTool == ConstructionTool.Boundary)
+            {
+                probeBuffer = buffer;
+                probeBufferPath = path;
+            }
+        }
+        finally
+        {
+            isWarmingProbeBuffer = false;
+            SetProbeWarmingIndicator(false);
+        }
+    }
+
+    /// <summary>
+    /// Drops the sample buffer. Called when the tool is put down: it is the largest thing
+    /// this window holds that nothing else needs, and it is cheap enough to rebuild.
+    /// </summary>
+    private void ReleaseProbeBuffer()
+    {
+        probeBuffer = null;
+        probeBufferPath = null;
+        SetProbeWarmingIndicator(false);
+    }
+
+    private void SetProbeWarmingIndicator(bool isWarming)
+    {
+        Visibility visibility = isWarming ? Visibility.Visible : Visibility.Collapsed;
+
+        // Mirrored on both tabs, like the tool button itself.
+        if (ConstructionBoundaryProgressRing is not null)
+            ConstructionBoundaryProgressRing.Visibility = visibility;
+
+        if (ConstructionBoundaryProgressRingTransform is not null)
+            ConstructionBoundaryProgressRingTransform.Visibility = visibility;
+    }
+
+    #endregion
+
     /// <summary>Clears any half-finished construction gesture.</summary>
     private void CancelConstructionGesture()
     {
@@ -414,10 +653,12 @@ public partial class MainWindow
             // undo step.
             overlay.EndDrag();
             overlay.ClearSelection();
+            overlay.HideBoundaryCandidate();
         }
 
         constructionDragEndPointId = null;
         constructionDragLineId = null;
+        boundaryProbeStart = null;
     }
 
     /// <summary>
@@ -437,10 +678,19 @@ public partial class MainWindow
     /// </summary>
     private void SyncConstructionToolState()
     {
-        bool connectOnSecondSelection = ActiveConstructionTool == ConstructionTool.Line;
+        ConstructionTool tool = ActiveConstructionTool;
+        bool connectOnSecondSelection = tool == ConstructionTool.Line;
 
         foreach (ConstructionOverlayControl overlay in constructionControls)
             overlay.ConnectOnSecondSelection = connectOnSecondSelection;
+
+        // Reading the image for probing takes a moment, so it happens when the tool is
+        // picked rather than partway through the first drag — and the copy is dropped
+        // again the moment the tool is put down, since nothing else uses it.
+        if (tool == ConstructionTool.Boundary)
+            WarmProbeBuffer();
+        else
+            ReleaseProbeBuffer();
     }
 
     /// <summary>

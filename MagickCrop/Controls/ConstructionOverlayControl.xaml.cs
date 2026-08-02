@@ -77,6 +77,14 @@ public partial class ConstructionOverlayControl : UserControl
     private Path? ghostLinePath;
     private Path? ghostHitPath;
 
+    // Live preview of where a boundary probe is reading the edge. Created on first use and
+    // then reused, because it is repositioned on every mouse move of the gesture.
+    private Ellipse? boundaryCandidate;
+    private Point? boundaryCandidatePosition;
+    private bool boundaryCandidateIsWeak;
+
+    private string? transientHint;
+
     private int pointDraggingIndex = -1;
     private bool areDragGizmosVisible = true;
     private bool areEndpointCapsVisible;
@@ -133,6 +141,7 @@ public partial class ConstructionOverlayControl : UserControl
             // The build affordances are gizmos too — none may survive into an export.
             if (ghostLinePath is not null) ghostLinePath.Visibility = visibility;
             if (ghostHitPath is not null) ghostHitPath.Visibility = visibility;
+            ApplyBoundaryCandidateAppearance();
 
             // Candidates are dropped entirely rather than hidden, so they cannot be
             // clicked while invisible.
@@ -277,6 +286,47 @@ public partial class ConstructionOverlayControl : UserControl
 
     public void HidePreviewLine() => PreviewLine.Visibility = Visibility.Collapsed;
 
+    /// <summary>
+    /// Shows where a boundary probe is currently reading the edge, so the user can see the
+    /// point track the transition while they are still shaping the probe. Purely a
+    /// preview — nothing is added to the geometry until the gesture is released.
+    /// </summary>
+    /// <param name="isWeak">
+    /// Draws hollow and dashed instead of solid, so a guess never looks as certain as a
+    /// reading.
+    /// </param>
+    public void ShowBoundaryCandidate(Point position, bool isWeak)
+    {
+        boundaryCandidatePosition = position;
+        boundaryCandidateIsWeak = isWeak;
+
+        boundaryCandidate ??= CreateBoundaryCandidate();
+        ApplyBoundaryCandidateAppearance();
+    }
+
+    public void HideBoundaryCandidate()
+    {
+        boundaryCandidatePosition = null;
+
+        if (boundaryCandidate is not null)
+            boundaryCandidate.Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// A note about the last gesture, shown under the measurement until the next edit
+    /// replaces it. Used to say a probe found only a weak boundary without interrupting
+    /// the user with a dialog for something they can simply nudge.
+    /// </summary>
+    public string? TransientHint
+    {
+        get => transientHint;
+        set
+        {
+            transientHint = value;
+            UpdateDisplay();
+        }
+    }
+
     /// <summary>Ring of derived corners, empty when the construction cannot be solved.</summary>
     public IReadOnlyList<Point> SolvedRing => solvedRing;
 
@@ -357,6 +407,10 @@ public partial class ConstructionOverlayControl : UserControl
         bool isOutermost = dragSnapshot is null && editSnapshot is null;
         if (isOutermost)
             editSnapshot = CaptureGeometry();
+
+        // Any change to the geometry makes a note about the previous gesture stale. The
+        // probe tool sets its note back after the point it adds lands here.
+        transientHint = null;
 
         try
         {
@@ -449,6 +503,8 @@ public partial class ConstructionOverlayControl : UserControl
         // Whatever was in flight refers to a state that no longer exists.
         dragSnapshot = null;
         editSnapshot = null;
+        transientHint = null;
+        HideBoundaryCandidate();
 
         geometry.Clear();
 
@@ -1295,6 +1351,53 @@ public partial class ConstructionOverlayControl : UserControl
         return menu;
     }
 
+    private Ellipse CreateBoundaryCandidate()
+    {
+        Ellipse marker = new()
+        {
+            // A preview of where the click will land, so it must never eat the click.
+            IsHitTestVisible = false
+        };
+
+        Panel.SetZIndex(marker, PointZIndex);
+        MeasurementCanvas.Children.Add(marker);
+        return marker;
+    }
+
+    private void ApplyBoundaryCandidateAppearance()
+    {
+        if (boundaryCandidate is null) return;
+
+        if (boundaryCandidatePosition is not Point position || !areDragGizmosVisible)
+        {
+            boundaryCandidate.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        double size = CurrentPointSize() * SelectedPointScale;
+
+        boundaryCandidate.Width = size;
+        boundaryCandidate.Height = size;
+        boundaryCandidate.Stroke = SelectionBrush;
+        boundaryCandidate.Visibility = Visibility.Visible;
+
+        if (boundaryCandidateIsWeak)
+        {
+            boundaryCandidate.Fill = null;
+            boundaryCandidate.StrokeThickness = 2 * visualScale;
+            boundaryCandidate.StrokeDashArray = [2, 2];
+        }
+        else
+        {
+            boundaryCandidate.Fill = SelectionBrush;
+            boundaryCandidate.Stroke = Brushes.White;
+            boundaryCandidate.StrokeThickness = 2 * visualScale;
+            boundaryCandidate.StrokeDashArray = null;
+        }
+
+        PositionHandle(boundaryCandidate, position);
+    }
+
     private double CurrentPointSize() =>
         (areEndpointCapsVisible ? BaseSmallPointSize : BasePointSize) * visualScale;
 
@@ -1328,6 +1431,7 @@ public partial class ConstructionOverlayControl : UserControl
         RenderCircles();
         RenderDerivedCandidates();
         RenderGhostLine();
+        ApplyBoundaryCandidateAppearance();
 
         MeasurementText.RenderTransformOrigin = new Point(0.5, 0.5);
         MeasurementText.RenderTransform = new ScaleTransform(visualScale, visualScale);
@@ -1439,6 +1543,10 @@ public partial class ConstructionOverlayControl : UserControl
     /// </summary>
     private string? BuildSelectionHint()
     {
+        // A note about the gesture that just happened outranks a prompt for the next one.
+        if (transientHint is not null)
+            return transientHint;
+
         if (selectedLineId is not null)
             return "Line selected — press Delete to remove it";
 
