@@ -29,6 +29,12 @@ public class ConstructionGeometryDto : MeasurementControlDto
     /// Units of measurement (e.g., "pixels", "mm", "in")
     /// </summary>
     public string Units { get; set; } = "pixels";
+
+    /// <summary>
+    /// Whether the derived shape's perimeter and area readout is shown. Defaults to true
+    /// so projects saved before the toggle existed keep the readout they had.
+    /// </summary>
+    public bool ShowShapeMeasurement { get; set; } = true;
 }
 
 /// <summary>
@@ -65,6 +71,12 @@ public class ConstructionLineDto
     /// Whether the line draws past its points to reveal the corners it forms.
     /// </summary>
     public bool IsExtended { get; set; } = true;
+
+    /// <summary>
+    /// Whether the line's length is labelled. Absent from projects saved before
+    /// per-line readouts existed, which correctly default to unlabelled.
+    /// </summary>
+    public bool ShowMeasurement { get; set; }
 }
 
 /// <summary>
@@ -77,4 +89,9 @@ public class ConstructionCircleDto
     public Guid PointAId { get; set; }
     public Guid PointBId { get; set; }
     public Guid PointCId { get; set; }
+
+    /// <summary>
+    /// Whether the circle's radius, circumference, and area are labelled at its centre.
+    /// </summary>
+    public bool ShowMeasurement { get; set; }
 }

@@ -37,7 +37,14 @@
             CornerRadius="3"
             ToolTip="Construction measurement options">
             <Border.ContextMenu>
-                <ContextMenu>
+                <ContextMenu Opened="MeasurementContextMenu_Opened">
+                    <MenuItem
+                        x:Name="ShowShapeMeasurementMenuItem"
+                        Click="ShapeMeasurementMenuItem_Click"
+                        Header="Show Measurement"
+                        IsCheckable="True"
+                        IsChecked="True"
+                        ToolTip="Show the perimeter and area of the derived shape" />
                     <MenuItem
                         Click="CopyMeasurementMenuItem_Click"
                         Header="Copy Measurement"

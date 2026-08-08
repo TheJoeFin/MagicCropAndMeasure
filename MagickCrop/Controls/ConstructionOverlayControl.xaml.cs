@@ -66,6 +66,12 @@ public partial class ConstructionOverlayControl : UserControl
     private readonly List<Path> circlePaths = [];
     private readonly List<Path> circleHitPaths = [];
 
+    /// <summary>
+    /// Labels for individual lines and circles the user has asked to see measured.
+    /// Rebuilt on every refresh, because what they read depends on positions that move.
+    /// </summary>
+    private readonly List<Border> measurementLabels = [];
+
     // Crossings and centres the construction implies. Recomputed every refresh and never
     // stored — clicking one is what turns it into a point the construction owns.
     private readonly List<Ellipse> candidateHandles = [];
@@ -84,6 +90,8 @@ public partial class ConstructionOverlayControl : UserControl
     private bool boundaryCandidateIsWeak;
 
     private string? transientHint;
+
+    private bool showShapeMeasurement = true;
 
     private int pointDraggingIndex = -1;
     private bool areDragGizmosVisible = true;
@@ -264,6 +272,48 @@ public partial class ConstructionOverlayControl : UserControl
         });
 
     public bool IsLineExtended(Guid lineId) => geometry.FindLine(lineId)?.IsExtended ?? true;
+
+    /// <summary>
+    /// Shows or hides the length label beside one line. Routed through <see cref="Edit"/>
+    /// so the toggle joins the undo stack like any other change to the construction.
+    /// </summary>
+    public void SetLineMeasurementVisible(Guid lineId, bool isVisible) =>
+        Edit(() =>
+        {
+            if (geometry.FindLine(lineId) is ConstructionLine line)
+                line.ShowMeasurement = isVisible;
+        });
+
+    public bool IsLineMeasurementVisible(Guid lineId) =>
+        geometry.FindLine(lineId)?.ShowMeasurement ?? false;
+
+    /// <summary>Shows or hides the radius/circumference/area label at one circle's centre.</summary>
+    public void SetCircleMeasurementVisible(Guid circleId, bool isVisible) =>
+        Edit(() =>
+        {
+            if (geometry.FindCircle(circleId) is ConstructionCircle circle)
+                circle.ShowMeasurement = isVisible;
+        });
+
+    public bool IsCircleMeasurementVisible(Guid circleId) =>
+        geometry.FindCircle(circleId)?.ShowMeasurement ?? false;
+
+    /// <summary>
+    /// Whether the derived shape's perimeter and area readout is shown. Unlike the
+    /// per-line and per-circle flags this is not part of the geometry, so it is not
+    /// undoable — it is a view setting on the construction as a whole.
+    /// </summary>
+    public bool ShowShapeMeasurement
+    {
+        get => showShapeMeasurement;
+        set
+        {
+            if (showShapeMeasurement == value) return;
+
+            showShapeMeasurement = value;
+            UpdateDisplay();
+        }
+    }
 
     /// <summary>
     /// Finds a point within <paramref name="tolerance"/> of <paramref name="position"/>.
@@ -467,7 +517,8 @@ public partial class ConstructionOverlayControl : UserControl
                 Id = line.Id,
                 StartPointId = line.StartPointId,
                 EndPointId = line.EndPointId,
-                IsExtended = line.IsExtended
+                IsExtended = line.IsExtended,
+                ShowMeasurement = line.ShowMeasurement
             });
         }
 
@@ -478,7 +529,8 @@ public partial class ConstructionOverlayControl : UserControl
                 Id = circle.Id,
                 PointAId = circle.PointAId,
                 PointBId = circle.PointBId,
-                PointCId = circle.PointCId
+                PointCId = circle.PointCId,
+                ShowMeasurement = circle.ShowMeasurement
             });
         }
 
@@ -512,10 +564,10 @@ public partial class ConstructionOverlayControl : UserControl
             geometry.AddPoint(point.Id, point.Position, point.Source, point.ParentAId, point.ParentBId);
 
         foreach (ConstructionLineDto line in snapshot.Lines)
-            geometry.AddLine(line.Id, line.StartPointId, line.EndPointId, line.IsExtended);
+            geometry.AddLine(line.Id, line.StartPointId, line.EndPointId, line.IsExtended, line.ShowMeasurement);
 
         foreach (ConstructionCircleDto circle in snapshot.Circles)
-            geometry.AddCircle(circle.Id, circle.PointAId, circle.PointBId, circle.PointCId);
+            geometry.AddCircle(circle.Id, circle.PointAId, circle.PointBId, circle.PointCId, circle.ShowMeasurement);
 
         Refresh();
     }
@@ -542,7 +594,8 @@ public partial class ConstructionOverlayControl : UserControl
             if (a.Lines[i].Id != b.Lines[i].Id ||
                 a.Lines[i].StartPointId != b.Lines[i].StartPointId ||
                 a.Lines[i].EndPointId != b.Lines[i].EndPointId ||
-                a.Lines[i].IsExtended != b.Lines[i].IsExtended)
+                a.Lines[i].IsExtended != b.Lines[i].IsExtended ||
+                a.Lines[i].ShowMeasurement != b.Lines[i].ShowMeasurement)
                 return false;
         }
 
@@ -551,7 +604,8 @@ public partial class ConstructionOverlayControl : UserControl
             if (a.Circles[i].Id != b.Circles[i].Id ||
                 a.Circles[i].PointAId != b.Circles[i].PointAId ||
                 a.Circles[i].PointBId != b.Circles[i].PointBId ||
-                a.Circles[i].PointCId != b.Circles[i].PointCId)
+                a.Circles[i].PointCId != b.Circles[i].PointCId ||
+                a.Circles[i].ShowMeasurement != b.Circles[i].ShowMeasurement)
                 return false;
         }
 
@@ -816,6 +870,7 @@ public partial class ConstructionOverlayControl : UserControl
         RenderDerivedCandidates();
         RenderGhostLine();
         RenderShape();
+        RenderMeasurementLabels();
         UpdateDisplay();
         ConstructionChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -1075,6 +1130,16 @@ public partial class ConstructionOverlayControl : UserControl
     {
         ContextMenu menu = new();
 
+        MenuItem showMeasurement = new()
+        {
+            Header = "Show Measurement",
+            IsCheckable = true,
+            IsChecked = IsCircleMeasurementVisible(circleId),
+            Tag = circleId,
+            ToolTip = "Label this circle with its radius, circumference, and area"
+        };
+        showMeasurement.Click += CircleMeasurementMenuItem_Click;
+
         MenuItem delete = new()
         {
             Header = "Delete Circle",
@@ -1083,6 +1148,7 @@ public partial class ConstructionOverlayControl : UserControl
         };
         delete.Click += CircleDeleteMenuItem_Click;
 
+        menu.Items.Add(showMeasurement);
         menu.Items.Add(delete);
         return menu;
     }
@@ -1101,6 +1167,16 @@ public partial class ConstructionOverlayControl : UserControl
         };
         extend.Click += LineExtendMenuItem_Click;
 
+        MenuItem showMeasurement = new()
+        {
+            Header = "Show Measurement",
+            IsCheckable = true,
+            IsChecked = line.ShowMeasurement,
+            Tag = line.Id,
+            ToolTip = "Label this line with the distance between its two points"
+        };
+        showMeasurement.Click += LineMeasurementMenuItem_Click;
+
         MenuItem delete = new()
         {
             Header = "Delete Line",
@@ -1110,6 +1186,7 @@ public partial class ConstructionOverlayControl : UserControl
         delete.Click += LineDeleteMenuItem_Click;
 
         menu.Items.Add(extend);
+        menu.Items.Add(showMeasurement);
         menu.Items.Add(delete);
         return menu;
     }
@@ -1431,6 +1508,7 @@ public partial class ConstructionOverlayControl : UserControl
         RenderCircles();
         RenderDerivedCandidates();
         RenderGhostLine();
+        RenderMeasurementLabels();
         ApplyBoundaryCandidateAppearance();
 
         MeasurementText.RenderTransformOrigin = new Point(0.5, 0.5);
@@ -1452,6 +1530,79 @@ public partial class ConstructionOverlayControl : UserControl
         PathGeometry pathGeometry = new();
         pathGeometry.Figures.Add(figure);
         ShapePath.Data = pathGeometry;
+    }
+
+    /// <summary>
+    /// Draws a readout beside every line and circle the user has opted into. Rebuilt
+    /// wholesale each refresh: the text depends on positions that move on every drag,
+    /// so patching individual labels would only duplicate the work of recreating them.
+    /// </summary>
+    private void RenderMeasurementLabels()
+    {
+        foreach (Border label in measurementLabels)
+            MeasurementCanvas.Children.Remove(label);
+        measurementLabels.Clear();
+
+        foreach (ConstructionLine line in geometry.Lines)
+        {
+            if (!line.ShowMeasurement) continue;
+
+            ConstructionPoint? start = geometry.FindPoint(line.StartPointId);
+            ConstructionPoint? end = geometry.FindPoint(line.EndPointId);
+            if (start is null || end is null) continue;
+
+            double length = GeometryMathHelper.Distance(start.Position, end.Position) * ScaleFactor;
+            Point midpoint = new(
+                (start.Position.X + end.Position.X) / 2,
+                (start.Position.Y + end.Position.Y) / 2);
+
+            AddMeasurementLabel($"{length:N2} {Units}", midpoint);
+        }
+
+        foreach ((Guid id, Point center, double radius) in geometry.GetResolvedCircles())
+        {
+            if (geometry.FindCircle(id)?.ShowMeasurement != true) continue;
+
+            AddMeasurementLabel(BuildCircleText(radius), center);
+        }
+    }
+
+    /// <summary>
+    /// Places a readout centred just above <paramref name="anchor"/>. The label is
+    /// measured up front because it is created fresh each refresh and so has no
+    /// ActualWidth to centre on yet.
+    /// </summary>
+    private void AddMeasurementLabel(string text, Point anchor)
+    {
+        Border label = new()
+        {
+            Padding = new Thickness(4, 1, 4, 1),
+            Background = new SolidColorBrush(Color.FromArgb(0x7F, 0, 0, 0)),
+            CornerRadius = new CornerRadius(3),
+
+            // Purely a readout: it must never intercept a click aimed at the geometry.
+            IsHitTestVisible = false,
+            Child = new TextBlock
+            {
+                Text = text,
+                FontWeight = FontWeights.Bold,
+                Foreground = Brushes.White,
+                TextAlignment = TextAlignment.Center
+            }
+        };
+
+        label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Size size = label.DesiredSize;
+
+        label.RenderTransformOrigin = new Point(0.5, 0.5);
+        label.RenderTransform = new ScaleTransform(visualScale, visualScale);
+
+        Canvas.SetLeft(label, anchor.X - (size.Width / 2));
+        Canvas.SetTop(label, anchor.Y - (size.Height / 2));
+
+        Panel.SetZIndex(label, TextZIndex);
+        measurementLabels.Add(label);
+        MeasurementCanvas.Children.Add(label);
     }
 
     #endregion
@@ -1481,6 +1632,11 @@ public partial class ConstructionOverlayControl : UserControl
 
         if (solvedRing.Count >= 3)
         {
+            // The readout is hidden but the label is not: it stays as a small anchor so
+            // its context menu is still reachable to switch the measurement back on.
+            if (!showShapeMeasurement)
+                return "Construction";
+
             double perimeter = GeometryMathHelper.PolygonPerimeter(solvedRing, isClosed: true) * ScaleFactor;
             double area = GeometryMathHelper.PolygonArea(solvedRing) * ScaleFactor * ScaleFactor;
             return MeasurementFormattingHelper.FormatPerimeterArea(perimeter, area, Units);
@@ -1697,6 +1853,20 @@ public partial class ConstructionOverlayControl : UserControl
         SetLineExtended(lineId, item.IsChecked);
     }
 
+    private void LineMeasurementMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem item || item.Tag is not Guid lineId) return;
+
+        SetLineMeasurementVisible(lineId, item.IsChecked);
+    }
+
+    private void CircleMeasurementMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem item || item.Tag is not Guid circleId) return;
+
+        SetCircleMeasurementVisible(circleId, item.IsChecked);
+    }
+
     private void LineDeleteMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem item || item.Tag is not Guid lineId) return;
@@ -1718,6 +1888,16 @@ public partial class ConstructionOverlayControl : UserControl
 
     private void CopyMeasurementMenuItem_Click(object sender, RoutedEventArgs e) =>
         Clipboard.SetText(ConstructionTextBlock.Text);
+
+    private void ShapeMeasurementMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem item) return;
+
+        ShowShapeMeasurement = item.IsChecked;
+    }
+
+    private void MeasurementContextMenu_Opened(object sender, RoutedEventArgs e) =>
+        ShowShapeMeasurementMenuItem.IsChecked = showShapeMeasurement;
 
     private void MeasurementButton_Click(object sender, RoutedEventArgs e)
     {
@@ -1743,6 +1923,7 @@ public partial class ConstructionOverlayControl : UserControl
         ConstructionGeometryDto dto = CaptureGeometry();
         dto.ScaleFactor = ScaleFactor;
         dto.Units = Units;
+        dto.ShowShapeMeasurement = showShapeMeasurement;
         return dto;
     }
 
@@ -1752,6 +1933,7 @@ public partial class ConstructionOverlayControl : UserControl
         // transaction machinery.
         scaleFactor = dto.ScaleFactor;
         units = dto.Units;
+        showShapeMeasurement = dto.ShowShapeMeasurement;
 
         RestoreGeometry(dto);
     }

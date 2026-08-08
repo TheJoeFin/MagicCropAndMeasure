@@ -75,6 +75,13 @@ public class ConstructionLine
     /// because derived corners are the whole point of the feature.
     /// </summary>
     public bool IsExtended { get; set; } = true;
+
+    /// <summary>
+    /// When true the line's length is drawn beside it. Off by default because a
+    /// construction is usually several lines and labelling every one at once buries the
+    /// shape they define.
+    /// </summary>
+    public bool ShowMeasurement { get; set; }
 }
 
 /// <summary>
@@ -88,6 +95,12 @@ public class ConstructionCircle
     public Guid PointAId { get; set; }
     public Guid PointBId { get; set; }
     public Guid PointCId { get; set; }
+
+    /// <summary>
+    /// When true the circle's radius, circumference, and area are drawn at its centre,
+    /// without having to select it first.
+    /// </summary>
+    public bool ShowMeasurement { get; set; }
 
     public IEnumerable<Guid> PointIds
     {
@@ -170,14 +183,15 @@ public class ConstructionGeometry
         return line.Id;
     }
 
-    public void AddLine(Guid id, Guid startPointId, Guid endPointId, bool isExtended)
+    public void AddLine(Guid id, Guid startPointId, Guid endPointId, bool isExtended, bool showMeasurement = false)
     {
         lines.Add(new ConstructionLine
         {
             Id = id,
             StartPointId = startPointId,
             EndPointId = endPointId,
-            IsExtended = isExtended
+            IsExtended = isExtended,
+            ShowMeasurement = showMeasurement
         });
     }
 
@@ -193,14 +207,15 @@ public class ConstructionGeometry
         return circle.Id;
     }
 
-    public void AddCircle(Guid id, Guid pointAId, Guid pointBId, Guid pointCId)
+    public void AddCircle(Guid id, Guid pointAId, Guid pointBId, Guid pointCId, bool showMeasurement = false)
     {
         circles.Add(new ConstructionCircle
         {
             Id = id,
             PointAId = pointAId,
             PointBId = pointBId,
-            PointCId = pointCId
+            PointCId = pointCId,
+            ShowMeasurement = showMeasurement
         });
     }
 
