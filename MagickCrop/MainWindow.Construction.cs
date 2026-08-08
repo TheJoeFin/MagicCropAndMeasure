@@ -1,5 +1,6 @@
 using MagickCrop.Controls;
 using MagickCrop.Helpers;
+using MagickCrop.Models.MeasurementControls;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,13 +23,15 @@ public partial class MainWindow
         Edge,
         Point,
         Line,
-        Boundary
+        Boundary,
+        Face
     }
 
     private const string ConstructionEdgeTag = "ConstructionEdge";
     private const string ConstructionPointTag = "ConstructionPoint";
     private const string ConstructionLineTag = "ConstructionLine";
     private const string ConstructionBoundaryTag = "ConstructionBoundary";
+    private const string ConstructionFaceTag = "ConstructionFace";
 
     /// <summary>Minimum drag distance before an edge drag counts as more than a click.</summary>
     private const double ConstructionDragThreshold = 5.0;
@@ -70,6 +73,7 @@ public partial class MainWindow
                     case ConstructionPointTag: return ConstructionTool.Point;
                     case ConstructionLineTag: return ConstructionTool.Line;
                     case ConstructionBoundaryTag: return ConstructionTool.Boundary;
+                    case ConstructionFaceTag: return ConstructionTool.Face;
                 }
             }
 
@@ -123,6 +127,7 @@ public partial class MainWindow
         overlay.RemoveControlRequested += ConstructionControl_RemoveControlRequested;
         overlay.ConstructionChanged += ConstructionOverlay_Changed;
         overlay.GeometryEdited += ConstructionOverlay_GeometryEdited;
+        overlay.FaceSelectionChanged += ConstructionOverlay_Changed;
     }
 
     private void UnwireConstructionOverlay(ConstructionOverlayControl overlay)
@@ -131,6 +136,7 @@ public partial class MainWindow
         overlay.RemoveControlRequested -= ConstructionControl_RemoveControlRequested;
         overlay.ConstructionChanged -= ConstructionOverlay_Changed;
         overlay.GeometryEdited -= ConstructionOverlay_GeometryEdited;
+        overlay.FaceSelectionChanged -= ConstructionOverlay_Changed;
     }
 
     /// <summary>
@@ -266,6 +272,12 @@ public partial class MainWindow
                 StartBoundaryProbe(canvasPoint);
                 e.Handled = true;
                 return true;
+
+            case ConstructionTool.Face:
+                // Selection happens on the face Path elements themselves, which set
+                // e.Handled before the click ever reaches here. Reaching this case means
+                // the click landed on empty space between cells, so there is nothing to do.
+                return false;
 
             default:
                 return false;
@@ -680,9 +692,13 @@ public partial class MainWindow
     {
         ConstructionTool tool = ActiveConstructionTool;
         bool connectOnSecondSelection = tool == ConstructionTool.Line;
+        bool faceSelectionActive = tool == ConstructionTool.Face;
 
         foreach (ConstructionOverlayControl overlay in constructionControls)
+        {
             overlay.ConnectOnSecondSelection = connectOnSecondSelection;
+            overlay.IsFaceSelectionModeActive = faceSelectionActive;
+        }
 
         // Reading the image for probing takes a moment, so it happens when the tool is
         // picked rather than partway through the first drag — and the copy is dropped
@@ -758,9 +774,31 @@ public partial class MainWindow
 
     private bool HasConstructedQuadrilateral => GetConstructedQuadrilateral() is not null;
 
+    /// <summary>
+    /// The constructed shape's solved ring in canvas coordinates, whatever its corner
+    /// count. Unlike <see cref="GetConstructedQuadrilateral"/> this is not restricted to
+    /// four corners — it backs the "Add as Polygon" action, which accepts any polygon.
+    /// </summary>
+    private bool TryGetConstructedRing(out IReadOnlyList<Point> ring)
+    {
+        foreach (ConstructionOverlayControl overlay in constructionControls)
+        {
+            if (overlay.TryGetRing(out ring))
+                return true;
+        }
+
+        ring = [];
+        return false;
+    }
+
+    private bool HasConstructedRing => TryGetConstructedRing(out _);
+
+    /// <summary>True when any overlay has one or more shapes picked with the Face tool.</summary>
+    private bool HasSelectedConstructionFaces => constructionControls.Any(overlay => overlay.HasSelectedFaces);
+
     private void UpdateConstructionApplyButtons()
     {
-        bool enabled = HasConstructedQuadrilateral;
+        bool quadrilateralEnabled = HasConstructedQuadrilateral;
 
         foreach (Button? button in new[]
         {
@@ -771,8 +809,11 @@ public partial class MainWindow
         })
         {
             if (button is not null)
-                button.IsEnabled = enabled;
+                button.IsEnabled = quadrilateralEnabled;
         }
+
+        if (ApplyConstructionToPolygonButton is not null)
+            ApplyConstructionToPolygonButton.IsEnabled = HasSelectedConstructionFaces || HasConstructedRing;
     }
 
     private void ApplyConstructionToTransform_Click(object sender, RoutedEventArgs e)
@@ -800,6 +841,51 @@ public partial class MainWindow
 
         ShowUnWarpControls();
         PositionUnWarpMarkers(quad);
+    }
+
+    /// <summary>
+    /// Turns the constructed shape into one or more polygon measurements. Shapes picked
+    /// with the Face tool are merged — clicking cells that border each other selects them
+    /// all, and this is what folds them into a single polygon per contiguous group. With
+    /// nothing individually selected it falls back to the whole solved shape, same as
+    /// before the Face tool existed.
+    /// </summary>
+    private void ApplyConstructionToPolygon_Click(object sender, RoutedEventArgs e)
+    {
+        List<List<Point>> rings = [];
+
+        foreach (ConstructionOverlayControl overlay in constructionControls)
+        {
+            if (overlay.TryGetSelectedFacesUnion(out List<List<Point>> unionRings))
+                rings.AddRange(unionRings);
+        }
+
+        if (rings.Count == 0 && TryGetConstructedRing(out IReadOnlyList<Point> ring) && ring.Count >= 3)
+            rings.Add(ConstructionSolver.NormalizeWinding(ring));
+
+        foreach (List<Point> polygonRing in rings)
+            AddPolygonMeasurementFromRing(polygonRing);
+
+        foreach (ConstructionOverlayControl overlay in constructionControls)
+            overlay.ClearFaceSelection();
+    }
+
+    private void AddPolygonMeasurementFromRing(List<Point> ring)
+    {
+        PolygonMeasurementControl control = new();
+
+        control.FromDto(new PolygonMeasurementControlDto
+        {
+            Vertices = ring,
+            ScaleFactor = ScaleInput.Value ?? 1.0,
+            Units = MeasurementUnits.Text,
+            IsClosed = true
+        });
+
+        control.MeasurementPointMouseDown += PolygonMeasurementPoint_MouseDown;
+        control.RemoveControlRequested += PolygonMeasurementControl_RemoveControlRequested;
+        polygonMeasurementTools.Add(control);
+        ShapeCanvas.Children.Add(control);
     }
 
     private void ClearConstruction_Click(object sender, RoutedEventArgs e)

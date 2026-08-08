@@ -34,8 +34,15 @@ public partial class ConstructionOverlayControl : UserControl
     private static readonly Brush LineBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0066FF"));
     private static readonly Brush SelectionBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF6600"));
 
+    // Nearly transparent rather than fully so WPF still hit-tests the fill — an idle face
+    // needs to be clickable before it has ever been hovered.
+    private static readonly Brush FaceIdleBrush = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
+    private static readonly Brush FaceHoverBrush = new SolidColorBrush(Color.FromArgb(70, 0, 150, 255));
+    private static readonly Brush FaceSelectedBrush = new SolidColorBrush(Color.FromArgb(110, 0, 200, 90));
+
     // Layering inside the shared canvas. Explicit z-indices avoid having to remove and
     // re-add elements to keep points clickable above the lines.
+    private const int FaceZIndex = -1;
     private const int ShapeZIndex = 0;
     private const int LineZIndex = 1;
     private const int HitZIndex = 2;
@@ -100,6 +107,15 @@ public partial class ConstructionOverlayControl : UserControl
 
     private IReadOnlyList<Point> solvedRing = [];
     private ConstructionSolver.SolveStatus solveStatus = ConstructionSolver.SolveStatus.NotEnoughLines;
+
+    // Every bounded cell the current lines carve out, not just the single outer shape
+    // above. Rebuilt alongside it on every refresh; the user clicks these to build an
+    // arbitrary polygon out of adjacent cells.
+    private List<ConstructionFace> faces = [];
+    private readonly List<Path> facePaths = [];
+    private readonly HashSet<int> selectedFaceIndices = [];
+    private int? hoveredFaceIndex;
+    private bool isFaceSelectionModeActive;
 
     public ConstructionOverlayControl()
     {
@@ -414,6 +430,61 @@ public partial class ConstructionOverlayControl : UserControl
 
         quadrilateral = new QuadrilateralDetector.DetectedQuadrilateral([.. ordered], area, 1.0);
         return true;
+    }
+
+    #endregion
+
+    #region Face selection
+
+    /// <summary>
+    /// Gates whether the bounded cells the arrangement carves out can be hovered and
+    /// clicked. Off by default so face paths never steal clicks meant for the point, line,
+    /// and boundary tools sharing this canvas.
+    /// </summary>
+    public bool IsFaceSelectionModeActive
+    {
+        get => isFaceSelectionModeActive;
+        set
+        {
+            isFaceSelectionModeActive = value;
+
+            foreach (Path path in facePaths)
+                path.IsHitTestVisible = value;
+
+            if (!value)
+            {
+                hoveredFaceIndex = null;
+                UpdateFaceVisuals();
+            }
+        }
+    }
+
+    /// <summary>Raised whenever a face is clicked, so the host can enable/disable its "Make Polygon" button.</summary>
+    public event EventHandler? FaceSelectionChanged;
+
+    public bool HasSelectedFaces => selectedFaceIndices.Count > 0;
+
+    public void ClearFaceSelection()
+    {
+        if (selectedFaceIndices.Count == 0) return;
+
+        selectedFaceIndices.Clear();
+        UpdateFaceVisuals();
+        FaceSelectionChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// The selected faces merged into one or more outer boundaries — more than one only
+    /// when the selection is split into separate clumps. Empty rather than a single empty
+    /// ring when nothing is selected.
+    /// </summary>
+    public bool TryGetSelectedFacesUnion(out List<List<Point>> rings)
+    {
+        rings = selectedFaceIndices.Count > 0
+            ? ConstructionFaceSolver.UnionFaces(faces, selectedFaceIndices)
+            : [];
+
+        return rings.Count > 0;
     }
 
     #endregion
@@ -864,12 +935,14 @@ public partial class ConstructionOverlayControl : UserControl
         geometry.RefreshDerivedPoints();
 
         Solve();
+        SolveFaces();
         RenderLines();
         RenderCircles();
         RenderPoints();
         RenderDerivedCandidates();
         RenderGhostLine();
         RenderShape();
+        RenderFaces();
         RenderMeasurementLabels();
         UpdateDisplay();
         ConstructionChanged?.Invoke(this, EventArgs.Empty);
@@ -883,6 +956,44 @@ public partial class ConstructionOverlayControl : UserControl
         ConstructionSolver.SolveResult result = ConstructionSolver.Solve(lines, positions);
         solveStatus = result.Status;
         solvedRing = result.Ring;
+    }
+
+    /// <summary>
+    /// Re-derives every bounded cell of the arrangement. Selection is kept across the
+    /// re-solve by matching on each face's centroid rather than its list index, since nothing
+    /// guarantees a face keeps the same index once the geometry it comes from changes.
+    /// </summary>
+    private void SolveFaces()
+    {
+        List<(Guid Id, Point Start, Point End)> lines = geometry.GetResolvedLines();
+        List<ConstructionFace> newFaces = lines.Count >= 3
+            ? ConstructionFaceSolver.SolveFaces(lines, GetConstructionBounds())
+            : [];
+
+        if (selectedFaceIndices.Count > 0)
+        {
+            HashSet<(long X, long Y)> selectedCentroids = [];
+            foreach (int index in selectedFaceIndices)
+            {
+                if (index < 0 || index >= faces.Count) continue;
+                selectedCentroids.Add(CentroidKey(faces[index].Ring));
+            }
+
+            selectedFaceIndices.Clear();
+            for (int i = 0; i < newFaces.Count; i++)
+            {
+                if (selectedCentroids.Contains(CentroidKey(newFaces[i].Ring)))
+                    selectedFaceIndices.Add(i);
+            }
+        }
+
+        faces = newFaces;
+    }
+
+    private static (long X, long Y) CentroidKey(IReadOnlyList<Point> ring)
+    {
+        Point centroid = ConstructionSolver.Centroid(ring);
+        return ((long)Math.Round(centroid.X), (long)Math.Round(centroid.Y));
     }
 
     /// <summary>
@@ -1508,6 +1619,7 @@ public partial class ConstructionOverlayControl : UserControl
         RenderCircles();
         RenderDerivedCandidates();
         RenderGhostLine();
+        RenderFaces();
         RenderMeasurementLabels();
         ApplyBoundaryCandidateAppearance();
 
@@ -1530,6 +1642,93 @@ public partial class ConstructionOverlayControl : UserControl
         PathGeometry pathGeometry = new();
         pathGeometry.Figures.Add(figure);
         ShapePath.Data = pathGeometry;
+    }
+
+    /// <summary>
+    /// Draws a hit-testable, mostly-invisible fill over every bounded cell so it can be
+    /// hovered and clicked. Rebuilt wholesale each refresh, same as the lines above — the
+    /// cells themselves can appear, disappear, split, or merge as the geometry changes, so
+    /// there is no single element per cell to patch in place.
+    /// </summary>
+    private void RenderFaces()
+    {
+        foreach (Path path in facePaths)
+            MeasurementCanvas.Children.Remove(path);
+        facePaths.Clear();
+
+        for (int i = 0; i < faces.Count; i++)
+        {
+            ConstructionFace face = faces[i];
+
+            PathFigure figure = new() { StartPoint = face.Ring[0], IsClosed = true, IsFilled = true };
+            for (int v = 1; v < face.Ring.Count; v++)
+                figure.Segments.Add(new LineSegment(face.Ring[v], true));
+
+            PathGeometry pathGeometry = new();
+            pathGeometry.Figures.Add(figure);
+
+            Path path = new()
+            {
+                Data = pathGeometry,
+                StrokeThickness = 1.5 * visualScale,
+                Cursor = Cursors.Hand,
+                Tag = i,
+                IsHitTestVisible = isFaceSelectionModeActive,
+                ToolTip = "Click to select this shape. Selecting shapes that border each other merges them into one polygon."
+            };
+
+            Panel.SetZIndex(path, FaceZIndex);
+            path.MouseEnter += FacePath_MouseEnter;
+            path.MouseLeave += FacePath_MouseLeave;
+            path.MouseDown += FacePath_MouseDown;
+
+            facePaths.Add(path);
+            MeasurementCanvas.Children.Add(path);
+        }
+
+        UpdateFaceVisuals();
+    }
+
+    private void FacePath_MouseEnter(object sender, MouseEventArgs e)
+    {
+        if (!isFaceSelectionModeActive || sender is not Path { Tag: int index }) return;
+
+        hoveredFaceIndex = index;
+        UpdateFaceVisuals();
+    }
+
+    private void FacePath_MouseLeave(object sender, MouseEventArgs e)
+    {
+        if (sender is not Path { Tag: int index }) return;
+
+        if (hoveredFaceIndex == index)
+            hoveredFaceIndex = null;
+
+        UpdateFaceVisuals();
+    }
+
+    private void FacePath_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (!isFaceSelectionModeActive || sender is not Path { Tag: int index }) return;
+
+        if (!selectedFaceIndices.Remove(index))
+            selectedFaceIndices.Add(index);
+
+        UpdateFaceVisuals();
+        FaceSelectionChanged?.Invoke(this, EventArgs.Empty);
+        e.Handled = true;
+    }
+
+    private void UpdateFaceVisuals()
+    {
+        for (int i = 0; i < facePaths.Count; i++)
+        {
+            bool isSelected = selectedFaceIndices.Contains(i);
+            bool isHovered = hoveredFaceIndex == i;
+
+            facePaths[i].Fill = isSelected ? FaceSelectedBrush : isHovered ? FaceHoverBrush : FaceIdleBrush;
+            facePaths[i].Stroke = isSelected ? SelectionBrush : Brushes.Transparent;
+        }
     }
 
     /// <summary>

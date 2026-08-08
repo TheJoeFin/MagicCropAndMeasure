@@ -1298,6 +1298,22 @@
                                                     </StackPanel>
                                                 </ToggleButton.Content>
                                             </ToggleButton>
+                                            <ToggleButton
+                                                x:Name="ConstructionFaceToggle"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Checked="ToolSelector_Checked"
+                                                Click="ToolSelector_Clicked"
+                                                Tag="ConstructionFace"
+                                                ToolTip="Click any shape bounded by the edge lines to select it — a triangle, a grid cell, anything the lines enclose. Click shapes that border each other to select them all, then use Make Polygon."
+                                                Unchecked="ToolSelector_Unchecked">
+                                                <ToggleButton.Content>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="TableCellsMerge24" />
+                                                        <TextBlock VerticalAlignment="Center" Text="Select Shapes" />
+                                                    </StackPanel>
+                                                </ToggleButton.Content>
+                                            </ToggleButton>
                                             <!--  Shown while the image is being read for probing  -->
                                             <wpfui:ProgressRing
                                                 x:Name="ConstructionBoundaryProgressRing"
@@ -1315,7 +1331,7 @@
                                                 FontSize="11"
                                                 FontStyle="Italic"
                                                 Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
-                                                Text="Corners are where the edge lines cross. Click a point to select it, then drag to reshape. Select two points and click the faint line to connect them, or a third point for the circle through all three. Faint rings mark line crossings and circle centres — click one to keep it as a point. Find Edge Point drags a short line across a boundary and drops the point on the transition. Select a line or circle and press Delete to remove it — its points stay."
+                                                Text="Corners are where the edge lines cross. Click a point to select it, then drag to reshape. Select two points and click the faint line to connect them, or a third point for the circle through all three. Faint rings mark line crossings and circle centres — click one to keep it as a point. Find Edge Point drags a short line across a boundary and drops the point on the transition. Select a line or circle and press Delete to remove it — its points stay. Select Shapes lets you click any bounded region the lines enclose — a triangle, a grid cell, any of them — and merges shapes that border each other into one polygon with Make Polygon."
                                                 TextWrapping="Wrap"
                                                 Visibility="Collapsed" />
 
@@ -1346,6 +1362,15 @@
                                                 Content="Use for Un-Warp"
                                                 IsEnabled="False"
                                                 ToolTip="Move the un-warp markers to the constructed corners" />
+                                            <wpfui:Button
+                                                x:Name="ApplyConstructionToPolygonButton"
+                                                Width="150"
+                                                Margin="0,4"
+                                                Appearance="Secondary"
+                                                Click="ApplyConstructionToPolygon_Click"
+                                                Content="Make Polygon"
+                                                IsEnabled="False"
+                                                ToolTip="Add the selected shapes as one polygon measurement, merging any that border each other. With nothing selected, adds the whole constructed shape instead." />
                                             <wpfui:Button
                                                 x:Name="ClearConstructionButton"
                                                 Width="150"
