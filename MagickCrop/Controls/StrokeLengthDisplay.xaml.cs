@@ -1,7 +1,9 @@
-﻿using MagickCrop.Models;
+﻿using MagickCrop.Helpers;
+using MagickCrop.Models;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Ink;
+using System.Windows.Media;
 
 namespace MagickCrop.Controls;
 
@@ -52,6 +54,20 @@ public partial class StrokeLengthDisplay : UserControl
         _parentCanvas.Children.Remove(this);
         _inkCanvas.Strokes.Remove(_stroke);
         RemoveControlRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    private async void ChangeColorMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (Application.Current.MainWindow is not MainWindow mainWindow)
+            return;
+
+        Color? picked = await ColorPickerDialog.PickColorAsync(mainWindow, _stroke.DrawingAttributes.Color, "Change Stroke Color");
+        if (picked is not Color color)
+            return;
+
+        DrawingAttributes attributes = _stroke.DrawingAttributes.Clone();
+        attributes.Color = color;
+        _stroke.DrawingAttributes = attributes;
     }
 
     private void MeasurementButton_Click(object sender, RoutedEventArgs e)

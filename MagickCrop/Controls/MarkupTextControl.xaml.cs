@@ -1,3 +1,4 @@
+using MagickCrop.Helpers;
 using MagickCrop.Models.MeasurementControls;
 using System.Windows;
 using System.Windows.Controls;
@@ -195,6 +196,16 @@ public partial class MarkupTextControl : UserControl
     private void RemoveMenuItem_Click(object sender, RoutedEventArgs e)
     {
         RemoveControlRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    private async void ChangeColorMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (Application.Current.MainWindow is not MainWindow mainWindow)
+            return;
+
+        Color? picked = await ColorPickerDialog.PickColorAsync(mainWindow, textColor, "Change Text Color");
+        if (picked is Color color)
+            TextColor = color;
     }
 
     public MarkupTextDto ToDto()

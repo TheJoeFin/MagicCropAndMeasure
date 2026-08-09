@@ -28,4 +28,9 @@ public class CircleMeasurementControlDto : MeasurementControlDto
     /// Units of measurement (e.g., "pixels", "mm", "in")
     /// </summary>
     public string Units { get; set; } = "pixels";
+
+    /// <summary>
+    /// Color of the circle outline and its point handles
+    /// </summary>
+    public string StrokeColor { get; set; } = "#0066FF";
 }

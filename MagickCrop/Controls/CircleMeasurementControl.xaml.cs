@@ -1,7 +1,9 @@
+using MagickCrop.Helpers;
 using MagickCrop.Models.MeasurementControls;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace MagickCrop.Controls;
 
@@ -40,10 +42,30 @@ public partial class CircleMeasurementControl : UserControl
     public delegate void RemoveControlRequestedEventHandler(object sender, EventArgs e);
     public event RemoveControlRequestedEventHandler? RemoveControlRequested;
 
+    private Color strokeColor = (Color)ColorConverter.ConvertFromString("#0066FF");
+    public Color StrokeColor
+    {
+        get => strokeColor;
+        set
+        {
+            strokeColor = value;
+            UpdateColors();
+        }
+    }
+
     public CircleMeasurementControl()
     {
         InitializeComponent();
         UpdatePositions();
+    }
+
+    private void UpdateColors()
+    {
+        MeasurementCircle.Stroke = new SolidColorBrush(strokeColor);
+        MeasurementCircle.Fill = new SolidColorBrush(Color.FromArgb(0x20, strokeColor.R, strokeColor.G, strokeColor.B));
+        SolidColorBrush pointBrush = new(strokeColor);
+        CenterPoint.Fill = pointBrush;
+        EdgePoint.Fill = pointBrush;
     }
 
     public bool IsDragGizmoVisible
@@ -182,6 +204,16 @@ public partial class CircleMeasurementControl : UserControl
         RemoveControlRequested?.Invoke(this, EventArgs.Empty);
     }
 
+    private async void ChangeColorMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (Application.Current.MainWindow is not MainWindow mainWindow)
+            return;
+
+        Color? picked = await ColorPickerDialog.PickColorAsync(mainWindow, strokeColor, "Change Measurement Color");
+        if (picked is Color color)
+            StrokeColor = color;
+    }
+
     public CircleMeasurementControlDto ToDto()
     {
         return new CircleMeasurementControlDto
@@ -189,7 +221,8 @@ public partial class CircleMeasurementControl : UserControl
             Center = center,
             EdgePoint = edgePoint,
             ScaleFactor = ScaleFactor,
-            Units = Units
+            Units = Units,
+            StrokeColor = strokeColor.ToString()
         };
     }
 
@@ -202,6 +235,11 @@ public partial class CircleMeasurementControl : UserControl
         edgePoint = dto.EdgePoint;
         ScaleFactor = dto.ScaleFactor; // This will use the property setter
         Units = dto.Units;             // This will use the property setter
+
+        try { strokeColor = (Color)ColorConverter.ConvertFromString(dto.StrokeColor); }
+        catch { strokeColor = (Color)ColorConverter.ConvertFromString("#0066FF"); }
+        UpdateColors();
+
         UpdatePositions();
     }
 }

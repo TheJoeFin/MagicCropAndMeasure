@@ -50,6 +50,10 @@
                         Header="Copy Measurement"
                         ToolTip="Copy the perimeter and area values" />
                     <MenuItem
+                        Click="ChangeColorMenuItem_Click"
+                        Header="Change Color"
+                        ToolTip="Change the color of this construction" />
+                    <MenuItem
                         Click="RemoveMeasurementMenuItem_Click"
                         Header="Remove Construction"
                         ToolTip="Delete this construction and all its points and lines" />

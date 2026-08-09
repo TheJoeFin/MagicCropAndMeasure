@@ -46,9 +46,36 @@ public partial class PolygonMeasurementControl : UserControl
     public delegate void RemoveControlRequestedEventHandler(object sender, EventArgs e);
     public event RemoveControlRequestedEventHandler? RemoveControlRequested;
 
+    private Color strokeColor = (Color)ColorConverter.ConvertFromString("#0066FF");
+    public Color StrokeColor
+    {
+        get => strokeColor;
+        set
+        {
+            strokeColor = value;
+            UpdateColors();
+        }
+    }
+
     public PolygonMeasurementControl()
     {
         InitializeComponent();
+    }
+
+    private void UpdateColors()
+    {
+        SolidColorBrush brush = new(strokeColor);
+        PolygonPath.Stroke = brush;
+        PolygonPath.Fill = new SolidColorBrush(Color.FromArgb(0x20, strokeColor.R, strokeColor.G, strokeColor.B));
+        PreviewLine.Stroke = brush;
+
+        foreach (Ellipse point in vertexPoints)
+            point.Fill = new SolidColorBrush(strokeColor);
+
+        // The first vertex's "click to close" highlight is a fixed state indicator, not
+        // part of the shape's identity color, so it is reapplied on top.
+        if (!isClosed && vertices.Count >= 3)
+            UpdateFirstVertexAppearance();
     }
 
     public bool IsDragGizmoVisible
@@ -170,7 +197,7 @@ public partial class PolygonMeasurementControl : UserControl
         {
             Width = areEndpointCapsVisible ? 6 : 12,
             Height = areEndpointCapsVisible ? 6 : 12,
-            Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0066FF")),
+            Fill = new SolidColorBrush(strokeColor),
             Stroke = Brushes.White,
             StrokeThickness = 1,
             Opacity = 0.8,
@@ -249,7 +276,7 @@ public partial class PolygonMeasurementControl : UserControl
             // Reset to normal appearance
             firstVertex.Width = 12;
             firstVertex.Height = 12;
-            firstVertex.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0066FF"));
+            firstVertex.Fill = new SolidColorBrush(strokeColor);
             firstVertex.StrokeThickness = 1;
 
             // Reposition after size change
@@ -376,6 +403,16 @@ public partial class PolygonMeasurementControl : UserControl
         RemoveControlRequested?.Invoke(this, EventArgs.Empty);
     }
 
+    private async void ChangeColorMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (Application.Current.MainWindow is not MainWindow mainWindow)
+            return;
+
+        Color? picked = await ColorPickerDialog.PickColorAsync(mainWindow, strokeColor, "Change Measurement Color");
+        if (picked is Color color)
+            StrokeColor = color;
+    }
+
     public PolygonMeasurementControlDto ToDto()
     {
         return new PolygonMeasurementControlDto
@@ -383,7 +420,8 @@ public partial class PolygonMeasurementControl : UserControl
             Vertices = [.. vertices],
             ScaleFactor = ScaleFactor,
             Units = Units,
-            IsClosed = isClosed
+            IsClosed = isClosed,
+            StrokeColor = strokeColor.ToString()
         };
     }
 
@@ -405,6 +443,9 @@ public partial class PolygonMeasurementControl : UserControl
         ScaleFactor = dto.ScaleFactor;
         Units = dto.Units;
 
+        try { strokeColor = (Color)ColorConverter.ConvertFromString(dto.StrokeColor); }
+        catch { strokeColor = (Color)ColorConverter.ConvertFromString("#0066FF"); }
+
         // Recreate vertex points
         for (int i = 0; i < vertices.Count; i++)
         {
@@ -418,6 +459,7 @@ public partial class PolygonMeasurementControl : UserControl
         }
 
         UpdatePolygonPath();
+        UpdateColors();
         UpdateDisplay();
 
         System.Diagnostics.Debug.WriteLine($"FromDto: Polygon restoration complete");

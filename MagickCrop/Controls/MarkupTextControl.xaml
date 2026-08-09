@@ -8,6 +8,7 @@
     mc:Ignorable="d">
     <UserControl.ContextMenu>
         <ContextMenu>
+            <MenuItem Click="ChangeColorMenuItem_Click" Header="Change Color" />
             <MenuItem Click="RemoveMenuItem_Click" Header="Remove" />
         </ContextMenu>
     </UserControl.ContextMenu>

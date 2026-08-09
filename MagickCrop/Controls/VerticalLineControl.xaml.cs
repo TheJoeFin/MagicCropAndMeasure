@@ -1,3 +1,4 @@
+using MagickCrop.Helpers;
 using MagickCrop.Models.MeasurementControls;
 using System.Windows;
 using System.Windows.Controls;
@@ -73,32 +74,15 @@ public partial class VerticalLineControl : UserControl
 
     private async void ChangeColorMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        // Create a simple color picker dialog
-        ContentDialog colorDialog = new()
-        {
-            Title = "Select Line Color",
-            CloseButtonText = "Cancel",
-            PrimaryButtonText = "Apply"
-        };
-
-        // ColorPicker colorPicker = new();
-        // if (VerticalLine.Stroke is SolidColorBrush brush)
-        // {
-        //     colorPicker.Color = brush.Color;
-        // }
-        // 
-        // colorDialog.Content = colorPicker;
-
-        // Show dialog
         if (Application.Current.MainWindow is not MainWindow mainWindow)
             return;
 
-        colorDialog.DialogHost = mainWindow.Presenter;
-        ContentDialogResult result = await colorDialog.ShowAsync();
-        if (result == ContentDialogResult.Primary)
-        {
-            // VerticalLine.Stroke = new SolidColorBrush(colorPicker.Color);
-        }
+        Color currentColor = (VerticalLine.Stroke as SolidColorBrush)?.Color
+            ?? (Color)ColorConverter.ConvertFromString("#0066FF");
+
+        Color? picked = await ColorPickerDialog.PickColorAsync(mainWindow, currentColor, "Change Line Color");
+        if (picked is Color color)
+            VerticalLine.Stroke = new SolidColorBrush(color);
     }
 
     private async void ChangeThicknessMenuItem_Click(object sender, RoutedEventArgs e)

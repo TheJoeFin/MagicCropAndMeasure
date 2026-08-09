@@ -56,6 +56,10 @@
                         Header="Set Real World Length"
                         ToolTip="Set a real-world length for this line" />
                     <MenuItem
+                        Click="ChangeColorMenuItem_Click"
+                        Header="Change Color"
+                        ToolTip="Change the color of this measurement" />
+                    <MenuItem
                         Click="RemoveMeasurementMenuItem_Click"
                         Header="Remove Measurement"
                         ToolTip="Delete this measurement" />

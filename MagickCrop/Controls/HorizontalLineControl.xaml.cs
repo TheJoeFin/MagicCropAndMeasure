@@ -1,3 +1,4 @@
+using MagickCrop.Helpers;
 using MagickCrop.Models.MeasurementControls;
 using System.Windows;
 using System.Windows.Controls;
@@ -73,32 +74,15 @@ public partial class HorizontalLineControl : UserControl
 
     private async void ChangeColorMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        // Create a simple color picker dialog
-        ContentDialog colorDialog = new()
-        {
-            Title = "Select Line Color",
-            CloseButtonText = "Cancel",
-            PrimaryButtonText = "Apply"
-        };
-
-        // ColorPicker colorPicker = new();
-        // if (HorizontalLine.Stroke is SolidColorBrush brush)
-        // {
-        //     colorPicker.Color = brush.Color;
-        // }
-        // 
-        // colorDialog.Content = colorPicker;
         if (Application.Current.MainWindow is not MainWindow mainWindow)
             return;
 
-        colorDialog.DialogHost = mainWindow.Presenter;
+        Color currentColor = (HorizontalLine.Stroke as SolidColorBrush)?.Color
+            ?? (Color)ColorConverter.ConvertFromString("#0066FF");
 
-        // Show dialog
-        ContentDialogResult result = await colorDialog.ShowAsync();
-        if (result == ContentDialogResult.Primary)
-        {
-            // HorizontalLine.Stroke = new SolidColorBrush(colorPicker.Color);
-        }
+        Color? picked = await ColorPickerDialog.PickColorAsync(mainWindow, currentColor, "Change Line Color");
+        if (picked is Color color)
+            HorizontalLine.Stroke = new SolidColorBrush(color);
     }
 
     private async void ChangeThicknessMenuItem_Click(object sender, RoutedEventArgs e)

@@ -30,8 +30,11 @@ public partial class ConstructionOverlayControl : UserControl
     /// <summary>How much bigger a selected point handle draws than an idle one.</summary>
     private const double SelectedPointScale = 1.5;
 
-    private static readonly Brush PointBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0066FF"));
-    private static readonly Brush LineBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0066FF"));
+    // Mutable per-instance so each construction overlay can have its own color. Selection
+    // and face-state brushes below stay fixed/static — they're state indicators, not the
+    // shape's identity color.
+    private Brush PointBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0066FF"));
+    private Brush LineBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0066FF"));
     private static readonly Brush SelectionBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF6600"));
 
     // Nearly transparent rather than fully so WPF still hit-tests the fill — an idle face
@@ -149,6 +152,27 @@ public partial class ConstructionOverlayControl : UserControl
         {
             units = value;
             UpdateDisplay();
+        }
+    }
+
+    private Color strokeColor = (Color)ColorConverter.ConvertFromString("#0066FF");
+
+    /// <summary>
+    /// The construction's identity color — applied to its points, lines, circles, and the
+    /// derived shape's outline/fill. One color for the whole construction, since it is one
+    /// context menu and one "thing" to the user, even though it is many visual elements.
+    /// </summary>
+    public Color StrokeColor
+    {
+        get => strokeColor;
+        set
+        {
+            strokeColor = value;
+            PointBrush = new SolidColorBrush(strokeColor);
+            LineBrush = new SolidColorBrush(strokeColor);
+            ShapePath.Stroke = new SolidColorBrush(strokeColor);
+            ShapePath.Fill = new SolidColorBrush(Color.FromArgb(0x26, strokeColor.R, strokeColor.G, strokeColor.B));
+            Refresh();
         }
     }
 
@@ -2111,6 +2135,16 @@ public partial class ConstructionOverlayControl : UserControl
     private void RemoveMeasurementMenuItem_Click(object sender, RoutedEventArgs e) =>
         RemoveControlRequested?.Invoke(this, EventArgs.Empty);
 
+    private async void ChangeColorMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (Application.Current.MainWindow is not MainWindow mainWindow)
+            return;
+
+        Color? picked = await ColorPickerDialog.PickColorAsync(mainWindow, strokeColor, "Change Construction Color");
+        if (picked is Color color)
+            StrokeColor = color;
+    }
+
     #endregion
 
     #region Persistence
@@ -2123,6 +2157,7 @@ public partial class ConstructionOverlayControl : UserControl
         dto.ScaleFactor = ScaleFactor;
         dto.Units = Units;
         dto.ShowShapeMeasurement = showShapeMeasurement;
+        dto.StrokeColor = strokeColor.ToString();
         return dto;
     }
 
@@ -2133,6 +2168,15 @@ public partial class ConstructionOverlayControl : UserControl
         scaleFactor = dto.ScaleFactor;
         units = dto.Units;
         showShapeMeasurement = dto.ShowShapeMeasurement;
+
+        // Absent from projects saved before this existed — leave the construction in its
+        // just-constructed appearance (blue points/lines, orange shape) rather than
+        // forcing every old project's shape from orange to blue.
+        if (!string.IsNullOrEmpty(dto.StrokeColor))
+        {
+            try { StrokeColor = (Color)ColorConverter.ConvertFromString(dto.StrokeColor); }
+            catch { /* Keep the just-constructed default on a corrupt value. */ }
+        }
 
         RestoreGeometry(dto);
     }

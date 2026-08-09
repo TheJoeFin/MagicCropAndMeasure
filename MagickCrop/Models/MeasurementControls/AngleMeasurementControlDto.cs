@@ -26,4 +26,9 @@ public class AngleMeasurementControlDto : MeasurementControlDto
     /// Third point position of the angle measurement
     /// </summary>
     public Point Point3Position { get; set; }
+
+    /// <summary>
+    /// Color of the angle's legs, arc, and point handles
+    /// </summary>
+    public string StrokeColor { get; set; } = "#0066FF";
 }

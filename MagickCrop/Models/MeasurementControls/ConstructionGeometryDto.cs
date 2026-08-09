@@ -35,6 +35,13 @@ public class ConstructionGeometryDto : MeasurementControlDto
     /// so projects saved before the toggle existed keep the readout they had.
     /// </summary>
     public bool ShowShapeMeasurement { get; set; } = true;
+
+    /// <summary>
+    /// Color of the construction's points, lines, and derived shape. Null for projects
+    /// saved before this existed, which keep their original blue/orange appearance rather
+    /// than being forced onto a single color.
+    /// </summary>
+    public string? StrokeColor { get; set; }
 }
 
 /// <summary>
