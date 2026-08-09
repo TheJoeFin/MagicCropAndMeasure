@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.20348.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <Platforms>x64;ARM64</Platforms>
+    <!--
+      Default to the host CPU architecture when no Platform is specified (e.g. plain
+      `dotnet test`/`dotnet build`, or a solution build via the "Any CPU" row) so this
+      resolves correctly on both x64 and arm64 dev machines. Pass -p:Platform=x64 or
+      -p:Platform=ARM64 explicitly to override.
+    -->
+    <Platform Condition="('$(Platform)' == '' Or '$(Platform)' == 'AnyCPU' Or '$(Platform)' == 'Any CPU') And '$(PROCESSOR_ARCHITECTURE)' == 'ARM64'">ARM64</Platform>
+    <Platform Condition="'$(Platform)' == '' Or '$(Platform)' == 'AnyCPU' Or '$(Platform)' == 'Any CPU'">x64</Platform>
+    <PlatformTarget>$(Platform)</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MSTest" Version="4.0.2" />
+    <PackageReference Include="Moq" Version="4.20.72" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Forces MagickCrop to build for the same architecture as this test project,
+         regardless of what Platform the outer build (e.g. a solution build) passes in. -->
+    <ProjectReference Include="..\MagickCrop\MagickCrop.csproj">
+      <SetPlatform>Platform=$(Platform)</SetPlatform>
+    </ProjectReference>
+  </ItemGroup>
+
+</Project>
