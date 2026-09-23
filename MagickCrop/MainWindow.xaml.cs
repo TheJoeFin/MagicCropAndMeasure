@@ -1401,6 +1401,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         Dictionary<UIElement, Visibility> visibilityBeforeRender = [];
         void SetVisibilityForRender(UIElement element, Visibility visibility)
         {
+            if (visibility == Visibility.Hidden && element.Visibility == Visibility.Collapsed)
+                return;
+
             visibilityBeforeRender.TryAdd(element, element.Visibility);
             element.Visibility = visibility;
         }
@@ -1412,19 +1415,23 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         double originalTranslateX = canvasTranslate.X;
         double originalTranslateY = canvasTranslate.Y;
 
+        // Excluded layers are Hidden rather than Collapsed so the layout does not change
+        // during the render. ImageGrid has a fixed width and ImageResizeGrip occupies an
+        // auto-sized column beside MainImage; collapsing it lets MainImage grow, which
+        // shifts the image relative to the overlays.
         try
         {
             foreach (UIElement element in ShapeCanvas.Children)
             {
                 SetVisibilityForRender(
                     element,
-                    includedElements.Contains(element) ? Visibility.Visible : Visibility.Collapsed);
+                    includedElements.Contains(element) ? Visibility.Visible : Visibility.Hidden);
             }
 
-            SetVisibilityForRender(DrawingCanvas, includeMeasurements ? Visibility.Visible : Visibility.Collapsed);
-            SetVisibilityForRender(MarkupCanvas, includeMarkup ? Visibility.Visible : Visibility.Collapsed);
-            SetVisibilityForRender(EraseMaskCanvas, Visibility.Collapsed);
-            SetVisibilityForRender(ImageResizeGrip, Visibility.Collapsed);
+            SetVisibilityForRender(DrawingCanvas, includeMeasurements ? Visibility.Visible : Visibility.Hidden);
+            SetVisibilityForRender(MarkupCanvas, includeMarkup ? Visibility.Visible : Visibility.Hidden);
+            SetVisibilityForRender(EraseMaskCanvas, Visibility.Hidden);
+            SetVisibilityForRender(ImageResizeGrip, Visibility.Hidden);
 
             foreach (MarkupShapeControl control in markupShapeControls)
             {
@@ -1439,18 +1446,39 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
             ShapeCanvas.UpdateLayout();
 
+            // Draw each visible layer individually, positioned relative to MainImage.
+            // A single VisualBrush over ShapeCanvas maps its viewbox against the canvas's
+            // content bounds (which include the canvas margin and any overlays outside the
+            // image), shifting the export and misaligning overlays with the image.
+            double scaleX = imageWidth / MainImage.ActualWidth;
+            double scaleY = imageHeight / MainImage.ActualHeight;
+
+            IEnumerable<UIElement> layers = ShapeCanvas.Children
+                .Cast<UIElement>()
+                .Select((element, index) => (element, index))
+                .OrderBy(item => Panel.GetZIndex(item.element))
+                .ThenBy(item => item.index)
+                .Select(item => item.element)
+                .Where(element => element.Visibility == Visibility.Visible);
+
             DrawingVisual visual = new();
             using (DrawingContext context = visual.RenderOpen())
             {
-                VisualBrush imageBrush = new(ShapeCanvas)
+                foreach (UIElement layer in layers)
                 {
-                    Stretch = Stretch.Fill,
-                    Viewbox = new Rect(0, 0, MainImage.ActualWidth, MainImage.ActualHeight),
-                    ViewboxUnits = BrushMappingMode.Absolute,
-                    Viewport = new Rect(0, 0, imageWidth, imageHeight),
-                    ViewportUnits = BrushMappingMode.Absolute
-                };
-                context.DrawRectangle(imageBrush, null, new Rect(0, 0, imageWidth, imageHeight));
+                    Rect localBounds = VisualTreeHelper.GetDescendantBounds(layer);
+                    if (localBounds.IsEmpty || localBounds.Width <= 0 || localBounds.Height <= 0)
+                        continue;
+
+                    Rect imageBounds = layer.TransformToVisual(MainImage).TransformBounds(localBounds);
+                    Rect targetBounds = new(
+                        imageBounds.X * scaleX,
+                        imageBounds.Y * scaleY,
+                        imageBounds.Width * scaleX,
+                        imageBounds.Height * scaleY);
+
+                    context.DrawRectangle(new VisualBrush(layer) { Stretch = Stretch.Fill }, null, targetBounds);
+                }
             }
 
             RenderTargetBitmap renderedImage = new(
