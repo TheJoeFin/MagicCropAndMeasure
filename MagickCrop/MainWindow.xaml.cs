@@ -309,10 +309,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             // do nothing this is just running unpackaged.
         }
 
-        AspectRatioComboBox.ItemsSource = AspectRatioItem.GetStandardAspectRatios();
-        AspectRatioComboBox.SelectedIndex = 0;
-        selectedAspectRatio = AspectRatioComboBox.SelectedItem as AspectRatioItem;
-        AspectRatioTransformPreview.RatioItem = selectedAspectRatio;
+        InitializeAspectRatioSelection();
 
         InitializeProjectManager();
 
@@ -958,16 +955,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             else
                 return null;
         }
-        else if (selectedAspectRatio.AspectRatioEnum == AspectRatio.Custom)
-        {
-            if (CustomHeight.Value is double height
-                && CustomWidth.Value is double width
-                && height != 0
-                && width != 0)
-                aspectRatio = height / width;
-            else
-                return null;
-        }
+        if (!double.IsFinite(aspectRatio) || aspectRatio <= 0)
+            return null;
 
         Rect? visualContentBounds = ReflectionHelper.GetPrivatePropertyValue(lines, "VisualContentBounds") as Rect?;
         Rect finalSize = new(0, 0, MainImage.ActualWidth, MainImage.ActualHeight);
@@ -1417,6 +1406,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         }
 
         Dictionary<MarkupShapeControl, bool> markupGizmoVisibility = [];
+        Dictionary<ConstructionOverlayControl, bool> constructionGizmoVisibility = [];
         StopCanvasTranslateAnimation();
         double originalScaleX = canvasScale.ScaleX;
         double originalScaleY = canvasScale.ScaleY;
@@ -1444,6 +1434,12 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             foreach (MarkupShapeControl control in markupShapeControls)
             {
                 markupGizmoVisibility[control] = control.IsDragGizmoVisible;
+                control.IsDragGizmoVisible = false;
+            }
+
+            foreach (ConstructionOverlayControl control in constructionControls)
+            {
+                constructionGizmoVisibility[control] = control.IsDragGizmoVisible;
                 control.IsDragGizmoVisible = false;
             }
 
@@ -1505,6 +1501,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 element.Visibility = visibility;
 
             foreach ((MarkupShapeControl control, bool visible) in markupGizmoVisibility)
+                control.IsDragGizmoVisible = visible;
+
+            foreach ((ConstructionOverlayControl control, bool visible) in constructionGizmoVisibility)
                 control.IsDragGizmoVisible = visible;
 
             canvasScale.ScaleX = originalScaleX;
@@ -2293,50 +2292,93 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         }
     }
 
-    private void AspectRatioComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void InitializeAspectRatioSelection()
     {
-        if (sender is not ComboBox comboBox || comboBox.SelectedItem is not AspectRatioItem item || !IsLoaded)
-            return;
+        AspectRatioItem? defaultRatio = GetAvailableAspectRatios()
+            .FirstOrDefault(item => item.Id == appSettings.DefaultAspectRatioId);
 
-        selectedAspectRatio = item;
-
-        if (item.AspectRatioEnum == AspectRatio.Custom)
-        {
-            CustomButtonGrid.Visibility = Visibility.Visible;
-            UpdateCustomAspectRatioPreview();
-            return;
-        }
-
-        CustomButtonGrid.Visibility = Visibility.Collapsed;
-
-        if (item.AspectRatioEnum == AspectRatio.Original)
-        {
-            UpdateOriginalAspectRatioPreview();
-            return;
-        }
-
-        AspectRatioTransformPreview.RatioItem = item;
+        SetSelectedAspectRatio(defaultRatio);
     }
 
-    private void CustomWidth_ValueChanged(object sender, RoutedEventArgs e)
+    private IEnumerable<AspectRatioItem> GetAvailableAspectRatios() =>
+        AspectRatioItem.GetStandardAspectRatios().Concat(appSettings.CustomAspectRatios);
+
+    private async void AspectRatioPickerButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!IsLoaded)
+        await ChooseAspectRatioAsync();
+    }
+
+    private async Task ChooseAspectRatioAsync()
+    {
+        double? originalRatio = ViewModel.OriginalImageSize.Width > 0
+            ? ViewModel.OriginalImageSize.Height / ViewModel.OriginalImageSize.Width
+            : null;
+
+        AspectRatioPicker picker = new(
+            AspectRatioItem.GetStandardAspectRatios(),
+            appSettings.CustomAspectRatios,
+            selectedAspectRatio,
+            appSettings.DefaultAspectRatioId,
+            originalRatio);
+
+        ContentDialog dialog = new()
+        {
+            Title = "Choose Output Aspect Ratio",
+            Content = picker,
+            PrimaryButtonText = "Use this ratio",
+            CloseButtonText = "Cancel",
+            IsPrimaryButtonEnabled = picker.SelectedRatio is not null,
+            DialogHost = Presenter,
+        };
+
+        picker.SelectedRatioChanged += (_, _) =>
+            dialog.IsPrimaryButtonEnabled = picker.SelectedRatio is not null;
+
+        ContentDialogResult result = await dialog.ShowAsync();
+        if (result != ContentDialogResult.Primary || picker.SelectedRatio is null)
             return;
 
-        double aspectRatio = double.NaN;
+        appSettings.CustomAspectRatios = picker.SavedRatios.ToList();
 
-        if (CustomHeight.Value is double height && CustomWidth.Value is double width && height != 0 && width != 0)
-            aspectRatio = height / width;
+        switch (picker.DefaultChoice)
+        {
+            case AspectRatioDefaultChoice.UseSelected:
+                appSettings.DefaultAspectRatioId = picker.SelectedRatio.Id;
+                break;
+            case AspectRatioDefaultChoice.AskEveryTime:
+                appSettings.DefaultAspectRatioId = null;
+                break;
+            case AspectRatioDefaultChoice.KeepCurrent:
+                if (GetAvailableAspectRatios().All(item => item.Id != appSettings.DefaultAspectRatioId))
+                    appSettings.DefaultAspectRatioId = null;
+                break;
+        }
 
-        double trimmedValue = Math.Round(aspectRatio, 2);
-        AspectRatioTextBox.Text = $"Ratio: {trimmedValue}";
+        appSettings.Save();
+        SetSelectedAspectRatio(picker.SelectedRatio);
+    }
 
-        UpdateCustomAspectRatioPreview();
+    private void SetSelectedAspectRatio(AspectRatioItem? item)
+    {
+        selectedAspectRatio = item is null ? null : item with { };
+        AspectRatioSelectionName.Text = selectedAspectRatio?.Text ?? "Choose aspect ratio";
+        AspectRatioSelectionDetail.Text = selectedAspectRatio?.ToolTip ?? "Required for transform";
+        AspectRatioSelectionRequiredText.Visibility = selectedAspectRatio is null
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        AspectRatioTransformPreview.Visibility = selectedAspectRatio is null
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+        ApplyTransformButton.IsEnabled = selectedAspectRatio is not null;
+        AspectRatioTransformPreview.RatioItem = selectedAspectRatio;
+
+        if (selectedAspectRatio?.AspectRatioEnum == AspectRatio.Original)
+            UpdateOriginalAspectRatioPreview();
     }
 
     /// <summary>
     /// Updates the aspect ratio preview shape to match the currently loaded image's original dimensions.
-    /// Does not mutate items in the ComboBox to avoid breaking selection tracking.
+    /// Does not mutate the selected preset because its ratio is image-specific.
     /// </summary>
     private void UpdateOriginalAspectRatioPreview()
     {
@@ -2350,23 +2392,6 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             AspectRatioEnum = AspectRatio.Original
         };
         AspectRatioTransformPreview.RatioItem = previewItem;
-    }
-
-    /// <summary>
-    /// Updates the aspect ratio preview shape to match the current custom width/height values.
-    /// </summary>
-    private void UpdateCustomAspectRatioPreview()
-    {
-        if (CustomHeight.Value is double h && CustomWidth.Value is double w && h != 0 && w != 0)
-        {
-            double ratio = h / w;
-            AspectRatioItem customPreview = new()
-            {
-                RatioValue = ratio,
-                AspectRatioEnum = AspectRatio.Custom
-            };
-            AspectRatioTransformPreview.RatioItem = customPreview;
-        }
     }
 
     private void FluentWindow_PreviewDragOver(object sender, DragEventArgs e)
@@ -3286,6 +3311,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     {
         ShowTransformControls();
         await RunTransformDetectionAsync();
+
+        if (selectedAspectRatio is null)
+            await ChooseAspectRatioAsync();
     }
 
     private void CancelTransformButton_Click(object sender, RoutedEventArgs e)
@@ -3304,6 +3332,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideGridStraightenControls();
 
         TransformButtonPanel.Visibility = Visibility.Visible;
+        ApplyTransformButton.IsEnabled = selectedAspectRatio is not null;
 
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Visible;

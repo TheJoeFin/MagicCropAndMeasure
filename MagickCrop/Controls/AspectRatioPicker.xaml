@@ -1,0 +1,240 @@
+<UserControl
+    x:Class="MagickCrop.Controls.AspectRatioPicker"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="clr-namespace:MagickCrop.Models"
+    xmlns:root="clr-namespace:MagickCrop"
+    xmlns:wpfui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Width="760"
+    Height="540"
+    mc:Ignorable="d">
+    <UserControl.Resources>
+        <DataTemplate x:Key="AspectRatioItemTemplate" DataType="{x:Type models:AspectRatioItem}">
+            <Grid Margin="6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="28" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <wpfui:SymbolIcon
+                    VerticalAlignment="Center"
+                    Foreground="{wpfui:ThemeResource SystemAccentColorPrimaryBrush}"
+                    Symbol="{Binding Symbol}" />
+                <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                    <TextBlock FontWeight="SemiBold" Text="{Binding Text}" />
+                    <TextBlock
+                        Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
+                        Text="{Binding ToolTip}"
+                        TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="290" />
+            <ColumnDefinition Width="20" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="2*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <StackPanel>
+                <TextBlock
+                    Margin="0,0,0,4"
+                    FontSize="22"
+                    FontWeight="SemiBold"
+                    Text="Output aspect ratio" />
+                <TextBlock
+                    Margin="0,0,0,14"
+                    Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
+                    Text="Choose the shape of the corrected image."
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    Margin="0,0,0,6"
+                    FontWeight="SemiBold"
+                    Text="Standard ratios" />
+            </StackPanel>
+
+            <ListBox
+                x:Name="StandardRatioList"
+                Grid.Row="1"
+                ItemTemplate="{StaticResource AspectRatioItemTemplate}"
+                SelectionChanged="RatioList_SelectionChanged" />
+
+            <TextBlock
+                Grid.Row="2"
+                Margin="0,14,0,6"
+                FontWeight="SemiBold"
+                Text="My saved ratios" />
+
+            <ListBox
+                x:Name="SavedRatioList"
+                Grid.Row="3"
+                ItemTemplate="{StaticResource AspectRatioItemTemplate}"
+                SelectionChanged="RatioList_SelectionChanged" />
+
+            <wpfui:Button
+                x:Name="DeleteSavedRatioButton"
+                Grid.Row="4"
+                Margin="0,8,0,0"
+                Click="DeleteSavedRatioButton_Click"
+                Content="Delete selected saved ratio"
+                IsEnabled="False">
+                <wpfui:Button.Icon>
+                    <wpfui:SymbolIcon Symbol="Delete24" />
+                </wpfui:Button.Icon>
+            </wpfui:Button>
+        </Grid>
+
+        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Border
+                    Padding="18"
+                    Background="{wpfui:ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{wpfui:ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="100" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock
+                                x:Name="SelectedRatioTitle"
+                                FontSize="18"
+                                FontWeight="SemiBold"
+                                Text="No ratio selected" />
+                            <TextBlock
+                                x:Name="SelectedRatioDescription"
+                                Margin="0,6,0,0"
+                                Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Pick a standard or saved ratio, or create a custom one below."
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <root:AspectRatioTransform
+                            x:Name="SelectionPreview"
+                            Grid.Column="1"
+                            Width="90"
+                            Height="60"
+                            Margin="8,0,0,0" />
+                    </Grid>
+                </Border>
+
+                <TextBlock
+                    Margin="0,18,0,4"
+                    FontSize="17"
+                    FontWeight="SemiBold"
+                    Text="Create a custom ratio" />
+                <TextBlock
+                    Margin="0,0,0,10"
+                    Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
+                    Text="Enter width and height in the same units. Add a unit below if they also describe a real-world measurement."
+                    TextWrapping="Wrap" />
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,4" Text="Width" />
+                        <wpfui:NumberBox
+                            x:Name="CustomWidthInput"
+                            Minimum="0.0001"
+                            PlaceholderText="e.g. 4"
+                            Value="4" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Margin="0,0,0,4" Text="Height" />
+                        <wpfui:NumberBox
+                            x:Name="CustomHeightInput"
+                            Minimum="0.0001"
+                            PlaceholderText="e.g. 3"
+                            Value="3" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,4" Text="Name" />
+                        <wpfui:TextBox
+                            x:Name="CustomNameInput"
+                            PlaceholderText="e.g. Artifact card" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Margin="0,0,0,4" Text="Unit (optional)" />
+                        <wpfui:TextBox
+                            x:Name="CustomUnitsInput"
+                            PlaceholderText="mm, in, cm" />
+                    </StackPanel>
+                </Grid>
+
+                <CheckBox
+                    x:Name="SaveCustomRatioCheckBox"
+                    Margin="0,10,0,0"
+                    Content="Save this custom ratio for next time" />
+
+                <wpfui:Button
+                    Margin="0,10,0,0"
+                    Click="UseCustomRatioButton_Click"
+                    Content="Use these dimensions">
+                    <wpfui:Button.Icon>
+                        <wpfui:SymbolIcon Symbol="ResizeImage24" />
+                    </wpfui:Button.Icon>
+                </wpfui:Button>
+
+                <TextBlock
+                    x:Name="ValidationMessage"
+                    Margin="0,6,0,0"
+                    Foreground="{wpfui:ThemeResource SystemFillColorCriticalBrush}"
+                    TextWrapping="Wrap"
+                    Visibility="Collapsed" />
+
+                <Border
+                    Margin="0,18,0,0"
+                    Padding="0,14,0,0"
+                    BorderBrush="{wpfui:ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="0,1,0,0">
+                    <StackPanel>
+                        <TextBlock
+                            FontSize="17"
+                            FontWeight="SemiBold"
+                            Text="Default behavior" />
+                        <RadioButton
+                            x:Name="KeepDefaultRadio"
+                            Margin="0,8,0,0"
+                            Content="Keep my current default"
+                            GroupName="AspectRatioDefault" />
+                        <RadioButton
+                            x:Name="UseSelectedAsDefaultRadio"
+                            Margin="0,6,0,0"
+                            Content="Use this ratio by default"
+                            GroupName="AspectRatioDefault" />
+                        <RadioButton
+                            x:Name="AskEveryTimeRadio"
+                            Margin="0,6,0,0"
+                            Content="Ask me to choose every time (no default)"
+                            GroupName="AspectRatioDefault" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -1896,88 +1896,52 @@
                     d:Visibility="Visible"
                     Orientation="Vertical"
                     Visibility="Collapsed">
-
-                    <Grid
-                        x:Name="CustomButtonGrid"
-                        HorizontalAlignment="Left"
-                        Visibility="Collapsed">
-                        <wpfui:Flyout
-                            Margin="0,0,0,20"
-                            IsOpen="{Binding ElementName=EditToggleButton,
-                                             Path=IsChecked,
-                                             Mode=TwoWay}"
-                            Placement="Top">
-                            <Grid x:Name="CustomSizeStackPanel">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*" />
-                                    <RowDefinition Height="10" />
-                                    <RowDefinition Height="*" />
-                                </Grid.RowDefinitions>
-                                <Label
-                                    Width="80"
-                                    VerticalAlignment="Center"
-                                    Content="Width"
-                                    Target="{Binding ElementName=CustomWidth}" />
-                                <wpfui:NumberBox
-                                    x:Name="CustomWidth"
-                                    Grid.Column="1"
-                                    Width="150"
-                                    VerticalAlignment="Center"
-                                    Minimum="0"
-                                    ToolTip="Custom width"
-                                    ValueChanged="CustomWidth_ValueChanged"
-                                    Value="10" />
-                                <Label
-                                    Grid.Row="2"
-                                    Width="80"
-                                    VerticalAlignment="Center"
-                                    Content="Height"
-                                    Target="{Binding ElementName=CustomHeight}" />
-                                <wpfui:NumberBox
-                                    x:Name="CustomHeight"
-                                    Grid.Row="2"
-                                    Grid.Column="1"
-                                    Width="150"
-                                    VerticalAlignment="Center"
-                                    Minimum="0"
-                                    ToolTip="Custom height"
-                                    ValueChanged="CustomWidth_ValueChanged"
-                                    Value="5" />
-                            </Grid>
-                        </wpfui:Flyout>
-                        <ToggleButton
-                            x:Name="EditToggleButton"
-                            Width="180"
-                            Margin="0,4"
-                            HorizontalContentAlignment="Left"
-                            ToolTip="Toggle custom aspect ratio input">
-                            <StackPanel Orientation="Horizontal">
-                                <wpfui:SymbolIcon Margin="0,0,8,0" Symbol="ResizeImage24" />
-                                <TextBlock x:Name="AspectRatioTextBox" Text="Ratio: 0.5" />
-                            </StackPanel>
-                        </ToggleButton>
-                    </Grid>
-                    <ComboBox
-                        x:Name="AspectRatioComboBox"
+                    <TextBlock
+                        Margin="0,0,0,6"
+                        FontWeight="SemiBold"
+                        Text="Output aspect ratio" />
+                    <wpfui:Button
+                        x:Name="AspectRatioPickerButton"
                         Width="180"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Center"
-                        SelectionChanged="AspectRatioComboBox_SelectionChanged"
-                        ToolTip="Choose a preset aspect ratio">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate DataType="models:AspectRatioItem">
-                                <StackPanel Orientation="Horizontal">
-                                    <wpfui:SymbolIcon Margin="0,0,10,0" Symbol="{Binding Symbol}" />
-                                    <TextBlock Text="{Binding Text}" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                    <local:AspectRatioTransform x:Name="AspectRatioTransformPreview" />
+                        MinHeight="64"
+                        HorizontalContentAlignment="Stretch"
+                        Click="AspectRatioPickerButton_Click"
+                        ToolTip="Choose, create, save, or set a default aspect ratio">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="28" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="16" />
+                            </Grid.ColumnDefinitions>
+                            <wpfui:SymbolIcon Symbol="RatioOneToOne24" />
+                            <StackPanel Grid.Column="1" Margin="6,0">
+                                <TextBlock
+                                    x:Name="AspectRatioSelectionName"
+                                    FontWeight="SemiBold"
+                                    Text="Choose aspect ratio"
+                                    TextTrimming="CharacterEllipsis" />
+                                <TextBlock
+                                    x:Name="AspectRatioSelectionDetail"
+                                    FontSize="11"
+                                    Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
+                                    Text="Required for transform"
+                                    TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <wpfui:SymbolIcon
+                                Grid.Column="2"
+                                Symbol="ChevronRight24" />
+                        </Grid>
+                    </wpfui:Button>
+                    <local:AspectRatioTransform
+                        x:Name="AspectRatioTransformPreview"
+                        Visibility="Collapsed" />
+                    <TextBlock
+                        x:Name="AspectRatioSelectionRequiredText"
+                        Width="180"
+                        Margin="0,6,0,0"
+                        Foreground="{wpfui:ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Choose an output ratio before applying the transform."
+                        TextWrapping="Wrap" />
                     <wpfui:Button
                         x:Name="DetectShapeButton"
                         Width="180"

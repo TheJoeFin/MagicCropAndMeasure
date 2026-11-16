@@ -11,4 +11,10 @@ public enum AspectRatio
     UsDollarBillPortrait = 6,
     UsDollarBillLandscape = 7,
     Custom = 8,
+    PhotoLandscape3By2 = 9,
+    PhotoPortrait2By3 = 10,
+    ClassicLandscape4By3 = 11,
+    ClassicPortrait3By4 = 12,
+    WidescreenLandscape16By9 = 13,
+    WidescreenPortrait9By16 = 14,
 }

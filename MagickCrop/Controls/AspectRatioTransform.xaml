@@ -37,7 +37,7 @@
         <wpfui:SymbolIcon Grid.Column="1" Symbol="ArrowRight24" />
         <Canvas
             x:Name="RectangleCanvas"
-            Grid.Column="3"
+            Grid.Column="2"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             Background="Transparent"
