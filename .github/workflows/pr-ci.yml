@@ -18,26 +18,30 @@ concurrency:
 
 env:
   PROJECT_PATH: "MagickCrop/MagickCrop.csproj"
+  TEST_PROJECT_PATH: "MagickCrop.Tests/MagickCrop.Tests.csproj"
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: "9.0.x"
+          dotnet-version: "10.0.x"
       - name: Install dependencies
-        run: dotnet restore ${{ env.PROJECT_PATH }}
+        run: dotnet restore ${{ env.TEST_PROJECT_PATH }}
       - name: Build
         run: dotnet build ${{ env.PROJECT_PATH }}
+
+      - name: Test
+        run: dotnet test ${{ env.TEST_PROJECT_PATH }} -c Release -p:Platform=x64 --no-restore
 
       - name: Build for release and Publish
         run: dotnet publish ${{ env.PROJECT_PATH }} -c Release --self-contained -r win-x64 -p:PublishSingleFile=true -o publish
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: MagickCrop-winx64
           path: .\publish
