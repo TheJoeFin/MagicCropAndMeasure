@@ -1406,6 +1406,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         }
 
         Dictionary<MarkupShapeControl, bool> markupGizmoVisibility = [];
+        Dictionary<ConstructionOverlayControl, bool> constructionGizmoVisibility = [];
         StopCanvasTranslateAnimation();
         double originalScaleX = canvasScale.ScaleX;
         double originalScaleY = canvasScale.ScaleY;
@@ -1433,6 +1434,12 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             foreach (MarkupShapeControl control in markupShapeControls)
             {
                 markupGizmoVisibility[control] = control.IsDragGizmoVisible;
+                control.IsDragGizmoVisible = false;
+            }
+
+            foreach (ConstructionOverlayControl control in constructionControls)
+            {
+                constructionGizmoVisibility[control] = control.IsDragGizmoVisible;
                 control.IsDragGizmoVisible = false;
             }
 
@@ -1494,6 +1501,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 element.Visibility = visibility;
 
             foreach ((MarkupShapeControl control, bool visible) in markupGizmoVisibility)
+                control.IsDragGizmoVisible = visible;
+
+            foreach ((ConstructionOverlayControl control, bool visible) in constructionGizmoVisibility)
                 control.IsDragGizmoVisible = visible;
 
             canvasScale.ScaleX = originalScaleX;
