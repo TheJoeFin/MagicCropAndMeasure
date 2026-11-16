@@ -480,7 +480,7 @@ public partial class MainWindow
             // The crosshairs belong on the edge that was found, not on the cursor — the
             // whole point of the gesture is that those are different places, and seeing
             // the transition magnified is how the user judges whether it picked right.
-            UpdatePixelZoom(canvasPoint, found);
+            UpdatePixelZoom(found, canvasPoint);
         }
         else
         {

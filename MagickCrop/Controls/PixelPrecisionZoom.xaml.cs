@@ -15,9 +15,21 @@ public partial class PixelPrecisionZoom : UserControl
     private const int DefaultPreviewSize = 150;
 
     /// <summary>
-    /// Gets or sets the zoom magnification factor.
+    /// Gets or sets the zoom magnification factor, in screen pixels per source image pixel.
     /// </summary>
-    public double ZoomFactor { get; set; } = DefaultZoomFactor;
+    public double ZoomFactor
+    {
+        get => zoomFactor;
+        set
+        {
+            if (Math.Abs(zoomFactor - value) < double.Epsilon)
+                return;
+
+            zoomFactor = value;
+            UpdateZoomPreview();
+        }
+    }
+    private double zoomFactor = DefaultZoomFactor;
 
     /// <summary>
     /// Gets or sets the source image to magnify.
