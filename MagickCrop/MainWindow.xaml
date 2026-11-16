@@ -2589,6 +2589,24 @@
                         </StackPanel>
                     </wpfui:Card>
 
+                    <!--  Overlay scaling options  -->
+                    <StackPanel Margin="0,2,0,4">
+                        <CheckBox
+                            x:Name="ResizeScaleMeasurementsCheckBox"
+                            Checked="ResizeScaleOverlaysCheckBox_Changed"
+                            Unchecked="ResizeScaleOverlaysCheckBox_Changed"
+                            Content="Scale measurements"
+                            IsChecked="True"
+                            ToolTip="Move and resize measurements with the image, keeping calibrated real-world lengths" />
+                        <CheckBox
+                            x:Name="ResizeScaleMarkupsCheckBox"
+                            Checked="ResizeScaleOverlaysCheckBox_Changed"
+                            Unchecked="ResizeScaleOverlaysCheckBox_Changed"
+                            Content="Scale markups"
+                            IsChecked="True"
+                            ToolTip="Move and resize markup strokes, shapes, and text with the image" />
+                    </StackPanel>
+
                     <!--  Action Buttons  -->
                     <wpfui:Button
                         x:Name="ApplyResizeButton"

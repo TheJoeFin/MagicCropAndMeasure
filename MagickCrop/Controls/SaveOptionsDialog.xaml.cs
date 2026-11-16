@@ -1,6 +1,7 @@
 using ImageMagick;
 using MagickCrop.Models;
 using System.Diagnostics;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -121,44 +122,82 @@ public partial class SaveOptionsDialog : UserControl
         ScheduleSizeEstimate();
     }
 
+    // Handles both TextChanged and ValueChanged: NumberBox only commits Value on Enter or
+    // lost focus, so reading the text keeps the linked dimension in sync while typing.
     private void WidthBox_ValueChanged(object sender, RoutedEventArgs e)
     {
-        if (!IsLoaded) return;
-
-        if (updatingDimensions || WidthBox.Value == null)
+        if (!IsLoaded || updatingDimensions)
             return;
 
-        Options.Width = (int)WidthBox.Value.Value;
+        if (!TryGetDimension(WidthBox, out int width))
+            return;
+
+        Options.Width = width;
 
         if (MaintainAspectRatioCheckBox.IsChecked == true)
-        {
-            updatingDimensions = true;
-            HeightBox.Value = (int)(WidthBox.Value.Value * aspectRatio);
-            Options.Height = (int)HeightBox.Value.Value;
-            updatingDimensions = false;
-        }
+            SetLinkedDimension(HeightBox, Math.Max(1, (int)Math.Round(width * aspectRatio)), height => Options.Height = height);
 
         ScheduleSizeEstimate();
     }
 
     private void HeightBox_ValueChanged(object sender, RoutedEventArgs e)
     {
-        if (!IsLoaded) return;
-
-        if (updatingDimensions || HeightBox.Value == null)
+        if (!IsLoaded || updatingDimensions)
             return;
 
-        Options.Height = (int)HeightBox.Value.Value;
+        if (!TryGetDimension(HeightBox, out int height))
+            return;
+
+        Options.Height = height;
 
         if (MaintainAspectRatioCheckBox.IsChecked == true)
-        {
-            updatingDimensions = true;
-            WidthBox.Value = (int)(HeightBox.Value.Value / aspectRatio);
-            Options.Width = (int)WidthBox.Value.Value;
-            updatingDimensions = false;
-        }
+            SetLinkedDimension(WidthBox, Math.Max(1, (int)Math.Round(height / aspectRatio)), width => Options.Width = width);
 
         ScheduleSizeEstimate();
+    }
+
+    private void MaintainAspectRatioCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded)
+            return;
+
+        Options.MaintainAspectRatio = MaintainAspectRatioCheckBox.IsChecked == true;
+        if (Options.MaintainAspectRatio)
+            WidthBox_ValueChanged(sender, e);
+
+        ScheduleSizeEstimate();
+    }
+
+    private void SetLinkedDimension(Wpf.Ui.Controls.NumberBox box, int value, Action<int> setOption)
+    {
+        updatingDimensions = true;
+        try
+        {
+            box.Value = value;
+            setOption(value);
+        }
+        finally
+        {
+            updatingDimensions = false;
+        }
+    }
+
+    private static bool TryGetDimension(Wpf.Ui.Controls.NumberBox box, out int dimension)
+    {
+        dimension = 0;
+
+        if (!double.TryParse(box.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out double value))
+        {
+            if (box.Value is not double committed)
+                return false;
+            value = committed;
+        }
+
+        if (value < 1)
+            return false;
+
+        dimension = (int)Math.Round(value);
+        return true;
     }
 
     private void IncludeMarkupCheckBox_CheckedChanged(object sender, RoutedEventArgs e)

@@ -709,14 +709,28 @@ public class ResizeUndoRedoItem : UndoRedoItem
     private readonly string _next;
     private readonly Grid _grid;
     private readonly Size _oldSize;
+    private readonly Size _newSize;
+    private readonly Action? _undoOverlays;
+    private readonly Action? _redoOverlays;
 
-    public ResizeUndoRedoItem(Image image, Grid grid, Size oldGridSize, string previousPath, string nextPath)
+    public ResizeUndoRedoItem(
+        Image image,
+        Grid grid,
+        Size oldGridSize,
+        Size newGridSize,
+        string previousPath,
+        string nextPath,
+        Action? undoOverlays = null,
+        Action? redoOverlays = null)
     {
         _image = image;
         _previous = previousPath;
         _next = nextPath;
         _grid = grid;
         _oldSize = oldGridSize;
+        _newSize = newGridSize;
+        _undoOverlays = undoOverlays;
+        _redoOverlays = redoOverlays;
     }
 
     public override string Undo()
@@ -724,8 +738,18 @@ public class ResizeUndoRedoItem : UndoRedoItem
         using MagickImage undoImage = new(_previous);
         _image.Source = undoImage.ToBitmapSource();
         _image.Stretch = Stretch.Uniform;
-        _grid.Width = 700;
-        _grid.Height = double.NaN;
+        // Restore the exact pre-resize display size so scaled overlays line up again
+        if (_oldSize.Width > 0 && _oldSize.Height > 0)
+        {
+            _grid.Width = _oldSize.Width;
+            _grid.Height = _oldSize.Height;
+        }
+        else
+        {
+            _grid.Width = 700;
+            _grid.Height = double.NaN;
+        }
+        _undoOverlays?.Invoke();
         return _previous;
     }
 
@@ -734,8 +758,9 @@ public class ResizeUndoRedoItem : UndoRedoItem
         using MagickImage redoImage = new(_next);
         _image.Source = redoImage.ToBitmapSource();
         _image.Stretch = Stretch.Fill;
-        _grid.Width = _oldSize.Width;
-        _grid.Height = _oldSize.Height;
+        _grid.Width = _newSize.Width;
+        _grid.Height = _newSize.Height;
+        _redoOverlays?.Invoke();
         return _next;
     }
 }

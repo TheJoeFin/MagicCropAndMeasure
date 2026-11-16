@@ -29,7 +29,7 @@ public partial class StrokeLengthDisplay : UserControl
         _inkCanvas = inkCanvas;
         _parentCanvas = parentCanvas;
 
-        DistanceTextBlock.Text = $"{info.ScaledLength:F2} {info.Units}";
+        Refresh();
     }
 
     /// <summary>
@@ -37,6 +37,11 @@ public partial class StrokeLengthDisplay : UserControl
     /// </summary>
     /// <returns>The associated stroke</returns>
     public Stroke GetStroke() => _stroke;
+
+    /// <summary>
+    /// Updates the displayed value after its underlying measurement changes.
+    /// </summary>
+    public void Refresh() => DistanceTextBlock.Text = $"{_strokeInfo.ScaledLength:F2} {_strokeInfo.Units}";
 
     private void CopyMeasurementMenuItem_Click(object sender, RoutedEventArgs e)
     {

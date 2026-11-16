@@ -69,9 +69,12 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private Point clickedPoint = new();
     private Vector handleGrabOffset = new();
     private Size oldGridSize = new();
+    private Size resizeDragStartSize = new();
+    private Size resizeStartImageSize = new();
     private FrameworkElement? clickedElement;
     private bool allowHandlesOutsideImage = true;
     private bool isUpdatingCanvasNavigation;
+    private Stretch resizeStartImageStretch = Stretch.Uniform;
     private bool showMiniMap = true;
     private const double CanvasOriginOffset = 50;
     private const double DefaultSidebarWidth = 240;
@@ -782,8 +785,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         double deltaY = currentPoint.Y - clickedPoint.Y;
 
         // Calculate new dimensions
-        double newWidth = oldGridSize.Width + deltaX;
-        double newHeight = oldGridSize.Height + deltaY;
+        double newWidth = resizeDragStartSize.Width + deltaX;
+        double newHeight = resizeDragStartSize.Height + deltaY;
 
         // Enforce minimum dimensions of 50px
         ImageGrid.Width = Math.Max(50, newWidth);
@@ -791,6 +794,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         // Update text boxes based on the current display size and full resolution
         UpdateResizeTextBoxesFromDrag();
+        UpdateResizeOverlayPreview();
 
         e.Handled = true;
     }
@@ -804,29 +808,17 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (ViewModel.ActualImageSize.Width <= 0 || ViewModel.ActualImageSize.Height <= 0)
             return;
 
-        // Get current display dimensions
-        double displayWidth = ImageGrid.Width;
-        double displayHeight = ImageGrid.Height;
+        // Get current image display dimensions (excluding the resize grip's row and column)
+        Size gripSpace = GetResizeGripSpace();
+        double displayWidth = ImageGrid.Width - gripSpace.Width;
+        double displayHeight = ImageGrid.Height - gripSpace.Height;
+        if (displayWidth <= 0 || displayHeight <= 0)
+            return;
 
-        // Calculate the new aspect ratio from the current drag
-        double newAspectRatio = displayWidth / displayHeight;
-
-        // Determine final dimensions by projecting the new aspect ratio onto the full resolution
-        // Use the dimension that results in the largest image without exceeding original bounds
-        double finalWidth, finalHeight;
-
-        if (newAspectRatio > ViewModel.ActualImageSize.Width / ViewModel.ActualImageSize.Height)
-        {
-            // New aspect ratio is wider - use original width as base
-            finalWidth = ViewModel.ActualImageSize.Width;
-            finalHeight = ViewModel.ActualImageSize.Width / newAspectRatio;
-        }
-        else
-        {
-            // New aspect ratio is taller or same - use original height as base
-            finalHeight = ViewModel.ActualImageSize.Height;
-            finalWidth = ViewModel.ActualImageSize.Height * newAspectRatio;
-        }
+        double finalWidth = ViewModel.ActualImageSize.Width
+            * displayWidth / resizeStartImageSize.Width;
+        double finalHeight = ViewModel.ActualImageSize.Height
+            * displayHeight / resizeStartImageSize.Height;
 
         isUpdatingFromCode = true;
 
@@ -3032,7 +3024,10 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private void StretchMenuItem_Click(object sender, RoutedEventArgs e)
     {
         oldGridSize = new(ImageGrid.ActualWidth, ImageGrid.ActualHeight);
+        resizeStartImageSize = new(MainImage.ActualWidth, MainImage.ActualHeight);
+        resizeStartImageStretch = MainImage.Stretch;
         ShowResizeControls();
+        resizeOverlayBaseline = CaptureOverlayBaseline();
     }
 
     private async void CropImage_Click(object sender, RoutedEventArgs e)
@@ -4572,7 +4567,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (Mouse.LeftButton == MouseButtonState.Pressed)
         {
             clickedPoint = e.GetPosition(ShapeCanvas);
-            oldGridSize = new Size(ImageGrid.ActualWidth, ImageGrid.ActualHeight);
+            // oldGridSize stays the pre-resize size captured when the panel opened
+            resizeDragStartSize = new Size(ImageGrid.ActualWidth, ImageGrid.ActualHeight);
             draggingMode = DraggingMode.Resizing;
             isDraggingResizeGrip = true;
 
@@ -4616,7 +4612,16 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         string tempFileName = await magickImage.WriteToTempFileAsync();
 
-        ResizeUndoRedoItem undoRedoItem = new(MainImage, ImageGrid, oldGridSize, ViewModel.ImagePath, tempFileName);
+        // The grid already shows the new display size; resolve it (Height may still be auto)
+        ImageGrid.UpdateLayout();
+        Size newGridSize = new(ImageGrid.ActualWidth, ImageGrid.ActualHeight);
+
+        // The overlays already follow the preview; this just captures it for undo/redo
+        (Action Undo, Action Redo)? overlayScaling = CommitResizeOverlayPreview();
+
+        ResizeUndoRedoItem undoRedoItem = new(
+            MainImage, ImageGrid, oldGridSize, newGridSize, ViewModel.ImagePath, tempFileName,
+            overlayScaling?.Undo, overlayScaling?.Redo);
         UndoRedo.AddUndo(undoRedoItem);
 
         ViewModel.ImagePath = tempFileName;
@@ -4628,20 +4633,27 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         ViewModel.ActualImageSize = new Size(targetWidth, targetHeight);
 
         SetUiForCompletedTask();
+        resizeOverlayBaseline = null;
         HideResizeControls();
     }
 
     private void CancelResizeButton_Click(object sender, RoutedEventArgs e)
     {
-        ImageGrid.Width = oldGridSize.Width;
-        ImageGrid.Height = oldGridSize.Height;
-        ImageGrid.InvalidateMeasure();
-
         HideResizeControls();
     }
 
     private void HideResizeControls()
     {
+        if (resizeOverlayBaseline is not null)
+        {
+            ImageGrid.Width = oldGridSize.Width;
+            ImageGrid.Height = oldGridSize.Height;
+            ImageGrid.InvalidateMeasure();
+            MainImage.Stretch = resizeStartImageStretch;
+            CancelResizeOverlayPreview();
+            resizeOverlayBaseline = null;
+        }
+
         ResizeButtonsPanel.Visibility = Visibility.Collapsed;
         ImageResizeGrip.Visibility = Visibility.Hidden;
     }
@@ -4765,14 +4777,30 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             targetHeight = ViewModel.ActualImageSize.Height * (height / 100.0);
         }
 
-        // Calculate scale factors relative to original display size
+        // Calculate scale factors relative to the current image pixel size
         double widthScale = targetWidth / ViewModel.ActualImageSize.Width;
         double heightScale = targetHeight / ViewModel.ActualImageSize.Height;
 
-        // Apply to ImageGrid (maintains the same logic as drag resize)
-        ImageGrid.Width = ViewModel.OriginalImageSize.Width * widthScale;
-        ImageGrid.Height = ViewModel.OriginalImageSize.Height * heightScale;
+        // Scale the image's on-screen size from when the panel opened. OriginalImageSize is the
+        // file as first opened (stale after crops/transforms), and the grid also holds the resize
+        // grip's row and column, so scaling either would letterbox and offset the image.
+        Size gripSpace = GetResizeGripSpace();
+        MainImage.Stretch = Stretch.Fill;
+        ImageGrid.Width = resizeStartImageSize.Width * widthScale + gripSpace.Width;
+        ImageGrid.Height = resizeStartImageSize.Height * heightScale + gripSpace.Height;
         ImageGrid.InvalidateMeasure();
+        UpdateResizeOverlayPreview();
+    }
+
+    /// <summary>
+    /// The space ImageGrid reserves around the image for the resize grip's auto row and column
+    /// (reserved even while the grip is Hidden).
+    /// </summary>
+    private Size GetResizeGripSpace()
+    {
+        return new Size(
+            Math.Max(0, oldGridSize.Width - resizeStartImageSize.Width),
+            Math.Max(0, oldGridSize.Height - resizeStartImageSize.Height));
     }
 
     private void PixelModeToggle_Checked(object sender, RoutedEventArgs e)
@@ -5437,6 +5465,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             info.Units = units;
 
             updatedMeasurements[stroke] = info;
+            ShapeCanvas.Children.OfType<StrokeLengthDisplay>()
+                .FirstOrDefault(display => display.GetStroke() == stroke)?
+                .Refresh();
         }
 
         strokeMeasurements = updatedMeasurements;
