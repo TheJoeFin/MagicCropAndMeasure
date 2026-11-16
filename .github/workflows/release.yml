@@ -16,8 +16,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: ${{ github.repository }}-ci-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  group: ${{ github.repository }}-release-${{ github.ref_name }}
+  cancel-in-progress: false
 
 env:
   PROJECT: 'MagickCrop'
