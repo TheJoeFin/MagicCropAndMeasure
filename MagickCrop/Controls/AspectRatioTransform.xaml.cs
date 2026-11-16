@@ -18,7 +18,10 @@ public partial class AspectRatioTransform : UserControl
             _ratioItem = value;
 
             if (_ratioItem is null)
+            {
+                RectanglePoly.Points = [];
                 return;
+            }
 
             RectanglePoly.Points = GetPointsFromAspectRatio(_ratioItem.RatioValue);
         }

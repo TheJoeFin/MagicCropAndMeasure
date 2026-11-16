@@ -1,10 +1,11 @@
 using System.IO;
 using System.Text.Json;
+using MagickCrop.Models;
 
 namespace MagickCrop.Services;
 
 /// <summary>
-/// Small JSON-backed store for canvas preferences that should survive a restart. Kept alongside
+/// Small JSON-backed store for application preferences that should survive a restart. Kept alongside
 /// the recent-project data in <c>%LocalAppData%\MagickCrop</c>.
 /// </summary>
 public class AppSettingsService
@@ -17,6 +18,12 @@ public class AppSettingsService
 
     /// <summary>Whether the canvas mini map overlay is shown.</summary>
     public bool ShowMiniMap { get; set; } = true;
+
+    /// <summary>The stable ID of the aspect ratio selected automatically, or <see langword="null"/> to ask each time.</summary>
+    public string? DefaultAspectRatioId { get; set; }
+
+    /// <summary>Named custom aspect ratios saved for future transforms.</summary>
+    public List<AspectRatioItem> CustomAspectRatios { get; set; } = [];
 
     public AppSettingsService()
     {
@@ -43,6 +50,14 @@ public class AppSettingsService
 
             AllowHandlesOutsideImage = saved.AllowHandlesOutsideImage;
             ShowMiniMap = saved.ShowMiniMap;
+            DefaultAspectRatioId = string.IsNullOrWhiteSpace(saved.DefaultAspectRatioId)
+                ? null
+                : saved.DefaultAspectRatioId;
+            CustomAspectRatios = saved.CustomAspectRatios?
+                .Where(AspectRatioItem.IsValidCustom)
+                .GroupBy(item => item.Id, StringComparer.Ordinal)
+                .Select(group => group.First())
+                .ToList() ?? [];
         }
         catch (Exception)
         {
@@ -58,6 +73,8 @@ public class AppSettingsService
             {
                 AllowHandlesOutsideImage = AllowHandlesOutsideImage,
                 ShowMiniMap = ShowMiniMap,
+                DefaultAspectRatioId = DefaultAspectRatioId,
+                CustomAspectRatios = CustomAspectRatios,
             };
 
             File.WriteAllText(_settingsPath, JsonSerializer.Serialize(dto));
@@ -72,5 +89,7 @@ public class AppSettingsService
     {
         public bool AllowHandlesOutsideImage { get; set; } = true;
         public bool ShowMiniMap { get; set; } = true;
+        public string? DefaultAspectRatioId { get; set; }
+        public List<AspectRatioItem>? CustomAspectRatios { get; set; }
     }
 }
