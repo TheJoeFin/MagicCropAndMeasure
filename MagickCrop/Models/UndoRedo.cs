@@ -1,5 +1,6 @@
 ﻿using ImageMagick;
 using MagickCrop.Controls;
+using MagickCrop.Models.MeasurementControls;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -606,6 +607,101 @@ public class MarkupClearedItem : UndoRedoItem
     }
 }
 
+/// <summary>
+/// One construction edit, stored as before/after snapshots of the whole point/line
+/// graph rather than as a delta. The graph is tiny and every corner is derived from all
+/// of it, so a snapshot is both cheaper to reason about and impossible to desync.
+/// </summary>
+public class ConstructionGeometryEditedItem : UndoRedoItem
+{
+    private readonly ConstructionOverlayControl _control;
+    private readonly ConstructionGeometryDto _before;
+    private readonly ConstructionGeometryDto _after;
+
+    public ConstructionGeometryEditedItem(
+        ConstructionOverlayControl control,
+        ConstructionGeometryDto before,
+        ConstructionGeometryDto after)
+    {
+        _control = control;
+        _before = before;
+        _after = after;
+    }
+
+    public override string Undo()
+    {
+        _control.RestoreGeometry(_before);
+        return string.Empty;
+    }
+
+    public override string Redo()
+    {
+        _control.RestoreGeometry(_after);
+        return string.Empty;
+    }
+}
+
+/// <summary>
+/// Removal of whole construction overlays — "Clear Construction", or removing one from
+/// its measurement menu. The controls are kept alive so an undo puts back the same
+/// instances the geometry undo items still point at.
+/// </summary>
+public class ConstructionOverlaysRemovedItem : UndoRedoItem
+{
+    private readonly List<ConstructionOverlayControl> _overlays;
+    private readonly ObservableCollection<ConstructionOverlayControl> _collection;
+    private readonly Canvas _canvas;
+    private readonly Action<ConstructionOverlayControl> _wireEvents;
+    private readonly Action<ConstructionOverlayControl> _unwireEvents;
+    private readonly Action _afterChange;
+
+    public ConstructionOverlaysRemovedItem(
+        List<ConstructionOverlayControl> overlays,
+        ObservableCollection<ConstructionOverlayControl> collection,
+        Canvas canvas,
+        Action<ConstructionOverlayControl> wireEvents,
+        Action<ConstructionOverlayControl> unwireEvents,
+        Action afterChange)
+    {
+        _overlays = overlays;
+        _collection = collection;
+        _canvas = canvas;
+        _wireEvents = wireEvents;
+        _unwireEvents = unwireEvents;
+        _afterChange = afterChange;
+    }
+
+    public override string Undo()
+    {
+        foreach (ConstructionOverlayControl overlay in _overlays)
+        {
+            if (_collection.Contains(overlay)) continue;
+
+            _wireEvents(overlay);
+            _collection.Add(overlay);
+            _canvas.Children.Add(overlay);
+        }
+
+        _afterChange();
+        return string.Empty;
+    }
+
+    public override string Redo()
+    {
+        foreach (ConstructionOverlayControl overlay in _overlays)
+        {
+            if (!_collection.Contains(overlay)) continue;
+
+            _unwireEvents(overlay);
+            _collection.Remove(overlay);
+            _canvas.Children.Remove(overlay);
+        }
+
+        _afterChange();
+        return string.Empty;
+    }
+}
+
 public class ResizeUndoRedoItem : UndoRedoItem
 {
     private readonly Image _image;
@@ -613,14 +709,28 @@ public class ResizeUndoRedoItem : UndoRedoItem
     private readonly string _next;
     private readonly Grid _grid;
     private readonly Size _oldSize;
+    private readonly Size _newSize;
+    private readonly Action? _undoOverlays;
+    private readonly Action? _redoOverlays;
 
-    public ResizeUndoRedoItem(Image image, Grid grid, Size oldGridSize, string previousPath, string nextPath)
+    public ResizeUndoRedoItem(
+        Image image,
+        Grid grid,
+        Size oldGridSize,
+        Size newGridSize,
+        string previousPath,
+        string nextPath,
+        Action? undoOverlays = null,
+        Action? redoOverlays = null)
     {
         _image = image;
         _previous = previousPath;
         _next = nextPath;
         _grid = grid;
         _oldSize = oldGridSize;
+        _newSize = newGridSize;
+        _undoOverlays = undoOverlays;
+        _redoOverlays = redoOverlays;
     }
 
     public override string Undo()
@@ -628,8 +738,18 @@ public class ResizeUndoRedoItem : UndoRedoItem
         using MagickImage undoImage = new(_previous);
         _image.Source = undoImage.ToBitmapSource();
         _image.Stretch = Stretch.Uniform;
-        _grid.Width = 700;
-        _grid.Height = double.NaN;
+        // Restore the exact pre-resize display size so scaled overlays line up again
+        if (_oldSize.Width > 0 && _oldSize.Height > 0)
+        {
+            _grid.Width = _oldSize.Width;
+            _grid.Height = _oldSize.Height;
+        }
+        else
+        {
+            _grid.Width = 700;
+            _grid.Height = double.NaN;
+        }
+        _undoOverlays?.Invoke();
         return _previous;
     }
 
@@ -638,8 +758,9 @@ public class ResizeUndoRedoItem : UndoRedoItem
         using MagickImage redoImage = new(_next);
         _image.Source = redoImage.ToBitmapSource();
         _image.Stretch = Stretch.Fill;
-        _grid.Width = _oldSize.Width;
-        _grid.Height = _oldSize.Height;
+        _grid.Width = _newSize.Width;
+        _grid.Height = _newSize.Height;
+        _redoOverlays?.Invoke();
         return _next;
     }
 }

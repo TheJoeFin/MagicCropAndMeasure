@@ -1,7 +1,9 @@
+using MagickCrop.Helpers;
 using MagickCrop.Models.MeasurementControls;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace MagickCrop.Controls;
 
@@ -45,10 +47,29 @@ public partial class DistanceMeasurementControl : UserControl
         }
     }
 
+    private Color strokeColor = (Color)ColorConverter.ConvertFromString("#0066FF");
+    public Color StrokeColor
+    {
+        get => strokeColor;
+        set
+        {
+            strokeColor = value;
+            UpdateColors();
+        }
+    }
+
     public DistanceMeasurementControl()
     {
         InitializeComponent();
         UpdatePositions();
+    }
+
+    private void UpdateColors()
+    {
+        SolidColorBrush brush = new(strokeColor);
+        MeasurementLine.Stroke = brush;
+        StartPoint.Fill = brush;
+        EndPoint.Fill = brush;
     }
 
     public bool IsDragGizmoVisible
@@ -189,6 +210,16 @@ public partial class DistanceMeasurementControl : UserControl
         RemoveControlRequested?.Invoke(this, EventArgs.Empty);
     }
 
+    private async void ChangeColorMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (Application.Current.MainWindow is not MainWindow mainWindow)
+            return;
+
+        Color? picked = await ColorPickerDialog.PickColorAsync(mainWindow, strokeColor, "Change Measurement Color");
+        if (picked is Color color)
+            StrokeColor = color;
+    }
+
     /// <summary>
     /// Convert this control to a data transfer object
     /// </summary>
@@ -199,7 +230,8 @@ public partial class DistanceMeasurementControl : UserControl
             StartPosition = startPosition,
             EndPosition = endPosition,
             ScaleFactor = ScaleFactor,
-            Units = Units
+            Units = Units,
+            StrokeColor = strokeColor.ToString()
         };
     }
 
@@ -212,6 +244,11 @@ public partial class DistanceMeasurementControl : UserControl
         endPosition = dto.EndPosition;
         ScaleFactor = dto.ScaleFactor;
         Units = dto.Units;
+
+        try { strokeColor = (Color)ColorConverter.ConvertFromString(dto.StrokeColor); }
+        catch { strokeColor = (Color)ColorConverter.ConvertFromString("#0066FF"); }
+        UpdateColors();
+
         UpdatePositions();
     }
 }

@@ -31,4 +31,9 @@ public class PolygonMeasurementControlDto : MeasurementControlDto
     /// Whether the polygon is closed (completed)
     /// </summary>
     public bool IsClosed { get; set; } = false;
+
+    /// <summary>
+    /// Color of the polygon outline and its vertex handles
+    /// </summary>
+    public string StrokeColor { get; set; } = "#0066FF";
 }

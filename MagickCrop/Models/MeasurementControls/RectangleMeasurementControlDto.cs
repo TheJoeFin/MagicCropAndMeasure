@@ -12,4 +12,5 @@ public class RectangleMeasurementControlDto : MeasurementControlDto
     public Point BottomRight { get; set; }
     public double ScaleFactor { get; set; } = 1.0;
     public string Units { get; set; } = "pixels";
+    public string StrokeColor { get; set; } = "#0066FF";
 }

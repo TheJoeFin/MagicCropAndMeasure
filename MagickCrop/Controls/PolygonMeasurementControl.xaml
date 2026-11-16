@@ -39,6 +39,10 @@
                         Header="Copy Measurement"
                         ToolTip="Copy the polygon properties" />
                     <MenuItem
+                        Click="ChangeColorMenuItem_Click"
+                        Header="Change Color"
+                        ToolTip="Change the color of this measurement" />
+                    <MenuItem
                         Click="RemoveMeasurementMenuItem_Click"
                         Header="Remove Measurement"
                         ToolTip="Delete this measurement" />

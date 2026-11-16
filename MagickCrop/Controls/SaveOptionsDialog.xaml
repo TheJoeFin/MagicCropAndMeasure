@@ -114,6 +114,7 @@
                 Margin="0,0,10,0"
                 IsEnabled="False"
                 Minimum="1"
+                TextChanged="WidthBox_ValueChanged"
                 ValueChanged="WidthBox_ValueChanged"
                 Value="100" />
 
@@ -129,6 +130,8 @@
                 Grid.Column="3"
                 IsEnabled="False"
                 Minimum="1"
+                TextChanged="HeightBox_ValueChanged"
+                ValueChanged="HeightBox_ValueChanged"
                 Value="100" />
 
         </Grid>
@@ -136,9 +139,11 @@
         <StackPanel Grid.Row="5">
             <CheckBox
                 x:Name="MaintainAspectRatioCheckBox"
+                Checked="MaintainAspectRatioCheckBox_CheckedChanged"
                 Content="Maintain aspect ratio"
                 IsChecked="True"
-                IsEnabled="False" />
+                IsEnabled="False"
+                Unchecked="MaintainAspectRatioCheckBox_CheckedChanged" />
             <CheckBox
                 x:Name="IncludeMarkupCheckBox"
                 Margin="0,10,0,0"

@@ -1,7 +1,9 @@
+using MagickCrop.Helpers;
 using MagickCrop.Models.MeasurementControls;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace MagickCrop.Controls;
 
@@ -39,10 +41,30 @@ public partial class RectangleMeasurementControl : UserControl
     public delegate void RemoveControlRequestedEventHandler(object sender, EventArgs e);
     public event RemoveControlRequestedEventHandler? RemoveControlRequested;
 
+    private Color strokeColor = (Color)ColorConverter.ConvertFromString("#0066FF");
+    public Color StrokeColor
+    {
+        get => strokeColor;
+        set
+        {
+            strokeColor = value;
+            UpdateColors();
+        }
+    }
+
     public RectangleMeasurementControl()
     {
         InitializeComponent();
         UpdatePositions();
+    }
+
+    private void UpdateColors()
+    {
+        MeasurementRectangle.Stroke = new SolidColorBrush(strokeColor);
+        MeasurementRectangle.Fill = new SolidColorBrush(Color.FromArgb(0x20, strokeColor.R, strokeColor.G, strokeColor.B));
+        SolidColorBrush pointBrush = new(strokeColor);
+        TopLeftPoint.Fill = pointBrush;
+        BottomRightPoint.Fill = pointBrush;
     }
 
     public bool IsDragGizmoVisible
@@ -163,6 +185,16 @@ public partial class RectangleMeasurementControl : UserControl
         RemoveControlRequested?.Invoke(this, EventArgs.Empty);
     }
 
+    private async void ChangeColorMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (Application.Current.MainWindow is not MainWindow mainWindow)
+            return;
+
+        Color? picked = await ColorPickerDialog.PickColorAsync(mainWindow, strokeColor, "Change Measurement Color");
+        if (picked is Color color)
+            StrokeColor = color;
+    }
+
     public RectangleMeasurementControlDto ToDto()
     {
         return new RectangleMeasurementControlDto
@@ -170,7 +202,8 @@ public partial class RectangleMeasurementControl : UserControl
             TopLeft = topLeft,
             BottomRight = bottomRight,
             ScaleFactor = ScaleFactor,
-            Units = Units
+            Units = Units,
+            StrokeColor = strokeColor.ToString()
         };
     }
 
@@ -183,6 +216,11 @@ public partial class RectangleMeasurementControl : UserControl
         bottomRight = dto.BottomRight;
         ScaleFactor = dto.ScaleFactor; // This will use the property setter
         Units = dto.Units;             // This will use the property setter
+
+        try { strokeColor = (Color)ColorConverter.ConvertFromString(dto.StrokeColor); }
+        catch { strokeColor = (Color)ColorConverter.ConvertFromString("#0066FF"); }
+        UpdateColors();
+
         UpdatePositions();
     }
 }

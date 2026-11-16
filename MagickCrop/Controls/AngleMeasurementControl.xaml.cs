@@ -1,3 +1,4 @@
+using MagickCrop.Helpers;
 using MagickCrop.Models.MeasurementControls;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,10 +22,33 @@ public partial class AngleMeasurementControl : UserControl
     public delegate void RemoveControlRequestedEventHandler(object sender, EventArgs e);
     public event RemoveControlRequestedEventHandler? RemoveControlRequested;
 
+    private Color strokeColor = (Color)ColorConverter.ConvertFromString("#0066FF");
+    public Color StrokeColor
+    {
+        get => strokeColor;
+        set
+        {
+            strokeColor = value;
+            UpdateColors();
+        }
+    }
+
     public AngleMeasurementControl()
     {
         InitializeComponent();
         UpdatePositions();
+    }
+
+    private void UpdateColors()
+    {
+        SolidColorBrush brush = new(strokeColor);
+        Line1.Stroke = brush;
+        Line2.Stroke = brush;
+        AngleArc.Stroke = brush;
+        AngleArc.Fill = new SolidColorBrush(Color.FromArgb(0x20, strokeColor.R, strokeColor.G, strokeColor.B));
+        Point1.Fill = brush;
+        VertexPoint.Fill = brush;
+        Point3.Fill = brush;
     }
 
     public bool IsDragGizmoVisible
@@ -252,6 +276,16 @@ public partial class AngleMeasurementControl : UserControl
         RemoveControlRequested?.Invoke(this, EventArgs.Empty);
     }
 
+    private async void ChangeColorMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (Application.Current.MainWindow is not MainWindow mainWindow)
+            return;
+
+        Color? picked = await ColorPickerDialog.PickColorAsync(mainWindow, strokeColor, "Change Measurement Color");
+        if (picked is Color color)
+            StrokeColor = color;
+    }
+
     /// <summary>
     /// Convert this control to a data transfer object
     /// </summary>
@@ -261,7 +295,8 @@ public partial class AngleMeasurementControl : UserControl
         {
             Point1Position = point1Position,
             VertexPosition = vertexPosition,
-            Point3Position = point3Position
+            Point3Position = point3Position,
+            StrokeColor = strokeColor.ToString()
         };
     }
 
@@ -273,6 +308,11 @@ public partial class AngleMeasurementControl : UserControl
         point1Position = dto.Point1Position;
         vertexPosition = dto.VertexPosition;
         point3Position = dto.Point3Position;
+
+        try { strokeColor = (Color)ColorConverter.ConvertFromString(dto.StrokeColor); }
+        catch { strokeColor = (Color)ColorConverter.ConvertFromString("#0066FF"); }
+        UpdateColors();
+
         UpdatePositions();
     }
 }

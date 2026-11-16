@@ -86,6 +86,10 @@
                         Header="Copy Measurement"
                         ToolTip="Copy the angle value" />
                     <MenuItem
+                        Click="ChangeColorMenuItem_Click"
+                        Header="Change Color"
+                        ToolTip="Change the color of this measurement" />
+                    <MenuItem
                         Click="RemoveMeasurementMenuItem_Click"
                         Header="Remove Measurement"
                         ToolTip="Delete this measurement" />

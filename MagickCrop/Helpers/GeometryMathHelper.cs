@@ -10,6 +10,13 @@ public static class GeometryMathHelper
     public static Point MidPoint(Point a, Point b) =>
         new((a.X + b.X) / 2.0, (a.Y + b.Y) / 2.0);
 
+    public static double Distance(Point a, Point b)
+    {
+        double dx = b.X - a.X;
+        double dy = b.Y - a.Y;
+        return Math.Sqrt((dx * dx) + (dy * dy));
+    }
+
     public static Point GetEllipseCenter(Ellipse ellipse) =>
         new(Canvas.GetLeft(ellipse) + (ellipse.Width / 2),
             Canvas.GetTop(ellipse) + (ellipse.Height / 2));
@@ -62,6 +69,37 @@ public static class GeometryMathHelper
             perimeter += Math.Sqrt(dx * dx + dy * dy);
         }
         return perimeter;
+    }
+
+    /// <summary>
+    /// The unique circle through three points. Returns false when they are collinear
+    /// (or two coincide), where no finite circle exists.
+    /// </summary>
+    public static bool TryGetCircumcircle(Point a, Point b, Point c, out Point center, out double radius)
+    {
+        center = default;
+        radius = 0;
+
+        // Twice the signed area of the triangle: zero exactly when the points are
+        // collinear, and the denominator of the circumcenter either way.
+        double d = 2 * ((a.X * (b.Y - c.Y)) + (b.X * (c.Y - a.Y)) + (c.X * (a.Y - b.Y)));
+
+        if (Math.Abs(d) < 1e-9) return false;
+
+        double aSquared = (a.X * a.X) + (a.Y * a.Y);
+        double bSquared = (b.X * b.X) + (b.Y * b.Y);
+        double cSquared = (c.X * c.X) + (c.Y * c.Y);
+
+        double x = ((aSquared * (b.Y - c.Y)) + (bSquared * (c.Y - a.Y)) + (cSquared * (a.Y - b.Y))) / d;
+        double y = ((aSquared * (c.X - b.X)) + (bSquared * (a.X - c.X)) + (cSquared * (b.X - a.X))) / d;
+
+        if (double.IsNaN(x) || double.IsNaN(y) || double.IsInfinity(x) || double.IsInfinity(y))
+            return false;
+
+        center = new Point(x, y);
+        radius = Distance(center, a);
+
+        return !double.IsNaN(radius) && !double.IsInfinity(radius) && radius > 0;
     }
 
     public static double PolygonArea(IReadOnlyList<Point> vertices)
