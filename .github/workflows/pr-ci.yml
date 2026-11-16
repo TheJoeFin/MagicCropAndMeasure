@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.repository }}-ci-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 env:
