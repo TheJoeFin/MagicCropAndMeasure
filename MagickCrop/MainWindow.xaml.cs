@@ -5341,7 +5341,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         StackPanel content = new()
         {
-            Orientation = Orientation.Vertical,
+            Orientation = System.Windows.Controls.Orientation.Vertical,
             Children =
             {
                 new WpfTextBlock
