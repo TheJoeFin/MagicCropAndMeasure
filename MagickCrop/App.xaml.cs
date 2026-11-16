@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using MagickCrop.Behaviors;
+using System.IO;
 using System.Windows;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
@@ -11,6 +12,11 @@ namespace MagickCrop;
 
 public partial class App : Application
 {
+    public App()
+    {
+        SmoothScrollBehavior.RegisterGlobally();
+    }
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
