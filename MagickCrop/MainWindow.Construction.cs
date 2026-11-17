@@ -55,7 +55,8 @@ public partial class MainWindow
     // invalidates itself: every edit writes a new temp file.
     private ImageSampleBuffer? probeBuffer;
     private string? probeBufferPath;
-    private bool isWarmingProbeBuffer;
+    private Task<ImageSampleBuffer?>? probeBufferWarmTask;
+    private string? probeBufferWarmPath;
 
     #region Tool state
 
@@ -446,6 +447,12 @@ public partial class MainWindow
     /// </remarks>
     private void StartBoundaryProbe(Point canvasPoint)
     {
+        if (GetProbeBuffer() is null)
+        {
+            WarmProbeBuffer();
+            return;
+        }
+
         ConstructionOverlayControl overlay = EnsureConstructionOverlay();
 
         // Starting a probe abandons whatever was picked before it, as every other tool does.
@@ -454,12 +461,13 @@ public partial class MainWindow
         boundaryProbeStart = canvasPoint;
         draggingMode = DraggingMode.ConstructionBoundaryProbe;
         isCreatingMeasurement = true;
-        ShapeCanvas.CaptureMouse();
-        ShowPixelZoom(canvasPoint);
+        if (!ShapeCanvas.CaptureMouse())
+        {
+            CancelConstructionGesture();
+            return;
+        }
 
-        // Normally already warm from when the tool was picked. Doing it here rather than
-        // on the first mouse move keeps any decode cost out of the middle of the drag.
-        GetProbeBuffer();
+        ShowPixelZoom(canvasPoint);
     }
 
     /// <summary>
@@ -557,8 +565,8 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// The sample buffer for the image on screen right now, building it if the warm-up
-    /// has not finished or the image has changed since.
+    /// The ready sample buffer for the image on screen right now. Decoding is deliberately
+    /// restricted to the background warm-up so input handlers never block the UI thread.
     /// </summary>
     private ImageSampleBuffer? GetProbeBuffer()
     {
@@ -569,11 +577,7 @@ public partial class MainWindow
         if (probeBuffer is not null && probeBufferPath == path)
             return probeBuffer;
 
-        // Sampling the previous image's pixels would put the point in the wrong place
-        // silently, which is worse than a brief pause here.
-        probeBuffer = ImageSampleBuffer.FromFile(path);
-        probeBufferPath = probeBuffer is null ? null : path;
-        return probeBuffer;
+        return null;
     }
 
     /// <summary>
@@ -590,34 +594,46 @@ public partial class MainWindow
             return;
         }
 
-        // Reselecting the tool while a build is still running: the in-flight one finishes
-        // the job, but the indicator still has to be put back up for it.
         SetProbeWarmingIndicator(true);
 
-        if (isWarmingProbeBuffer)
-            return;
-
-        isWarmingProbeBuffer = true;
-
-        try
+        Task<ImageSampleBuffer?> warmTask;
+        if (probeBufferWarmTask is not null && probeBufferWarmPath == path)
         {
-            ImageSampleBuffer? buffer = await Task.Run(() => ImageSampleBuffer.FromFile(path));
-
-            // The tool may have been put down, or the image edited again, while this was
-            // decoding. Either way the result is stale; GetProbeBuffer rebuilds on demand.
-            if (buffer is not null &&
-                path == ViewModel.ImagePath &&
-                ActiveConstructionTool == ConstructionTool.Boundary)
-            {
-                probeBuffer = buffer;
-                probeBufferPath = path;
-            }
+            warmTask = probeBufferWarmTask;
         }
-        finally
+        else
         {
-            isWarmingProbeBuffer = false;
+            warmTask = Task.Run(() => ImageSampleBuffer.FromFile(path));
+            probeBufferWarmTask = warmTask;
+            probeBufferWarmPath = path;
+        }
+
+        ImageSampleBuffer? buffer = await warmTask;
+
+        if (ReferenceEquals(probeBufferWarmTask, warmTask))
+        {
+            probeBufferWarmTask = null;
+            probeBufferWarmPath = null;
+        }
+
+        bool isCurrent = path == ViewModel.ImagePath &&
+            ActiveConstructionTool == ConstructionTool.Boundary;
+
+        if (buffer is not null && isCurrent)
+        {
+            probeBuffer = buffer;
+            probeBufferPath = path;
+        }
+
+        if (ActiveConstructionTool == ConstructionTool.Boundary)
+        {
+            if (ViewModel.ImagePath != path)
+                WarmProbeBuffer();
+            else
+                SetProbeWarmingIndicator(false);
+        }
+        else
             SetProbeWarmingIndicator(false);
-        }
     }
 
     /// <summary>
