@@ -37,21 +37,24 @@ public static class MagickExtensions
     }
 
     /// <summary>
-    /// Writes the image to a new temp file using an encoder that is guaranteed to exist.
-    /// <see cref="Path.GetTempFileName"/> hands back a ".tmp" name and ImageMagick resolves the
-    /// encoder from the extension, which yields <see cref="MagickFormat.Unknown"/> and throws
-    /// <c>no encode delegate for this image format</c>. This gives the temp file a real
-    /// extension and passes the format explicitly.
+    /// Writes the image to a unique temp file with a real extension and an explicit encoder.
     /// </summary>
     internal static async Task<string> WriteToTempFileAsync(this IMagickImage<ushort> image, MagickFormat? format = null)
     {
         MagickFormat targetFormat = format ?? image.GetSafeWriteFormat();
         string tempFileName = CreateTempFileName(targetFormat);
 
-        image.Format = targetFormat;
-        await image.WriteAsync(tempFileName, targetFormat);
-
-        return tempFileName;
+        try
+        {
+            image.Format = targetFormat;
+            await image.WriteAsync(tempFileName, targetFormat);
+            return tempFileName;
+        }
+        catch
+        {
+            DeleteIncompleteTempFile(tempFileName);
+            throw;
+        }
     }
 
     /// <inheritdoc cref="WriteToTempFileAsync"/>
@@ -60,29 +63,36 @@ public static class MagickExtensions
         MagickFormat targetFormat = format ?? image.GetSafeWriteFormat();
         string tempFileName = CreateTempFileName(targetFormat);
 
-        image.Format = targetFormat;
-        image.Write(tempFileName, targetFormat);
-
-        return tempFileName;
+        try
+        {
+            image.Format = targetFormat;
+            image.Write(tempFileName, targetFormat);
+            return tempFileName;
+        }
+        catch
+        {
+            DeleteIncompleteTempFile(tempFileName);
+            throw;
+        }
     }
 
     private static string CreateTempFileName(MagickFormat format)
     {
-        string tempFileName = Path.GetTempFileName();
-        string withExtension = Path.ChangeExtension(tempFileName, format.ToString().ToLowerInvariant());
+        string extension = format.ToString().ToLowerInvariant();
+        return Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.{extension}");
+    }
 
-        if (!string.Equals(tempFileName, withExtension, StringComparison.OrdinalIgnoreCase))
+    private static void DeleteIncompleteTempFile(string tempFileName)
+    {
+        try
         {
-            try
-            {
+            if (File.Exists(tempFileName))
                 File.Delete(tempFileName);
-            }
-            catch (IOException)
-            {
-                // Leaving the zero-byte placeholder behind is harmless.
-            }
         }
-
-        return withExtension;
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Could not delete incomplete temp image '{tempFileName}': {ex.Message}");
+        }
     }
 }

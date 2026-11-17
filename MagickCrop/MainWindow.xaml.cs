@@ -1139,7 +1139,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         SaveFileDialog saveFileDialog = new()
         {
-            Filter = "Image Files|*.jpg;",
+            Filter = "JPEG Image|*.jpg",
+            DefaultExt = ".jpg",
+            AddExtension = true,
             RestoreDirectory = true,
             FileName = $"{ViewModel.OpenedFileName}_corrected.jpg",
             InitialDirectory = !string.IsNullOrEmpty(ViewModel.OriginalFilePath) ? System.IO.Path.GetDirectoryName(ViewModel.OriginalFilePath) : null,
@@ -1174,7 +1176,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         try
         {
-            await image.WriteAsync(correctedImageFileName);
+            await image.WriteAsync(correctedImageFileName, MagickFormat.Jpeg);
 
             OpenFolderButton.IsEnabled = true;
             SaveWindow saveWindow = new(correctedImageFileName);
@@ -7228,7 +7230,6 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         try
         {
             string previousPath = ViewModel.ImagePath!;
-
             string tempFileName = await Task.Run(() =>
             {
                 using MagickImage mi = new(previousPath);

@@ -445,10 +445,8 @@ public partial class MainWindowViewModel : ObservableObject
                 await Task.Run(() => adjustment(magickImage));
             }
 
-            // Path.GetTempFileName() hands back a ".tmp" name, and Magick picks its
-            // encoder from the extension - ".tmp" resolves to Unknown and fails to
-            // encode. WriteToTempFileAsync picks an explicit format, promoting to PNG
-            // when the operation introduced transparency the source format cannot hold.
+            // Write with an explicit encoder so operations that introduce transparency
+            // are promoted to a format that preserves it.
             string tempFileName = await magickImage.WriteToTempFileAsync();
 
             MagickImageUndoRedoItem undoRedoItem = new(_view.MainImageControl, ImagePath, tempFileName);
