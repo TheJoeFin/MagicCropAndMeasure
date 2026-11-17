@@ -31,4 +31,9 @@ public class DistanceMeasurementControlDto : MeasurementControlDto
     /// Units of measurement (e.g., "pixels", "mm", "in")
     /// </summary>
     public string Units { get; set; } = "pixels";
+
+    /// <summary>
+    /// Color of the measurement line and its endpoint handles
+    /// </summary>
+    public string StrokeColor { get; set; } = "#0066FF";
 }

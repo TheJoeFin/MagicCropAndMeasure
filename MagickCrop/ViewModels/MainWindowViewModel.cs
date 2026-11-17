@@ -89,6 +89,12 @@ public partial class MainWindowViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsNotBusy))]
     private bool isBusy;
 
+    /// <summary>What the app is currently busy doing, shown next to the canvas progress ring.</summary>
+    [ObservableProperty]
+    private string busyMessage = DefaultBusyMessage;
+
+    public const string DefaultBusyMessage = "Working";
+
     [ObservableProperty]
     private string windowTitle = "Magick Crop & Measure by TheJoeFin";
 
@@ -439,6 +445,8 @@ public partial class MainWindowViewModel : ObservableObject
                 await Task.Run(() => adjustment(magickImage));
             }
 
+            // Write with an explicit encoder so operations that introduce transparency
+            // are promoted to a format that preserves it.
             string tempFileName = await magickImage.WriteToTempFileAsync();
 
             MagickImageUndoRedoItem undoRedoItem = new(_view.MainImageControl, ImagePath, tempFileName);

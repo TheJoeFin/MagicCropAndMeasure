@@ -17,6 +17,7 @@
             <ContextMenu>
                 <MenuItem Click="CopyMeasurementMenuItem_Click" Header="Copy Measurement" />
                 <MenuItem Click="SetRealWorldLengthMenuItem_Click" Header="Set Real World Length" />
+                <MenuItem Click="ChangeColorMenuItem_Click" Header="Change Color" />
                 <MenuItem Click="RemoveMeasurementMenuItem_Click" Header="Remove Measurement" />
             </ContextMenu>
         </Border.ContextMenu>

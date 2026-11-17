@@ -13,40 +13,86 @@ public static class MagickExtensions
         geometry.Height = (uint)(geometry.Height * factor);
     }
 
-    internal static async Task<string> WriteToTempFileAsync(this MagickImage image)
+    /// <summary>
+    /// Picks an encoder that can actually represent the image. Falls back to PNG when the
+    /// image has no known format, when the format has no encoder, or when the image carries
+    /// transparency that the current format cannot store.
+    /// </summary>
+    internal static MagickFormat GetSafeWriteFormat(this IMagickImage<ushort> image)
     {
-        string tempFileName = CreateTempPngPath();
+        MagickFormat format = image.Format;
+
+        if (format is MagickFormat.Unknown)
+            return MagickFormat.Png;
+
+        if (image.HasAlpha && format is MagickFormat.Jpeg or MagickFormat.Jpg or MagickFormat.Jpe or MagickFormat.Bmp)
+            return MagickFormat.Png;
+
+        IMagickFormatInfo? formatInfo = MagickFormatInfo.Create(format);
+
+        if (formatInfo is null || !formatInfo.SupportsWriting)
+            return MagickFormat.Png;
+
+        return format;
+    }
+
+    /// <summary>
+    /// Writes the image to a unique temp file with a real extension and an explicit encoder.
+    /// </summary>
+    internal static async Task<string> WriteToTempFileAsync(this IMagickImage<ushort> image, MagickFormat? format = null)
+    {
+        MagickFormat targetFormat = format ?? image.GetSafeWriteFormat();
+        string tempFileName = CreateTempFileName(targetFormat);
 
         try
         {
-            await image.WriteAsync(tempFileName, MagickFormat.Png);
+            image.Format = targetFormat;
+            await image.WriteAsync(tempFileName, targetFormat);
             return tempFileName;
         }
         catch
         {
-            File.Delete(tempFileName);
+            DeleteIncompleteTempFile(tempFileName);
             throw;
         }
     }
 
-    internal static string WriteToTempFile(this MagickImage image)
+    /// <inheritdoc cref="WriteToTempFileAsync"/>
+    internal static string WriteToTempFile(this IMagickImage<ushort> image, MagickFormat? format = null)
     {
-        string tempFileName = CreateTempPngPath();
+        MagickFormat targetFormat = format ?? image.GetSafeWriteFormat();
+        string tempFileName = CreateTempFileName(targetFormat);
 
         try
         {
-            image.Write(tempFileName, MagickFormat.Png);
+            image.Format = targetFormat;
+            image.Write(tempFileName, targetFormat);
             return tempFileName;
         }
         catch
         {
-            File.Delete(tempFileName);
+            DeleteIncompleteTempFile(tempFileName);
             throw;
         }
     }
 
-    private static string CreateTempPngPath()
+    private static string CreateTempFileName(MagickFormat format)
     {
-        return Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.png");
+        string extension = format.ToString().ToLowerInvariant();
+        return Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.{extension}");
+    }
+
+    private static void DeleteIncompleteTempFile(string tempFileName)
+    {
+        try
+        {
+            if (File.Exists(tempFileName))
+                File.Delete(tempFileName);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Could not delete incomplete temp image '{tempFileName}': {ex.Message}");
+        }
     }
 }

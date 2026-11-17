@@ -33,6 +33,34 @@ public partial class ResizableRectangle : UserControl
     }
 
     /// <summary>
+    /// Counter-scales the grab handles and the outline against the canvas zoom, so they keep a
+    /// constant on-screen size and the extra precision gained by zooming in is not thrown away.
+    /// Each handle's centre sits exactly on the edge/corner it controls, so scaling about that
+    /// centre leaves it pinned in place at any zoom.
+    /// </summary>
+    /// <param name="canvasScale">The current ShapeCanvas scale factor.</param>
+    public void SetCanvasScale(double canvasScale)
+    {
+        if (canvasScale <= 0)
+            return;
+
+        double inverseScale = 1.0 / canvasScale;
+
+        foreach (UIElement child in RootGrid.Children)
+        {
+            if (ReferenceEquals(child, rectangle) || child is not FrameworkElement handle)
+                continue;
+
+            handle.RenderTransformOrigin = new Point(0.5, 0.5);
+            handle.RenderTransform = new System.Windows.Media.ScaleTransform(inverseScale, inverseScale);
+        }
+
+        // StrokeDashArray is measured in stroke thicknesses, so counter-scaling the thickness
+        // already keeps the dash pattern a constant size on screen.
+        rectangle.StrokeThickness = 2 * inverseScale;
+    }
+
+    /// <summary>
     /// Sets the stroke color and optionally hides the fill of the inner rectangle.
     /// </summary>
     public void SetAppearance(System.Windows.Media.Brush stroke, bool showFill)

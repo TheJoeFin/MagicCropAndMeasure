@@ -16,12 +16,13 @@ permissions:
   contents: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.repository }}-release-${{ github.ref_name }}
+  cancel-in-progress: false
 
 env:
   PROJECT: 'MagickCrop'
   PROJECT_PATH: 'MagickCrop/MagickCrop.csproj'
+  TEST_PROJECT_PATH: 'MagickCrop.Tests/MagickCrop.Tests.csproj'
   BUILD_X64: 'bld/x64'
   BUILD_X64_SC: 'bld/x64/MagickCrop-Self-Contained'
   BUILD_ARM64: 'bld/arm64'
@@ -31,15 +32,18 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Install dependencies
-        run: dotnet restore ${{ env.PROJECT_PATH }}
+        run: dotnet restore ${{ env.TEST_PROJECT_PATH }}
+
+      - name: Test
+        run: dotnet test ${{ env.TEST_PROJECT_PATH }} -c Release -p:Platform=x64 --no-restore
 
       - name: Compute build version, archive paths, and release metadata
         id: compute
@@ -154,19 +158,19 @@ jobs:
           }
 
       - name: Upload build artifact (x64 ZIP)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: MagickCrop-win-x64
           path: ${{ steps.compute.outputs.archive_x64_sc }}
 
       - name: Upload build artifact (arm64 ZIP)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: MagickCrop-win-arm64
           path: ${{ steps.compute.outputs.archive_arm64_sc }}
 
       - name: Create draft GitHub release and upload assets (both arch)
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

@@ -1,4 +1,4 @@
-﻿using ImageMagick;
+using ImageMagick;
 using MagickCrop.Controls;
 using MagickCrop.Helpers;
 using MagickCrop.Models;
@@ -51,7 +51,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         || angleMeasurementTools.Count > 0
         || rectangleMeasurementTools.Count > 0
         || polygonMeasurementTools.Count > 0
-        || circleMeasurementTools.Count > 0;
+        || circleMeasurementTools.Count > 0
+        || constructionControls.Any(control => !control.IsEmpty);
 
     MagickGeometry IMainWindowView.GetLocalAdjustmentRegion() => LocalAdjustmentRectangle.CropShape;
 
@@ -68,9 +69,12 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private Point clickedPoint = new();
     private Vector handleGrabOffset = new();
     private Size oldGridSize = new();
+    private Size resizeDragStartSize = new();
+    private Size resizeStartImageSize = new();
     private FrameworkElement? clickedElement;
     private bool allowHandlesOutsideImage = true;
     private bool isUpdatingCanvasNavigation;
+    private Stretch resizeStartImageStretch = Stretch.Uniform;
     private bool showMiniMap = true;
     private const double CanvasOriginOffset = 50;
     private const double DefaultSidebarWidth = 240;
@@ -109,6 +113,11 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private readonly ObservableCollection<VerticalLineControl> verticalLineControls = [];
     private readonly ObservableCollection<HorizontalLineControl> horizontalLineControls = [];
 
+    // Panels whose ToggleButtons form one mutually-exclusive tool group. Construction
+    // tools appear in both the Measure and Transform tabs, so this cannot be one panel.
+    private List<StackPanel>? toolPanels;
+    private bool isSyncingToolToggles;
+
     // --- Markup state ---
     private readonly ObservableCollection<MarkupShapeControl> markupShapeControls = [];
     private MarkupShapeControl? activeMarkupShapeControl;
@@ -143,6 +152,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private List<MarkupTextControl>? markupGroupMoveTexts;
 
     private Services.RecentProjectsManager? recentProjectsManager;
+    private readonly AppSettingsService appSettings = Singleton<AppSettingsService>.Instance;
     private System.Timers.Timer? autoSaveTimer;
     private readonly int AutoSaveIntervalMs = (int)TimeSpan.FromSeconds(5).TotalMilliseconds;
 
@@ -245,7 +255,11 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         canvasTranslate.Changed += CanvasTranslate_Changed;
         CanvasMiniMap.ViewportCenterRequested += CanvasMiniMap_ViewportCenterRequested;
         MainGrid.SizeChanged += (_, _) => UpdateMiniMap();
-        MainImage.SizeChanged += (_, _) => UpdateMiniMap();
+        MainImage.SizeChanged += (_, _) =>
+        {
+            UpdateMiniMap();
+            UpdateConstructionImageBounds();
+        };
         DependencyPropertyDescriptor
             .FromProperty(System.Windows.Controls.Image.SourceProperty, typeof(System.Windows.Controls.Image))
             ?.AddValueChanged(MainImage, (_, _) => UpdateMiniMap());
@@ -260,6 +274,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Collapsed;
+
+        // MeasureToolsPanel stays first so the existing tools keep their exact behaviour.
+        toolPanels = [MeasureToolsPanel, ConstructionToolsPanel, ConstructionToolsPanelTransform];
 
         // Tri-fold elements: all 8 markers + fold guide lines (built later)
         _triFoldElements.AddRange([TopLeft, TopRight, BottomRight, BottomLeft,
@@ -292,10 +309,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             // do nothing this is just running unpackaged.
         }
 
-        AspectRatioComboBox.ItemsSource = AspectRatioItem.GetStandardAspectRatios();
-        AspectRatioComboBox.SelectedIndex = 0;
-        selectedAspectRatio = AspectRatioComboBox.SelectedItem as AspectRatioItem;
-        AspectRatioTransformPreview.RatioItem = selectedAspectRatio;
+        InitializeAspectRatioSelection();
 
         InitializeProjectManager();
 
@@ -303,6 +317,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         ShapeCanvas.LostMouseCapture += ShapeCanvas_LostMouseCapture; // safety to ensure capture released
         MainGrid.LostMouseCapture += MainGrid_LostMouseCapture;
         rotationOverlayLabel = FindName("RotationOverlayLabel") as WpfTextBlock; // cache
+        ApplyPersistedCanvasSettings();
         UpdateCanvasNavigationUi();
         UpdateTransformVisualScale();
 
@@ -332,6 +347,11 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         {
             draggingMode = DraggingMode.None;
             Cursor = null;
+        }
+        else if (draggingMode is DraggingMode.ConstructionEdgeCreate or DraggingMode.ConstructionBoundaryProbe)
+        {
+            CancelConstructionGesture();
+            HidePixelZoom();
         }
     }
 
@@ -397,10 +417,15 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             Canvas.GetLeft(ellipse) + (ellipse.Width / 2),
             Canvas.GetTop(ellipse) + (ellipse.Height / 2));
         handleGrabOffset = clickedPoint - handleCenter;
+        lastActiveTransformHandle = ellipse;
+        lastActiveTransformIndex = pointDraggingIndex;
         CaptureMouse();
 
-        // Show pixel zoom for precise corner placement
-        ShowPixelZoom(clickedPoint);
+        BeginTransformHandleDrag(ellipse, handleCenter);
+
+        // Magnify the handle centre — not the cursor — so an off-centre grab still shows the
+        // pixel the corner will land on.
+        ShowPixelZoom(handleCenter, clickedPoint);
     }
 
     private void TopLeft_MouseMove(object sender, MouseEventArgs e)
@@ -429,16 +454,28 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         // Update pixel zoom if it should be shown (including before first measurement placement)
         Point mousePos = e.GetPosition(ShapeCanvas);
+
+        // A boundary probe magnifies the edge it found rather than the cursor, so it
+        // drives the loupe itself from the construction block further down — by which
+        // point it knows where the edge is.
+        bool probeOwnsPixelZoom = draggingMode == DraggingMode.ConstructionBoundaryProbe;
+
         if (ShouldShowPixelZoom())
         {
+            // While dragging a transform handle the loupe follows the handle centre (grab offset
+            // removed and bounds applied), so the crosshair marks where the point really lands.
+            Point loupeTarget = draggingMode == DraggingMode.MoveElement && clickedElement is not null
+                ? ConstrainHandlePosition(mousePos - handleGrabOffset)
+                : mousePos;
+
             // Show the pixel zoom if not already visible
             if (PixelZoomControl.Visibility != Visibility.Visible)
             {
-                ShowPixelZoom(mousePos);
+                ShowPixelZoom(loupeTarget, mousePos);
             }
-            else
+            else if (!probeOwnsPixelZoom)
             {
-                UpdatePixelZoom(mousePos);
+                UpdatePixelZoom(loupeTarget, mousePos);
             }
         }
         else
@@ -486,6 +523,15 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
+        // --- CONSTRUCTION PLACEMENT LOGIC ---
+        // Must stay above the buttons-released block below: the Line tool's rubber band
+        // has to follow the cursor between its two clicks, with no button held.
+        if (HandleConstructionMouseMove(mousePos))
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (Mouse.MiddleButton == MouseButtonState.Released && Mouse.LeftButton == MouseButtonState.Released)
         {
             if (draggingMode == DraggingMode.Panning)
@@ -526,6 +572,13 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             {
                 activeCircleMeasureControl.ResetActivePoint();
                 activeCircleMeasureControl = null;
+            }
+
+            if (draggingMode == DraggingMode.ConstructionPoint && activeConstructionControl is not null)
+            {
+                activeConstructionControl.ResetActivePoint();
+                activeConstructionControl.EndDrag();
+                activeConstructionControl = null;
             }
 
             if (draggingMode == DraggingMode.EdgeCorrectionDragging)
@@ -584,6 +637,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             {
                 FinishMarkupGroupMove();
             }
+
+            EndTransformHandleDrag();
 
             clickedElement = null;
             pointDraggingIndex = -1;
@@ -684,6 +739,17 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
+        if (draggingMode == DraggingMode.ConstructionPoint && activeConstructionControl is not null)
+        {
+            int pointIndex = activeConstructionControl.GetActivePointIndex();
+            if (pointIndex >= 0)
+            {
+                activeConstructionControl.MovePoint(pointIndex, movingPoint);
+            }
+            e.Handled = true;
+            return;
+        }
+
         if (draggingMode == DraggingMode.EdgeCorrectionDragging && edgeCorrectionDragIndex >= 0)
         {
             Point imagePoint = e.GetPosition(MainImage);
@@ -712,15 +778,12 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (draggingMode != DraggingMode.MoveElement || clickedElement is null)
             return;
 
-        Point newHandleCenter = new(
-            movingPoint.X - handleGrabOffset.X,
-            movingPoint.Y - handleGrabOffset.Y);
-        newHandleCenter = ConstrainHandlePosition(newHandleCenter);
-        Canvas.SetTop(clickedElement, newHandleCenter.Y - (clickedElement.Height / 2));
-        Canvas.SetLeft(clickedElement, newHandleCenter.X - (clickedElement.Width / 2));
-
-        MovePolyline(newHandleCenter);
-        UpdateCornerNavButtons();
+        MoveTransformHandleTo(
+            clickedElement,
+            pointDraggingIndex,
+            new Point(
+                movingPoint.X - handleGrabOffset.X,
+                movingPoint.Y - handleGrabOffset.Y));
 
         if (draggingMode == DraggingMode.CreatingMeasurement && isCreatingMeasurement)
         {
@@ -736,8 +799,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         double deltaY = currentPoint.Y - clickedPoint.Y;
 
         // Calculate new dimensions
-        double newWidth = oldGridSize.Width + deltaX;
-        double newHeight = oldGridSize.Height + deltaY;
+        double newWidth = resizeDragStartSize.Width + deltaX;
+        double newHeight = resizeDragStartSize.Height + deltaY;
 
         // Enforce minimum dimensions of 50px
         ImageGrid.Width = Math.Max(50, newWidth);
@@ -745,6 +808,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         // Update text boxes based on the current display size and full resolution
         UpdateResizeTextBoxesFromDrag();
+        UpdateResizeOverlayPreview();
 
         e.Handled = true;
     }
@@ -758,29 +822,17 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (ViewModel.ActualImageSize.Width <= 0 || ViewModel.ActualImageSize.Height <= 0)
             return;
 
-        // Get current display dimensions
-        double displayWidth = ImageGrid.Width;
-        double displayHeight = ImageGrid.Height;
+        // Get current image display dimensions (excluding the resize grip's row and column)
+        Size gripSpace = GetResizeGripSpace();
+        double displayWidth = ImageGrid.Width - gripSpace.Width;
+        double displayHeight = ImageGrid.Height - gripSpace.Height;
+        if (displayWidth <= 0 || displayHeight <= 0)
+            return;
 
-        // Calculate the new aspect ratio from the current drag
-        double newAspectRatio = displayWidth / displayHeight;
-
-        // Determine final dimensions by projecting the new aspect ratio onto the full resolution
-        // Use the dimension that results in the largest image without exceeding original bounds
-        double finalWidth, finalHeight;
-
-        if (newAspectRatio > ViewModel.ActualImageSize.Width / ViewModel.ActualImageSize.Height)
-        {
-            // New aspect ratio is wider - use original width as base
-            finalWidth = ViewModel.ActualImageSize.Width;
-            finalHeight = ViewModel.ActualImageSize.Width / newAspectRatio;
-        }
-        else
-        {
-            // New aspect ratio is taller or same - use original height as base
-            finalHeight = ViewModel.ActualImageSize.Height;
-            finalWidth = ViewModel.ActualImageSize.Height * newAspectRatio;
-        }
+        double finalWidth = ViewModel.ActualImageSize.Width
+            * displayWidth / resizeStartImageSize.Width;
+        double finalHeight = ViewModel.ActualImageSize.Height
+            * displayHeight / resizeStartImageSize.Height;
 
         isUpdatingFromCode = true;
 
@@ -854,18 +906,23 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         lines?.StrokeThickness = 2 * inverseScale;
 
+        UpdateConstructionVisualScale();
+        CroppingRectangle.SetCanvasScale(scale);
+        LocalAdjustmentRectangle.SetCanvasScale(scale);
+
+        UpdateActiveHandleCrosshairScale();
         UpdateCornerNavButtons();
     }
 
-    private void MovePolyline(Point newPoint)
+    private void MovePolyline(int handleIndex, Point newPoint)
     {
-        if (pointDraggingIndex < 0)
+        if (handleIndex < 0)
             return;
 
         // Update standard 4-corner polyline when dragging corner markers (index 0-3)
-        if (pointDraggingIndex < 4 && lines is not null)
+        if (handleIndex < 4 && lines is not null)
         {
-            lines.Points[pointDraggingIndex] = newPoint;
+            lines.Points[handleIndex] = newPoint;
             AspectRatioTransformPreview.SetAndScalePoints(lines.Points);
         }
 
@@ -903,16 +960,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             else
                 return null;
         }
-        else if (selectedAspectRatio.AspectRatioEnum == AspectRatio.Custom)
-        {
-            if (CustomHeight.Value is double height
-                && CustomWidth.Value is double width
-                && height != 0
-                && width != 0)
-                aspectRatio = height / width;
-            else
-                return null;
-        }
+        if (!double.IsFinite(aspectRatio) || aspectRatio <= 0)
+            return null;
 
         Rect? visualContentBounds = ReflectionHelper.GetPrivatePropertyValue(lines, "VisualContentBounds") as Rect?;
         Rect finalSize = new(0, 0, MainImage.ActualWidth, MainImage.ActualHeight);
@@ -974,7 +1023,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrWhiteSpace(ViewModel.ImagePath))
             return;
 
-        SetUiForLongTask();
+        SetUiForLongTask("Correcting perspective");
 
         // Capture original image dimensions and crop rectangle position before distortion
         Size originalDisplaySize = new(MainImage.ActualWidth, MainImage.ActualHeight);
@@ -1086,7 +1135,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private async void ApplySaveSplitButton_Click(object sender, RoutedEventArgs e)
     {
-        SetUiForLongTask();
+        SetUiForLongTask("Saving image");
 
         SaveFileDialog saveFileDialog = new()
         {
@@ -1155,7 +1204,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrEmpty(ViewModel.ImagePath))
             return;
 
-        SetUiForLongTask();
+        SetUiForLongTask("Saving image");
 
         try
         {
@@ -1343,6 +1392,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             includedElements.UnionWith(circleMeasurementTools);
             includedElements.UnionWith(verticalLineControls);
             includedElements.UnionWith(horizontalLineControls);
+            includedElements.UnionWith(constructionControls);
             includedElements.UnionWith(ShapeCanvas.Children.OfType<StrokeLengthDisplay>());
         }
 
@@ -1355,34 +1405,48 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         Dictionary<UIElement, Visibility> visibilityBeforeRender = [];
         void SetVisibilityForRender(UIElement element, Visibility visibility)
         {
+            if (visibility == Visibility.Hidden && element.Visibility == Visibility.Collapsed)
+                return;
+
             visibilityBeforeRender.TryAdd(element, element.Visibility);
             element.Visibility = visibility;
         }
 
         Dictionary<MarkupShapeControl, bool> markupGizmoVisibility = [];
+        Dictionary<ConstructionOverlayControl, bool> constructionGizmoVisibility = [];
         StopCanvasTranslateAnimation();
         double originalScaleX = canvasScale.ScaleX;
         double originalScaleY = canvasScale.ScaleY;
         double originalTranslateX = canvasTranslate.X;
         double originalTranslateY = canvasTranslate.Y;
 
+        // Excluded layers are Hidden rather than Collapsed so the layout does not change
+        // during the render. ImageGrid has a fixed width and ImageResizeGrip occupies an
+        // auto-sized column beside MainImage; collapsing it lets MainImage grow, which
+        // shifts the image relative to the overlays.
         try
         {
             foreach (UIElement element in ShapeCanvas.Children)
             {
                 SetVisibilityForRender(
                     element,
-                    includedElements.Contains(element) ? Visibility.Visible : Visibility.Collapsed);
+                    includedElements.Contains(element) ? Visibility.Visible : Visibility.Hidden);
             }
 
-            SetVisibilityForRender(DrawingCanvas, includeMeasurements ? Visibility.Visible : Visibility.Collapsed);
-            SetVisibilityForRender(MarkupCanvas, includeMarkup ? Visibility.Visible : Visibility.Collapsed);
-            SetVisibilityForRender(EraseMaskCanvas, Visibility.Collapsed);
-            SetVisibilityForRender(ImageResizeGrip, Visibility.Collapsed);
+            SetVisibilityForRender(DrawingCanvas, includeMeasurements ? Visibility.Visible : Visibility.Hidden);
+            SetVisibilityForRender(MarkupCanvas, includeMarkup ? Visibility.Visible : Visibility.Hidden);
+            SetVisibilityForRender(EraseMaskCanvas, Visibility.Hidden);
+            SetVisibilityForRender(ImageResizeGrip, Visibility.Hidden);
 
             foreach (MarkupShapeControl control in markupShapeControls)
             {
                 markupGizmoVisibility[control] = control.IsDragGizmoVisible;
+                control.IsDragGizmoVisible = false;
+            }
+
+            foreach (ConstructionOverlayControl control in constructionControls)
+            {
+                constructionGizmoVisibility[control] = control.IsDragGizmoVisible;
                 control.IsDragGizmoVisible = false;
             }
 
@@ -1393,18 +1457,39 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
             ShapeCanvas.UpdateLayout();
 
+            // Draw each visible layer individually, positioned relative to MainImage.
+            // A single VisualBrush over ShapeCanvas maps its viewbox against the canvas's
+            // content bounds (which include the canvas margin and any overlays outside the
+            // image), shifting the export and misaligning overlays with the image.
+            double scaleX = imageWidth / MainImage.ActualWidth;
+            double scaleY = imageHeight / MainImage.ActualHeight;
+
+            IEnumerable<UIElement> layers = ShapeCanvas.Children
+                .Cast<UIElement>()
+                .Select((element, index) => (element, index))
+                .OrderBy(item => Panel.GetZIndex(item.element))
+                .ThenBy(item => item.index)
+                .Select(item => item.element)
+                .Where(element => element.Visibility == Visibility.Visible);
+
             DrawingVisual visual = new();
             using (DrawingContext context = visual.RenderOpen())
             {
-                VisualBrush imageBrush = new(ShapeCanvas)
+                foreach (UIElement layer in layers)
                 {
-                    Stretch = Stretch.Fill,
-                    Viewbox = new Rect(0, 0, MainImage.ActualWidth, MainImage.ActualHeight),
-                    ViewboxUnits = BrushMappingMode.Absolute,
-                    Viewport = new Rect(0, 0, imageWidth, imageHeight),
-                    ViewportUnits = BrushMappingMode.Absolute
-                };
-                context.DrawRectangle(imageBrush, null, new Rect(0, 0, imageWidth, imageHeight));
+                    Rect localBounds = VisualTreeHelper.GetDescendantBounds(layer);
+                    if (localBounds.IsEmpty || localBounds.Width <= 0 || localBounds.Height <= 0)
+                        continue;
+
+                    Rect imageBounds = layer.TransformToVisual(MainImage).TransformBounds(localBounds);
+                    Rect targetBounds = new(
+                        imageBounds.X * scaleX,
+                        imageBounds.Y * scaleY,
+                        imageBounds.Width * scaleX,
+                        imageBounds.Height * scaleY);
+
+                    context.DrawRectangle(new VisualBrush(layer) { Stretch = Stretch.Fill }, null, targetBounds);
+                }
             }
 
             RenderTargetBitmap renderedImage = new(
@@ -1425,6 +1510,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             foreach ((MarkupShapeControl control, bool visible) in markupGizmoVisibility)
                 control.IsDragGizmoVisible = visible;
 
+            foreach ((ConstructionOverlayControl control, bool visible) in constructionGizmoVisibility)
+                control.IsDragGizmoVisible = visible;
+
             canvasScale.ScaleX = originalScaleX;
             canvasScale.ScaleY = originalScaleY;
             canvasTranslate.X = originalTranslateX;
@@ -1432,10 +1520,15 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         }
     }
 
-    private void SetUiForLongTask()
+    /// <param name="message">
+    /// What the user is waiting for, shown next to the canvas progress ring. Defaults to a generic
+    /// label so call sites that have nothing more specific to say need no argument.
+    /// </param>
+    private void SetUiForLongTask(string message = MainWindowViewModel.DefaultBusyMessage)
     {
         BottomPane.IsEnabled = false;
         Cursor = Cursors.Wait;
+        ViewModel.BusyMessage = message;
         ViewModel.IsBusy = true;
         autoSaveTimer?.Stop();
     }
@@ -1443,6 +1536,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private void SetUiForCompletedTask()
     {
         ViewModel.IsBusy = false;
+        ViewModel.BusyMessage = MainWindowViewModel.DefaultBusyMessage;
         Cursor = null;
         BottomPane.IsEnabled = true;
 
@@ -1465,7 +1559,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private async void OpenFileButton_Click(object sender, RoutedEventArgs e)
     {
-        SetUiForLongTask();
+        SetUiForLongTask("Opening image");
 
         OpenFileDialog openFileDialog = new()
         {
@@ -1502,7 +1596,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
-        SetUiForLongTask();
+        SetUiForLongTask("Pasting image");
         try
         {
             WelcomeMessageModal.Visibility = Visibility.Collapsed;
@@ -1557,7 +1651,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     {
         try
         {
-            SetUiForLongTask();
+            SetUiForLongTask("Capturing image");
             WelcomeMessageModal.Visibility = Visibility.Collapsed;
 
             nint hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
@@ -1937,6 +2031,18 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
+        if (IsConstructionToolActive)
+        {
+            HandleConstructionMouseDown(clickedPoint, e);
+            return;
+        }
+
+        // Reaching here means no construction point, line, or faint line claimed the
+        // click — it landed on bare canvas, which deselects. Left button only, so a
+        // right-click aimed at a context menu leaves the selection alone.
+        if (e.ChangedButton == MouseButton.Left)
+            ClearConstructionSelection();
+
         if (MeasureDistanceToggle.IsChecked is true)
         {
             double scale = ScaleInput.Value ?? 1.0;
@@ -2131,6 +2237,16 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
+        // --- CONSTRUCTION EDGE DRAG / BOUNDARY PROBE ---
+        // Keyed to their own dragging modes, so they must be tested before the generic
+        // CreatingMeasurement block below.
+        if (draggingMode is DraggingMode.ConstructionEdgeCreate or DraggingMode.ConstructionBoundaryProbe)
+        {
+            HandleConstructionMouseUp(e.GetPosition(ShapeCanvas));
+            e.Handled = true;
+            return;
+        }
+
         if (isCreatingMeasurement && draggingMode == DraggingMode.CreatingMeasurement)
         {
             Point endPoint = e.GetPosition(ShapeCanvas);
@@ -2183,50 +2299,93 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         }
     }
 
-    private void AspectRatioComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void InitializeAspectRatioSelection()
     {
-        if (sender is not ComboBox comboBox || comboBox.SelectedItem is not AspectRatioItem item || !IsLoaded)
-            return;
+        AspectRatioItem? defaultRatio = GetAvailableAspectRatios()
+            .FirstOrDefault(item => item.Id == appSettings.DefaultAspectRatioId);
 
-        selectedAspectRatio = item;
-
-        if (item.AspectRatioEnum == AspectRatio.Custom)
-        {
-            CustomButtonGrid.Visibility = Visibility.Visible;
-            UpdateCustomAspectRatioPreview();
-            return;
-        }
-
-        CustomButtonGrid.Visibility = Visibility.Collapsed;
-
-        if (item.AspectRatioEnum == AspectRatio.Original)
-        {
-            UpdateOriginalAspectRatioPreview();
-            return;
-        }
-
-        AspectRatioTransformPreview.RatioItem = item;
+        SetSelectedAspectRatio(defaultRatio);
     }
 
-    private void CustomWidth_ValueChanged(object sender, RoutedEventArgs e)
+    private IEnumerable<AspectRatioItem> GetAvailableAspectRatios() =>
+        AspectRatioItem.GetStandardAspectRatios().Concat(appSettings.CustomAspectRatios);
+
+    private async void AspectRatioPickerButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!IsLoaded)
+        await ChooseAspectRatioAsync();
+    }
+
+    private async Task ChooseAspectRatioAsync()
+    {
+        double? originalRatio = ViewModel.OriginalImageSize.Width > 0
+            ? ViewModel.OriginalImageSize.Height / ViewModel.OriginalImageSize.Width
+            : null;
+
+        AspectRatioPicker picker = new(
+            AspectRatioItem.GetStandardAspectRatios(),
+            appSettings.CustomAspectRatios,
+            selectedAspectRatio,
+            appSettings.DefaultAspectRatioId,
+            originalRatio);
+
+        ContentDialog dialog = new()
+        {
+            Title = "Choose Output Aspect Ratio",
+            Content = picker,
+            PrimaryButtonText = "Use this ratio",
+            CloseButtonText = "Cancel",
+            IsPrimaryButtonEnabled = picker.SelectedRatio is not null,
+            DialogHost = Presenter,
+        };
+
+        picker.SelectedRatioChanged += (_, _) =>
+            dialog.IsPrimaryButtonEnabled = picker.SelectedRatio is not null;
+
+        ContentDialogResult result = await dialog.ShowAsync();
+        if (result != ContentDialogResult.Primary || picker.SelectedRatio is null)
             return;
 
-        double aspectRatio = double.NaN;
+        appSettings.CustomAspectRatios = picker.SavedRatios.ToList();
 
-        if (CustomHeight.Value is double height && CustomWidth.Value is double width && height != 0 && width != 0)
-            aspectRatio = height / width;
+        switch (picker.DefaultChoice)
+        {
+            case AspectRatioDefaultChoice.UseSelected:
+                appSettings.DefaultAspectRatioId = picker.SelectedRatio.Id;
+                break;
+            case AspectRatioDefaultChoice.AskEveryTime:
+                appSettings.DefaultAspectRatioId = null;
+                break;
+            case AspectRatioDefaultChoice.KeepCurrent:
+                if (GetAvailableAspectRatios().All(item => item.Id != appSettings.DefaultAspectRatioId))
+                    appSettings.DefaultAspectRatioId = null;
+                break;
+        }
 
-        double trimmedValue = Math.Round(aspectRatio, 2);
-        AspectRatioTextBox.Text = $"Ratio: {trimmedValue}";
+        appSettings.Save();
+        SetSelectedAspectRatio(picker.SelectedRatio);
+    }
 
-        UpdateCustomAspectRatioPreview();
+    private void SetSelectedAspectRatio(AspectRatioItem? item)
+    {
+        selectedAspectRatio = item is null ? null : item with { };
+        AspectRatioSelectionName.Text = selectedAspectRatio?.Text ?? "Choose aspect ratio";
+        AspectRatioSelectionDetail.Text = selectedAspectRatio?.ToolTip ?? "Required for transform";
+        AspectRatioSelectionRequiredText.Visibility = selectedAspectRatio is null
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        AspectRatioTransformPreview.Visibility = selectedAspectRatio is null
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+        ApplyTransformButton.IsEnabled = selectedAspectRatio is not null;
+        AspectRatioTransformPreview.RatioItem = selectedAspectRatio;
+
+        if (selectedAspectRatio?.AspectRatioEnum == AspectRatio.Original)
+            UpdateOriginalAspectRatioPreview();
     }
 
     /// <summary>
     /// Updates the aspect ratio preview shape to match the currently loaded image's original dimensions.
-    /// Does not mutate items in the ComboBox to avoid breaking selection tracking.
+    /// Does not mutate the selected preset because its ratio is image-specific.
     /// </summary>
     private void UpdateOriginalAspectRatioPreview()
     {
@@ -2240,23 +2399,6 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             AspectRatioEnum = AspectRatio.Original
         };
         AspectRatioTransformPreview.RatioItem = previewItem;
-    }
-
-    /// <summary>
-    /// Updates the aspect ratio preview shape to match the current custom width/height values.
-    /// </summary>
-    private void UpdateCustomAspectRatioPreview()
-    {
-        if (CustomHeight.Value is double h && CustomWidth.Value is double w && h != 0 && w != 0)
-        {
-            double ratio = h / w;
-            AspectRatioItem customPreview = new()
-            {
-                RatioValue = ratio,
-                AspectRatioEnum = AspectRatio.Custom
-            };
-            AspectRatioTransformPreview.RatioItem = customPreview;
-        }
     }
 
     private void FluentWindow_PreviewDragOver(object sender, DragEventArgs e)
@@ -2340,9 +2482,45 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             CenterAndZoomToFit();
     }
 
+    /// <summary>
+    /// Restores the canvas preferences saved by a previous session.
+    /// </summary>
+    private void ApplyPersistedCanvasSettings()
+    {
+        allowHandlesOutsideImage = appSettings.AllowHandlesOutsideImage;
+        showMiniMap = appSettings.ShowMiniMap;
+
+        AllowOutsideImageToggle.IsChecked = allowHandlesOutsideImage;
+    }
+
     private void AllowOutsideImageToggle_Changed(object sender, RoutedEventArgs e)
     {
         allowHandlesOutsideImage = AllowOutsideImageToggle.IsChecked == true;
+
+        appSettings.AllowHandlesOutsideImage = allowHandlesOutsideImage;
+        appSettings.Save();
+
+        // Turning the restriction on should pull handles that are already outside the image back
+        // in, rather than only affecting the next drag.
+        if (!allowHandlesOutsideImage)
+            ConstrainAllTransformHandles();
+    }
+
+    /// <summary>
+    /// Re-applies the image-bounds constraint to every visible transform handle.
+    /// </summary>
+    private void ConstrainAllTransformHandles()
+    {
+        foreach (Ellipse handle in GetTransformHandles())
+        {
+            if (handle.Visibility != Visibility.Visible || handle.Tag is not string tag
+                || !int.TryParse(tag, out int index))
+            {
+                continue;
+            }
+
+            MoveTransformHandleTo(handle, index, GeometryMathHelper.GetEllipseCenter(handle));
+        }
     }
 
     private void CanvasZoomSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -2533,7 +2711,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         draggingMode = DraggingMode.Panning;
         clickedPoint = e.GetPosition(this);
         MainGrid.CaptureMouse();
-        Cursor = Cursors.SizeAll;
+        Cursor = CursorHelper.Grabbing;
         e.Handled = true;
     }
 
@@ -2643,6 +2821,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         ToggleMiniMapMenuItem.IsChecked = showMiniMap;
         ToggleMiniMapBarMenuItem.IsChecked = showMiniMap;
+
+        appSettings.ShowMiniMap = showMiniMap;
+        appSettings.Save();
 
         UpdateMiniMap();
     }
@@ -2840,7 +3021,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             WhitePointColorPreview.Visibility = Visibility.Visible;
 
             await Task.Delay(800);
-            SetUiForLongTask();
+            SetUiForLongTask("Sampling color");
 
             // Build the per-channel Level adjustment
             void ApplyColorPoint(MagickImage target)
@@ -2936,7 +3117,10 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     private void StretchMenuItem_Click(object sender, RoutedEventArgs e)
     {
         oldGridSize = new(ImageGrid.ActualWidth, ImageGrid.ActualHeight);
+        resizeStartImageSize = new(MainImage.ActualWidth, MainImage.ActualHeight);
+        resizeStartImageStretch = MainImage.Stretch;
         ShowResizeControls();
+        resizeOverlayBaseline = CaptureOverlayBaseline();
     }
 
     private async void CropImage_Click(object sender, RoutedEventArgs e)
@@ -2982,7 +3166,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         double factor = magickImage.Height / displayHeight;
         cropGeometry.ScaleAll(factor);
 
-        SetUiForLongTask();
+        SetUiForLongTask("Cropping image");
 
         magickImage.Crop(cropGeometry);
 
@@ -3034,6 +3218,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrEmpty(ViewModel.ImagePath) || !File.Exists(ViewModel.ImagePath))
             return;
 
+        ViewModel.BusyMessage = "Detecting edges";
         ViewModel.IsBusy = true;
 
         try
@@ -3041,21 +3226,25 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             QuadrilateralDetector.DetectionResult detectionResult = await Task.Run(() =>
                 QuadrilateralDetector.DetectQuadrilateralsWithDimensions(ViewModel.ImagePath, minArea: QuadDetectionMinArea, maxResults: QuadDetectionMaxResults));
 
-            if (detectionResult.Quadrilaterals.Count == 0)
+            List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads = [.. detectionResult.Quadrilaterals.Select(q =>
+                QuadrilateralDetector.ScaleToDisplay(
+                    q,
+                    detectionResult.ImageWidth,
+                    detectionResult.ImageHeight,
+                    MainImage.ActualWidth,
+                    MainImage.ActualHeight))];
+
+            // A hand-built construction is most valuable on exactly the images where
+            // contour detection finds nothing, so it is offered even with no detections.
+            PrependConstructedQuadrilateral(scaledQuads);
+
+            if (scaledQuads.Count == 0)
             {
                 CropDetectInfoText.Text = "No shapes detected. Position the crop rectangle manually.";
                 CropDetectInfoText.Visibility = Visibility.Visible;
             }
             else
             {
-                List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads = [.. detectionResult.Quadrilaterals.Select(q =>
-                    QuadrilateralDetector.ScaleToDisplay(
-                        q,
-                        detectionResult.ImageWidth,
-                        detectionResult.ImageHeight,
-                        MainImage.ActualWidth,
-                        MainImage.ActualHeight))];
-
                 CropQuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
                 CropQuadrilateralSelectorControl.QuadrilateralHoverEnter -= QuadrilateralSelector_HoverEnter;
                 CropQuadrilateralSelectorControl.QuadrilateralHoverExit -= QuadrilateralSelector_HoverExit;
@@ -3072,6 +3261,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         finally
         {
             ViewModel.IsBusy = false;
+            ViewModel.BusyMessage = MainWindowViewModel.DefaultBusyMessage;
         }
     }
 
@@ -3128,6 +3318,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     {
         ShowTransformControls();
         await RunTransformDetectionAsync();
+
+        if (selectedAspectRatio is null)
+            await ChooseAspectRatioAsync();
     }
 
     private void CancelTransformButton_Click(object sender, RoutedEventArgs e)
@@ -3146,6 +3339,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         HideGridStraightenControls();
 
         TransformButtonPanel.Visibility = Visibility.Visible;
+        ApplyTransformButton.IsEnabled = selectedAspectRatio is not null;
 
         foreach (UIElement element in _polygonElements)
             element.Visibility = Visibility.Visible;
@@ -3323,7 +3517,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrWhiteSpace(ViewModel.ImagePath))
             return;
 
-        SetUiForLongTask();
+        SetUiForLongTask("Correcting tri-fold");
 
         try
         {
@@ -3404,6 +3598,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrEmpty(ViewModel.ImagePath) || !File.Exists(ViewModel.ImagePath))
             return;
 
+        ViewModel.BusyMessage = "Detecting edges";
         ViewModel.IsBusy = true;
 
         try
@@ -3412,22 +3607,24 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 QuadrilateralDetector.DetectQuadrilateralsWithDimensions(
                     ViewModel.ImagePath, minArea: QuadDetectionMinArea, maxResults: QuadDetectionMaxResults));
 
-            if (detectionResult.Quadrilaterals.Count == 0)
+            List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads =
+            [.. detectionResult.Quadrilaterals.Select(q =>
+                QuadrilateralDetector.ScaleToDisplay(
+                    q,
+                    detectionResult.ImageWidth,
+                    detectionResult.ImageHeight,
+                    MainImage.ActualWidth,
+                    MainImage.ActualHeight))];
+
+            PrependConstructedQuadrilateral(scaledQuads);
+
+            if (scaledQuads.Count == 0)
             {
                 UnWarpDetectInfoText.Text = "No shapes detected. Position the corner markers manually.";
                 UnWarpDetectInfoText.Visibility = Visibility.Visible;
             }
             else
             {
-                List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads =
-                [.. detectionResult.Quadrilaterals.Select(q =>
-                    QuadrilateralDetector.ScaleToDisplay(
-                        q,
-                        detectionResult.ImageWidth,
-                        detectionResult.ImageHeight,
-                        MainImage.ActualWidth,
-                        MainImage.ActualHeight))];
-
                 UnWarpQuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
                 UnWarpQuadrilateralSelectorControl.QuadrilateralHoverEnter -= QuadrilateralSelector_HoverEnter;
                 UnWarpQuadrilateralSelectorControl.QuadrilateralHoverExit -= QuadrilateralSelector_HoverExit;
@@ -3445,6 +3642,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         finally
         {
             ViewModel.IsBusy = false;
+            ViewModel.BusyMessage = MainWindowViewModel.DefaultBusyMessage;
         }
     }
 
@@ -3667,7 +3865,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrWhiteSpace(ViewModel.ImagePath))
             return;
 
-        SetUiForLongTask();
+        SetUiForLongTask("Un-warping image");
 
         try
         {
@@ -3962,7 +4160,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
-        SetUiForLongTask();
+        SetUiForLongTask("Straightening edges");
 
         try
         {
@@ -4308,7 +4506,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
-        SetUiForLongTask();
+        SetUiForLongTask("Straightening grid");
 
         try
         {
@@ -4373,6 +4571,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (string.IsNullOrEmpty(ViewModel.ImagePath) || !File.Exists(ViewModel.ImagePath))
             return;
 
+        ViewModel.BusyMessage = "Detecting edges";
         ViewModel.IsBusy = true;
 
         try
@@ -4380,21 +4579,23 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             QuadrilateralDetector.DetectionResult detectionResult = await Task.Run(() =>
                 QuadrilateralDetector.DetectQuadrilateralsWithDimensions(ViewModel.ImagePath, minArea: QuadDetectionMinArea, maxResults: QuadDetectionMaxResults));
 
-            if (detectionResult.Quadrilaterals.Count == 0)
+            List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads = [.. detectionResult.Quadrilaterals.Select(q =>
+                QuadrilateralDetector.ScaleToDisplay(
+                    q,
+                    detectionResult.ImageWidth,
+                    detectionResult.ImageHeight,
+                    MainImage.ActualWidth,
+                    MainImage.ActualHeight))];
+
+            PrependConstructedQuadrilateral(scaledQuads);
+
+            if (scaledQuads.Count == 0)
             {
                 TransformDetectInfoText.Text = "No shapes detected. Position the corner markers manually.";
                 TransformDetectInfoText.Visibility = Visibility.Visible;
             }
             else
             {
-                List<QuadrilateralDetector.DetectedQuadrilateral> scaledQuads = [.. detectionResult.Quadrilaterals.Select(q =>
-                    QuadrilateralDetector.ScaleToDisplay(
-                        q,
-                        detectionResult.ImageWidth,
-                        detectionResult.ImageHeight,
-                        MainImage.ActualWidth,
-                        MainImage.ActualHeight))];
-
                 QuadrilateralSelectorControl.SetQuadrilaterals(scaledQuads);
                 QuadrilateralSelectorControl.QuadrilateralHoverEnter -= QuadrilateralSelector_HoverEnter;
                 QuadrilateralSelectorControl.QuadrilateralHoverExit -= QuadrilateralSelector_HoverExit;
@@ -4411,6 +4612,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         finally
         {
             ViewModel.IsBusy = false;
+            ViewModel.BusyMessage = MainWindowViewModel.DefaultBusyMessage;
         }
     }
 
@@ -4468,7 +4670,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (Mouse.LeftButton == MouseButtonState.Pressed)
         {
             clickedPoint = e.GetPosition(ShapeCanvas);
-            oldGridSize = new Size(ImageGrid.ActualWidth, ImageGrid.ActualHeight);
+            // oldGridSize stays the pre-resize size captured when the panel opened
+            resizeDragStartSize = new Size(ImageGrid.ActualWidth, ImageGrid.ActualHeight);
             draggingMode = DraggingMode.Resizing;
             isDraggingResizeGrip = true;
 
@@ -4506,13 +4709,22 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             IgnoreAspectRatio = true
         };
 
-        SetUiForLongTask();
+        SetUiForLongTask("Resizing image");
 
         magickImage.Resize(resizeGeometry);
 
         string tempFileName = await magickImage.WriteToTempFileAsync();
 
-        ResizeUndoRedoItem undoRedoItem = new(MainImage, ImageGrid, oldGridSize, ViewModel.ImagePath, tempFileName);
+        // The grid already shows the new display size; resolve it (Height may still be auto)
+        ImageGrid.UpdateLayout();
+        Size newGridSize = new(ImageGrid.ActualWidth, ImageGrid.ActualHeight);
+
+        // The overlays already follow the preview; this just captures it for undo/redo
+        (Action Undo, Action Redo)? overlayScaling = CommitResizeOverlayPreview();
+
+        ResizeUndoRedoItem undoRedoItem = new(
+            MainImage, ImageGrid, oldGridSize, newGridSize, ViewModel.ImagePath, tempFileName,
+            overlayScaling?.Undo, overlayScaling?.Redo);
         UndoRedo.AddUndo(undoRedoItem);
 
         ViewModel.ImagePath = tempFileName;
@@ -4524,20 +4736,27 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         ViewModel.ActualImageSize = new Size(targetWidth, targetHeight);
 
         SetUiForCompletedTask();
+        resizeOverlayBaseline = null;
         HideResizeControls();
     }
 
     private void CancelResizeButton_Click(object sender, RoutedEventArgs e)
     {
-        ImageGrid.Width = oldGridSize.Width;
-        ImageGrid.Height = oldGridSize.Height;
-        ImageGrid.InvalidateMeasure();
-
         HideResizeControls();
     }
 
     private void HideResizeControls()
     {
+        if (resizeOverlayBaseline is not null)
+        {
+            ImageGrid.Width = oldGridSize.Width;
+            ImageGrid.Height = oldGridSize.Height;
+            ImageGrid.InvalidateMeasure();
+            MainImage.Stretch = resizeStartImageStretch;
+            CancelResizeOverlayPreview();
+            resizeOverlayBaseline = null;
+        }
+
         ResizeButtonsPanel.Visibility = Visibility.Collapsed;
         ImageResizeGrip.Visibility = Visibility.Hidden;
     }
@@ -4661,14 +4880,30 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             targetHeight = ViewModel.ActualImageSize.Height * (height / 100.0);
         }
 
-        // Calculate scale factors relative to original display size
+        // Calculate scale factors relative to the current image pixel size
         double widthScale = targetWidth / ViewModel.ActualImageSize.Width;
         double heightScale = targetHeight / ViewModel.ActualImageSize.Height;
 
-        // Apply to ImageGrid (maintains the same logic as drag resize)
-        ImageGrid.Width = ViewModel.OriginalImageSize.Width * widthScale;
-        ImageGrid.Height = ViewModel.OriginalImageSize.Height * heightScale;
+        // Scale the image's on-screen size from when the panel opened. OriginalImageSize is the
+        // file as first opened (stale after crops/transforms), and the grid also holds the resize
+        // grip's row and column, so scaling either would letterbox and offset the image.
+        Size gripSpace = GetResizeGripSpace();
+        MainImage.Stretch = Stretch.Fill;
+        ImageGrid.Width = resizeStartImageSize.Width * widthScale + gripSpace.Width;
+        ImageGrid.Height = resizeStartImageSize.Height * heightScale + gripSpace.Height;
         ImageGrid.InvalidateMeasure();
+        UpdateResizeOverlayPreview();
+    }
+
+    /// <summary>
+    /// The space ImageGrid reserves around the image for the resize grip's auto row and column
+    /// (reserved even while the grip is Hidden).
+    /// </summary>
+    private Size GetResizeGripSpace()
+    {
+        return new Size(
+            Math.Max(0, oldGridSize.Width - resizeStartImageSize.Width),
+            Math.Max(0, oldGridSize.Height - resizeStartImageSize.Height));
     }
 
     private void PixelModeToggle_Checked(object sender, RoutedEventArgs e)
@@ -4843,7 +5078,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return;
         }
 
-        SetUiForLongTask();
+        SetUiForLongTask("Erasing object");
 
         try
         {
@@ -5077,6 +5312,8 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         horizontalLineControls.Clear();
 
+        RemoveConstructionControls();
+
         ClearAllStrokesAndLengths();
         ClearAllMarkup();
         draggingMode = DraggingMode.None;
@@ -5207,7 +5444,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         StackPanel content = new()
         {
-            Orientation = Orientation.Vertical,
+            Orientation = System.Windows.Controls.Orientation.Vertical,
             Children =
             {
                 new WpfTextBlock
@@ -5281,6 +5518,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         foreach (CircleMeasurementControl tool in circleMeasurementTools)
             tool.ScaleFactor = newScale;
 
+        foreach (ConstructionOverlayControl tool in constructionControls)
+            tool.ScaleFactor = newScale;
+
         // Update stroke measurements
         UpdateStrokeMeasurements();
     }
@@ -5300,6 +5540,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             tool.Units = textBox.Text;
 
         foreach (CircleMeasurementControl tool in circleMeasurementTools)
+            tool.Units = textBox.Text;
+
+        foreach (ConstructionOverlayControl tool in constructionControls)
             tool.Units = textBox.Text;
 
         // Update stroke measurements
@@ -5325,6 +5568,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             info.Units = units;
 
             updatedMeasurements[stroke] = info;
+            ShapeCanvas.Children.OfType<StrokeLengthDisplay>()
+                .FirstOrDefault(display => display.GetStroke() == stroke)?
+                .Refresh();
         }
 
         strokeMeasurements = updatedMeasurements;
@@ -5361,6 +5607,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             control.Visibility = visibility;
 
         foreach (HorizontalLineControl control in horizontalLineControls)
+            control.Visibility = visibility;
+
+        foreach (ConstructionOverlayControl control in constructionControls)
             control.Visibility = visibility;
 
         DrawingCanvas.Visibility = visibility;
@@ -5411,6 +5660,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         foreach (PolygonMeasurementControl control in polygonMeasurementTools)
             package.Measurements.PolygonMeasurements.Add(control.ToDto());
+
+        foreach (ConstructionOverlayControl control in constructionControls)
+            package.Measurements.Constructions.Add(control.ToDto());
 
         foreach (VerticalLineControl control in verticalLineControls)
             package.Measurements.VerticalLines.Add(control.ToDto());
@@ -5477,7 +5729,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         if (saveFileDialog.ShowDialog() != true)
             return;
 
-        SetUiForLongTask();
+        SetUiForLongTask("Saving project");
 
         try
         {
@@ -5502,7 +5754,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     public async Task<bool> LoadMeasurementsPackageFromFile()
     {
-        SetUiForLongTask();
+        SetUiForLongTask("Opening project");
 
         OpenFileDialog openFileDialog = new()
         {
@@ -5676,6 +5928,24 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         }
         Debug.WriteLine($"Loaded polygon measurements. Total in collection: {polygonMeasurementTools.Count}");
 
+        // Add parametric constructions
+        foreach (ConstructionGeometryDto dto in package.Measurements.Constructions)
+        {
+            ConstructionOverlayControl control = new();
+            control.FromDto(dto);
+            WireConstructionOverlay(control);
+            constructionControls.Add(control);
+            ShapeCanvas.Children.Add(control);
+
+            // The overlay the construction tools will build into.
+            constructionOverlay ??= control;
+        }
+
+        UpdateConstructionImageBounds();
+        UpdateConstructionVisualScale();
+        UpdateConstructionApplyButtons();
+        SyncConstructionToolState();
+
         foreach (VerticalLineControlDto dto in package.Measurements.VerticalLines)
         {
             VerticalLineControl control = new();
@@ -5761,7 +6031,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     public async void LoadMeasurementsPackageFromFile(string filePath)
     {
-        SetUiForLongTask();
+        SetUiForLongTask("Opening project");
         WelcomeMessageModal.Visibility = Visibility.Collapsed;
 
         await LoadMeasurementPackageAsync(filePath);
@@ -5874,8 +6144,11 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         // --- Cancel any active placement / creation state ---
         isCreatingMeasurement = false;
         draggingMode = DraggingMode.None;
+        EndTransformHandleDrag();
         clickedElement = null;
         pointDraggingIndex = -1;
+        lastActiveTransformHandle = null;
+        lastActiveTransformIndex = -1;
         ShapeCanvas.ReleaseMouseCapture();
         ReleaseMouseCapture();
 
@@ -5917,6 +6190,10 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             ShapeCanvas.Children.Remove(activePolygonPlacementControl);
             activePolygonPlacementControl = null;
         }
+
+        // --- Construction placement ---
+        CancelConstructionGesture();
+        activeConstructionControl = null;
 
         // --- Circle measurement placement ---
         isPlacingCircleMeasurement = false;
@@ -6334,11 +6611,72 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         UncheckAllBut(toggleButton);
     }
 
+    /// <summary>
+    /// Turning a tool off has to go through the same funnel as turning one on.
+    /// </summary>
+    /// <remarks>
+    /// Without this, clicking a checked construction tool cleared only the button that was
+    /// clicked. Its twin in the other tab stayed checked, and since
+    /// <see cref="ActiveConstructionTool"/> reads whichever toggle is checked across both
+    /// tabs, the tool went on being active behind a button that looked off. The tool state
+    /// never resynced either, so the sample buffer was never released.
+    /// </remarks>
+    private void ToolSelector_Unchecked(object sender, RoutedEventArgs e)
+    {
+        // A programmatic uncheck is already part of a sync that will finish the job.
+        if (isSyncingToolToggles)
+            return;
+
+        if (sender is not ToggleButton toggleButton)
+            return;
+
+        UncheckTwinsOf(toggleButton);
+
+        // Single funnel for tool changes, same as UncheckAllBut ends with.
+        SyncConstructionToolState();
+    }
+
+    /// <summary>
+    /// Clears the other buttons carrying the same Tag. Construction tools appear once per
+    /// tab, and the pair has to move together in both directions.
+    /// </summary>
+    private void UncheckTwinsOf(ToggleButton toggleButton)
+    {
+        if (toggleButton.Tag is not string tag)
+            return;
+
+        isSyncingToolToggles = true;
+        try
+        {
+            foreach (ToggleButton button in AllToolToggles())
+            {
+                if (button != toggleButton && button.Tag as string == tag)
+                    button.IsChecked = false;
+            }
+        }
+        finally
+        {
+            isSyncingToolToggles = false;
+        }
+    }
+
+    /// <summary>
+    /// Every tool toggle across all tool panels. Construction tools appear in both the
+    /// Measure and Transform tabs, so mutual exclusion cannot look at one panel alone.
+    /// </summary>
+    private IEnumerable<ToggleButton> AllToolToggles()
+    {
+        if (toolPanels is null)
+            return MeasureToolsPanel?.Children.OfType<ToggleButton>() ?? [];
+
+        return toolPanels
+            .Where(panel => panel is not null)
+            .SelectMany(panel => panel.Children.OfType<ToggleButton>());
+    }
+
     private bool IsAnyToolSelected()
     {
-        List<ToggleButton> toolToggleButtons = [.. MeasureToolsPanel.Children.OfType<ToggleButton>()];
-
-        foreach (ToggleButton button in toolToggleButtons)
+        foreach (ToggleButton button in AllToolToggles())
             if (button.IsChecked == true)
                 return true;
 
@@ -6347,17 +6685,40 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
     private void UncheckAllBut(ToggleButton? toggleButton = null)
     {
-        List<ToggleButton> toolToggleButtons = [.. MeasureToolsPanel.Children.OfType<ToggleButton>()];
+        // Checking a twin raises its own Checked event, which lands back here.
+        if (isSyncingToolToggles)
+            return;
 
-        foreach (ToggleButton button in toolToggleButtons)
-            if (button != toggleButton)
-                button.IsChecked = false;
+        isSyncingToolToggles = true;
+        try
+        {
+            // A construction tool has a twin button in the other tab. Both carry the same
+            // Tag, so keeping the twin checked keeps both tabs showing the same active tool.
+            string? keepTag = toggleButton?.Tag as string;
+
+            foreach (ToggleButton button in AllToolToggles())
+            {
+                if (button == toggleButton)
+                    continue;
+
+                bool isTwin = keepTag is not null && button.Tag as string == keepTag;
+                button.IsChecked = isTwin;
+            }
+        }
+        finally
+        {
+            isSyncingToolToggles = false;
+        }
 
         if (toggleButton is null)
         {
             draggingMode = DraggingMode.None;
             isCreatingMeasurement = false;
+            CancelConstructionGesture();
         }
+
+        // Single funnel for tool changes, so the overlays always know which one is live.
+        SyncConstructionToolState();
     }
 
     private void ToolSelector_Clicked(object sender, RoutedEventArgs e)
@@ -6401,6 +6762,19 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         // While a text box has keyboard focus (e.g. editing a markup text),
         // leave Ctrl+Z/Ctrl+Y to the text box's own undo
         bool typingInTextBox = Keyboard.FocusedElement is System.Windows.Controls.Primitives.TextBoxBase;
+
+        // Arrow keys nudge the transform handle that was last grabbed, for placement that is finer
+        // than the mouse can manage. Controls that use the arrow keys themselves keep priority.
+        if (e.Key is Key.Left or Key.Right or Key.Up or Key.Down
+            && !typingInTextBox
+            && Keyboard.FocusedElement is not Slider
+            && Keyboard.FocusedElement is not System.Windows.Controls.ComboBox
+            && (Keyboard.Modifiers & ModifierKeys.Alt) != ModifierKeys.Alt
+            && TryNudgeTransformHandle(e.Key))
+        {
+            e.Handled = true;
+            return;
+        }
 
         // Handle Ctrl+Z for undo
         if (!typingInTextBox && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && e.Key == Key.Z)
@@ -6450,6 +6824,18 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             if (deletedAnything)
             {
                 ClearMarkupGroupSelection();
+                e.Handled = true;
+                return;
+            }
+        }
+
+        // Delete removes the selected construction line — keeping its two points — or,
+        // when no line is selected, the selected points themselves. Placed after the
+        // markup handler so a markup selection still wins its own Delete.
+        if (!typingInTextBox && e.Key is Key.Delete or Key.Back && HasConstructionSelection)
+        {
+            if (DeleteSelectedConstruction())
+            {
                 e.Handled = true;
                 return;
             }
@@ -6840,7 +7226,7 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             return; // no-op
         }
 
-        SetUiForLongTask();
+        SetUiForLongTask("Rotating image");
         try
         {
             string previousPath = ViewModel.ImagePath!;
@@ -6850,7 +7236,9 @@ public partial class MainWindow : FluentWindow, IMainWindowView
                 mi.BackgroundColor = MagickColors.Transparent;
                 mi.VirtualPixelMethod = VirtualPixelMethod.Transparent;
                 mi.Rotate(angle);
-                return mi.WriteToTempFile();
+
+                // Rotation fills the corners with transparency, so keep an alpha-capable format.
+                return mi.WriteToTempFile(MagickFormat.Png);
             });
 
             MagickImageUndoRedoItem undoItem = new(MainImage, previousPath, tempFileName);
@@ -6918,10 +7306,17 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     #region Pixel Precision Zoom
 
     /// <summary>
-    /// Shows the pixel precision zoom control at the current mouse position.
+    /// Shows the pixel precision zoom control.
     /// </summary>
-    /// <param name="mousePosition">Mouse position in ShapeCanvas coordinates</param>
-    private void ShowPixelZoom(Point mousePosition)
+    /// <param name="targetPoint">
+    /// The point to magnify, in ShapeCanvas coordinates. When a handle is being dragged by its
+    /// edge this is the handle centre, not the cursor, so the crosshair marks where the point
+    /// will actually land.
+    /// </param>
+    /// <param name="cursorPoint">
+    /// Where to park the loupe, in ShapeCanvas coordinates. Defaults to <paramref name="targetPoint"/>.
+    /// </param>
+    private void ShowPixelZoom(Point targetPoint, Point? cursorPoint = null)
     {
         if (MainImage.Source == null)
             return;
@@ -6930,17 +7325,12 @@ public partial class MainWindow : FluentWindow, IMainWindowView
         {
             // Set the source image for the zoom control
             PixelZoomControl.SourceImage = MainImage.Source;
+            UpdateLoupeMagnification();
 
-            // Convert mouse position to image coordinates
-            Point imagePosition = ConvertCanvasToImageCoordinates(mousePosition);
-            PixelZoomControl.CurrentPosition = imagePosition;
+            // Convert the magnified point to image coordinates
+            PixelZoomControl.CurrentPosition = ConvertCanvasToImageCoordinates(targetPoint);
 
-            // Convert ShapeCanvas coordinates to MainGrid coordinates
-            // ShapeCanvas has transforms applied, so we need to transform the point
-            Point mainGridPosition = ShapeCanvas.TransformToAncestor(MainGrid).Transform(mousePosition);
-
-            // Position the zoom control near the cursor in MainGrid coordinates
-            PixelZoomControl.PositionNearCursor(mainGridPosition, MainGrid.ActualWidth, MainGrid.ActualHeight);
+            PositionPixelZoom(cursorPoint ?? targetPoint);
 
             // Show the control
             PixelZoomControl.Visibility = Visibility.Visible;
@@ -6955,29 +7345,54 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     /// <summary>
     /// Updates the pixel precision zoom control position and preview.
     /// </summary>
-    /// <param name="mousePosition">Mouse position in ShapeCanvas coordinates</param>
-    private void UpdatePixelZoom(Point mousePosition)
+    /// <param name="targetPoint">
+    /// The point to magnify, in ShapeCanvas coordinates. This can differ from the cursor
+    /// for transform handles and boundary probes.
+    /// </param>
+    /// <param name="cursorPoint">
+    /// Where to park the loupe, in ShapeCanvas coordinates. Defaults to <paramref name="targetPoint"/>.
+    /// </param>
+    private void UpdatePixelZoom(Point targetPoint, Point? cursorPoint = null)
     {
         if (PixelZoomControl.Visibility != Visibility.Visible)
             return;
 
         try
         {
-            // Convert mouse position to image coordinates
-            Point imagePosition = ConvertCanvasToImageCoordinates(mousePosition);
-            PixelZoomControl.CurrentPosition = imagePosition;
-
-            // Convert ShapeCanvas coordinates to MainGrid coordinates
-            // ShapeCanvas has transforms applied, so we need to transform the point
-            Point mainGridPosition = ShapeCanvas.TransformToAncestor(MainGrid).Transform(mousePosition);
-
-            // Update the zoom control position in MainGrid coordinates
-            PixelZoomControl.PositionNearCursor(mainGridPosition, MainGrid.ActualWidth, MainGrid.ActualHeight);
+            UpdateLoupeMagnification();
+            PixelZoomControl.CurrentPosition = ConvertCanvasToImageCoordinates(targetPoint);
+            PositionPixelZoom(cursorPoint ?? targetPoint);
         }
         catch (Exception)
         {
             // Silently handle any errors
         }
+    }
+
+    /// <summary>
+    /// Moves the loupe next to the cursor. ShapeCanvas is pan/zoom transformed, so the point has
+    /// to be projected into MainGrid coordinates first.
+    /// </summary>
+    private void PositionPixelZoom(Point cursorPoint)
+    {
+        Point mainGridPosition = ShapeCanvas.TransformToAncestor(MainGrid).Transform(cursorPoint);
+        PixelZoomControl.PositionNearCursor(mainGridPosition, MainGrid.ActualWidth, MainGrid.ActualHeight);
+    }
+
+    /// <summary>
+    /// Keeps the loupe more magnified than the canvas itself. The loupe magnifies source pixels,
+    /// so on a small image at a high canvas zoom a fixed factor would actually show *less* detail
+    /// than the canvas underneath it.
+    /// </summary>
+    private void UpdateLoupeMagnification()
+    {
+        if (MainImage.Source is not BitmapSource source
+            || source.PixelWidth <= 0
+            || MainImage.ActualWidth <= 0)
+            return;
+
+        double canvasPixelsPerSourcePixel = MainImage.ActualWidth / source.PixelWidth * canvasScale.ScaleX;
+        PixelZoomControl.ZoomFactor = Math.Clamp(canvasPixelsPerSourcePixel * 2.5, 6.0, 24.0);
     }
 
     /// <summary>
@@ -7010,6 +7425,22 @@ public partial class MainWindow : FluentWindow, IMainWindowView
     }
 
     /// <summary>
+    /// Converts a point from MainImage pixel coordinates back to ShapeCanvas coordinates,
+    /// for results that come out of analysing the image at its own resolution.
+    /// </summary>
+    private Point ConvertImageToCanvasCoordinates(Point imagePoint)
+    {
+        if (MainImage.Source is not BitmapSource source
+            || source.PixelWidth <= 0
+            || source.PixelHeight <= 0)
+            return new Point(0, 0);
+
+        return new Point(
+            imagePoint.X * MainImage.ActualWidth / source.PixelWidth,
+            imagePoint.Y * MainImage.ActualHeight / source.PixelHeight);
+    }
+
+    /// <summary>
     /// Checks if pixel zoom should be shown for the current operation.
     /// Shows when a measurement tool is active, including hover before first placement.
     /// </summary>
@@ -7025,7 +7456,10 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             DraggingMode.MeasureAngle or
             DraggingMode.MeasureRectangle or
             DraggingMode.MeasurePolygon or
-            DraggingMode.MeasureCircle)
+            DraggingMode.MeasureCircle or
+            DraggingMode.ConstructionPoint or
+            DraggingMode.ConstructionEdgeCreate or
+            DraggingMode.ConstructionBoundaryProbe)
             return true;
 
         // Show during measurement creation (active drag)
@@ -7058,6 +7492,10 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             VerticalLineToggle?.IsChecked == true)
             return true;
 
+        // Construction points need at least as much precision as any other measurement.
+        if (IsConstructionToolActive)
+            return true;
+
         return false;
     }
 
@@ -7077,6 +7515,16 @@ public partial class MainWindow : FluentWindow, IMainWindowView
 
         SetMeasurementDragGizmosVisibility(measurementTabActive);
         SetMarkupDragGizmosVisibility(markupTabActive);
+
+        // Construction tools live in both the Measure and Transform tabs, so the overlay
+        // must stay interactive across both. It is deliberately kept out of
+        // SetMeasurementDragGizmosVisibility, which would kill hit-testing on Transform.
+        bool constructionTabActive = measurementTabActive || TransformTabItem?.IsSelected == true;
+        foreach (ConstructionOverlayControl control in constructionControls)
+        {
+            control.IsHitTestVisible = constructionTabActive;
+            control.IsDragGizmoVisible = constructionTabActive;
+        }
     }
 
     private void DeactivateAllMarkupTools()

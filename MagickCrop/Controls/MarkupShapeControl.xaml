@@ -8,6 +8,7 @@
     <Canvas x:Name="MeasurementCanvas">
         <Canvas.ContextMenu>
             <ContextMenu>
+                <MenuItem Click="ChangeColorMenuItem_Click" Header="Change Color" />
                 <MenuItem Click="RemoveMenuItem_Click" Header="Remove" />
             </ContextMenu>
         </Canvas.ContextMenu>
