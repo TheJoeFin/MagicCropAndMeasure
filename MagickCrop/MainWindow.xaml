@@ -595,8 +595,15 @@
                     <RowDefinition Height="auto" />
                     <RowDefinition Height="auto" />
                 </Grid.RowDefinitions>
-                <ScrollViewer>
-                    <StackPanel MinWidth="200" Orientation="Vertical">
+                <Grid Grid.Row="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <StackPanel
+                        Grid.Row="0"
+                        MinWidth="200"
+                        Orientation="Vertical">
                         <Grid Width="160">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -668,6 +675,12 @@
                                 </MenuItem.Icon>
                             </MenuItem>
                         </StackPanel>
+                    </StackPanel>
+                    <ScrollViewer
+                        Grid.Row="1"
+                        HorizontalScrollBarVisibility="Disabled"
+                        VerticalScrollBarVisibility="Auto">
+                        <StackPanel MinWidth="200" Orientation="Vertical">
                         <TextBlock Text="Tools" />
                         <TabControl ItemContainerStyle="{StaticResource NarrowTabHeaderStyle}" SelectionChanged="ToolsTabControl_SelectionChanged">
                             <TabItem x:Name="TransformTabItem">
@@ -1828,8 +1841,9 @@
                             </TabItem>
                         </TabControl>
 
-                    </StackPanel>
-                </ScrollViewer>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
                 <StackPanel
                     x:Name="CropButtonPanel"
                     Grid.Row="1"
