@@ -493,7 +493,9 @@ public partial class ConstructionOverlayControl : UserControl
         if (selectedFaceIndices.Count == 0) return;
 
         selectedFaceIndices.Clear();
+        transientHint = null;
         UpdateFaceVisuals();
+        UpdateDisplay();
         FaceSelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -504,11 +506,20 @@ public partial class ConstructionOverlayControl : UserControl
     /// </summary>
     public bool TryGetSelectedFacesUnion(out List<List<Point>> rings)
     {
-        rings = selectedFaceIndices.Count > 0
-            ? ConstructionFaceSolver.UnionFaces(faces, selectedFaceIndices)
-            : [];
+        return TryGetSelectedFacesUnion(out rings, out _);
+    }
 
-        return rings.Count > 0;
+    /// <summary>
+    /// Gets a representable selected-face union and reports when it was rejected because
+    /// the selection contains a hole.
+    /// </summary>
+    public bool TryGetSelectedFacesUnion(out List<List<Point>> rings, out bool containsHole)
+    {
+        rings = [];
+        containsHole = false;
+
+        return selectedFaceIndices.Count > 0 &&
+            ConstructionFaceSolver.TryUnionFaces(faces, selectedFaceIndices, out rings, out containsHole);
     }
 
     #endregion
@@ -1738,7 +1749,9 @@ public partial class ConstructionOverlayControl : UserControl
         if (!selectedFaceIndices.Remove(index))
             selectedFaceIndices.Add(index);
 
+        transientHint = null;
         UpdateFaceVisuals();
+        UpdateDisplay();
         FaceSelectionChanged?.Invoke(this, EventArgs.Empty);
         e.Handled = true;
     }

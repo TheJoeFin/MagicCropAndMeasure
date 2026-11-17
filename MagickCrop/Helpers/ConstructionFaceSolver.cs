@@ -118,13 +118,26 @@ public static class ConstructionFaceSolver
     }
 
     /// <summary>
-    /// Merges the faces the caller has selected into one or more outer boundaries. An edge
-    /// shared by two selected faces is internal to the union and cancels out; an edge
-    /// belonging to only one selected face is on the merged shape's outline. Tracing those
-    /// surviving edges into loops is the same face-walk used to find the faces themselves,
-    /// just run over this smaller edge set.
+    /// Merges the faces the caller has selected into one or more outer boundaries. Returns
+    /// no rings for a selection with a hole because each ring is consumed as an independent
+    /// polygon by the current measurement model, which cannot represent compound geometry.
     /// </summary>
     public static List<List<Point>> UnionFaces(IReadOnlyList<ConstructionFace> faces, IEnumerable<int> selectedIndices)
+    {
+        TryUnionFaces(faces, selectedIndices, out List<List<Point>> rings, out _);
+        return rings;
+    }
+
+    /// <summary>
+    /// Attempts to merge selected faces into independent simple polygon boundaries.
+    /// Nested boundaries indicate a hole, which the polygon measurement model cannot
+    /// represent without incorrectly counting the hole as filled geometry.
+    /// </summary>
+    public static bool TryUnionFaces(
+        IReadOnlyList<ConstructionFace> faces,
+        IEnumerable<int> selectedIndices,
+        out List<List<Point>> rings,
+        out bool containsHole)
     {
         Dictionary<(PointKey A, PointKey B), int> edgeCounts = [];
         Dictionary<(PointKey A, PointKey B), (Point A, Point B)> edgeLookup = [];
@@ -147,7 +160,13 @@ public static class ConstructionFaceSolver
         List<(Point A, Point B)> boundary =
             [.. edgeCounts.Where(kv => kv.Value % 2 != 0).Select(kv => edgeLookup[kv.Key])];
 
-        return TraceLoops(boundary);
+        rings = TraceLoops(boundary);
+        containsHole = HasNestedLoop(rings);
+
+        if (containsHole)
+            rings = [];
+
+        return rings.Count > 0;
     }
 
     #region Face arrangement
@@ -254,10 +273,8 @@ public static class ConstructionFaceSolver
     /// Traces closed loops out of an unordered bag of edges, the same way
     /// <see cref="TryTraceFace"/> traces a face, but without the clip-bounds check — this
     /// edge set has no clip artefacts to filter, since it only ever contains edges copied
-    /// from already-solved faces. Two loops emerge per real boundary (clockwise and
-    /// counter-clockwise); duplicate windings are dropped by keeping only positive signed
-    /// area, which also happens to be exactly the filter that separates a genuine outer
-    /// loop from a hole if the selection has one.
+    /// from already-solved faces. Two walks emerge per real boundary; keeping only one
+    /// winding removes that duplicate. Hole loops are identified later by containment.
     /// </summary>
     private static List<List<Point>> TraceLoops(List<(Point A, Point B)> edges)
     {
@@ -347,9 +364,7 @@ public static class ConstructionFaceSolver
 
         List<Point> ring = [.. loopVertices.Select(i => vertices[i])];
 
-        // Keeping only one winding direction both drops the mirror-image duplicate every
-        // loop produces and, for a selection with a hole, keeps the outer boundary over
-        // the inner one — the two are wound oppositely.
+        // Keeping only one winding drops the mirror-image duplicate.
         if (SignedArea(ring) <= 0)
             return;
 
@@ -357,6 +372,53 @@ public static class ConstructionFaceSolver
             return;
 
         loops.Add(ring);
+    }
+
+    private static bool HasNestedLoop(IReadOnlyList<List<Point>> rings)
+    {
+        for (int i = 0; i < rings.Count; i++)
+        {
+            for (int j = 0; j < rings.Count; j++)
+            {
+                if (i == j || rings[j].Count < 3)
+                    continue;
+
+                if (rings[i].Any(point => IsStrictlyInside(point, rings[j])))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsStrictlyInside(Point point, IReadOnlyList<Point> ring)
+    {
+        bool inside = false;
+
+        for (int i = 0, j = ring.Count - 1; i < ring.Count; j = i++)
+        {
+            Point a = ring[i];
+            Point b = ring[j];
+            double cross = ((point.Y - a.Y) * (b.X - a.X))
+                - ((point.X - a.X) * (b.Y - a.Y));
+
+            if (Math.Abs(cross) < 1e-9 &&
+                point.X >= Math.Min(a.X, b.X) - 1e-9 &&
+                point.X <= Math.Max(a.X, b.X) + 1e-9 &&
+                point.Y >= Math.Min(a.Y, b.Y) - 1e-9 &&
+                point.Y <= Math.Max(a.Y, b.Y) + 1e-9)
+            {
+                return false;
+            }
+
+            if (((a.Y > point.Y) != (b.Y > point.Y)) &&
+                point.X < ((b.X - a.X) * (point.Y - a.Y) / (b.Y - a.Y)) + a.X)
+            {
+                inside = !inside;
+            }
+        }
+
+        return inside;
     }
 
     private static double SignedArea(IReadOnlyList<Point> ring)

@@ -853,14 +853,30 @@ public partial class MainWindow
     private void ApplyConstructionToPolygon_Click(object sender, RoutedEventArgs e)
     {
         List<List<Point>> rings = [];
+        bool hasSelectedFaces = false;
+        bool containsHole = false;
 
         foreach (ConstructionOverlayControl overlay in constructionControls)
         {
-            if (overlay.TryGetSelectedFacesUnion(out List<List<Point>> unionRings))
+            if (!overlay.HasSelectedFaces)
+                continue;
+
+            hasSelectedFaces = true;
+            if (overlay.TryGetSelectedFacesUnion(out List<List<Point>> unionRings, out bool overlayContainsHole))
+            {
                 rings.AddRange(unionRings);
+            }
+            else if (overlayContainsHole)
+            {
+                containsHole = true;
+                overlay.TransientHint = "This selection contains a hole and cannot be made into a polygon";
+            }
         }
 
-        if (rings.Count == 0 && TryGetConstructedRing(out IReadOnlyList<Point> ring) && ring.Count >= 3)
+        if (containsHole)
+            return;
+
+        if (!hasSelectedFaces && TryGetConstructedRing(out IReadOnlyList<Point> ring) && ring.Count >= 3)
             rings.Add(ConstructionSolver.NormalizeWinding(ring));
 
         foreach (List<Point> polygonRing in rings)
