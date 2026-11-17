@@ -348,6 +348,11 @@ public partial class MainWindow : FluentWindow, IMainWindowView
             draggingMode = DraggingMode.None;
             Cursor = null;
         }
+        else if (draggingMode is DraggingMode.ConstructionEdgeCreate or DraggingMode.ConstructionBoundaryProbe)
+        {
+            CancelConstructionGesture();
+            HidePixelZoom();
+        }
     }
 
     private void MainGrid_LostMouseCapture(object sender, MouseEventArgs e)

@@ -555,6 +555,17 @@ public partial class ConstructionOverlayControl : UserControl
             PublishEdit(before);
     }
 
+    /// <summary>Rolls an unfinished drag back to its starting geometry without publishing an edit.</summary>
+    public bool CancelDrag()
+    {
+        ConstructionGeometryDto? before = dragSnapshot;
+        if (before is null)
+            return false;
+
+        RestoreGeometry(before);
+        return true;
+    }
+
     /// <summary>Runs a single mutation, publishing it unless a wider edit is in flight.</summary>
     private void Edit(Action change)
     {

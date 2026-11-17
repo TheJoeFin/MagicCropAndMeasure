@@ -309,7 +309,12 @@ public partial class MainWindow
 
         draggingMode = DraggingMode.ConstructionEdgeCreate;
         isCreatingMeasurement = true;
-        ShapeCanvas.CaptureMouse();
+        if (!ShapeCanvas.CaptureMouse())
+        {
+            CancelConstructionGesture();
+            return;
+        }
+
         ShowPixelZoom(canvasPoint);
     }
 
@@ -664,29 +669,32 @@ public partial class MainWindow
     /// <summary>Clears any half-finished construction gesture.</summary>
     private void CancelConstructionGesture()
     {
-        if (constructionOverlay is not null)
+        bool wasConstructionGesture =
+            draggingMode is DraggingMode.ConstructionEdgeCreate or DraggingMode.ConstructionBoundaryProbe ||
+            constructionDragLineId is not null ||
+            constructionDragEndPointId is not null ||
+            boundaryProbeStart is not null;
+
+        if (wasConstructionGesture)
         {
-            if (constructionDragLineId is Guid lineId)
-                constructionOverlay.RemoveConstructionLine(lineId);
-
-            if (constructionDragEndPointId is Guid endId)
-                constructionOverlay.RemoveConstructionPoint(endId);
-
-            constructionOverlay.HidePreviewLine();
+            draggingMode = DraggingMode.None;
+            isCreatingMeasurement = false;
         }
 
         foreach (ConstructionOverlayControl overlay in constructionControls)
         {
-            // Closes any drag abandoned by the cancel, so what survives it is still one
-            // undo step.
-            overlay.EndDrag();
+            overlay.CancelDrag();
             overlay.ClearSelection();
+            overlay.HidePreviewLine();
             overlay.HideBoundaryCandidate();
         }
 
         constructionDragEndPointId = null;
         constructionDragLineId = null;
         boundaryProbeStart = null;
+
+        if (wasConstructionGesture && ShapeCanvas.IsMouseCaptured)
+            ShapeCanvas.ReleaseMouseCapture();
     }
 
     /// <summary>
